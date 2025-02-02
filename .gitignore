@@ -8,7 +8,6 @@ node_modules
 # dependencies
 /frontend/node_modules
 /frontend/.pnp
-/frontend/.pnp.js
 
 # testing
 /frontend/coverage
@@ -30,7 +29,9 @@ node_modules
 
 #backend
 /backend/watchtower/__pycache__
-/backend/wat/migrations/__pycache__
+/backend/watchtower/migrations/__pycache__
+/backend/api/__pycache__
+/backend/backend/__pycache__
 
 # Django
 /backend/*.log
