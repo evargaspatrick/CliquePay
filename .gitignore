@@ -32,7 +32,7 @@ node_modules
 /backend/watchtower/migrations/__pycache__
 /backend/api/__pycache__
 /backend/backend/__pycache__
-
+/backend/backend/.env
 # Django
 /backend/*.log
 /backend/local_settings.py
