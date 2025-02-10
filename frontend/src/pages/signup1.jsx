@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from '../components/button';
 
 export default function SignupPage() {
   const [formData, setFormData] = useState({
