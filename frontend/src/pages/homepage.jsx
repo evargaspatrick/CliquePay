@@ -1,6 +1,9 @@
+import { useNavigate } from 'react-router-dom';
 import Button from '../components/button';
 
 export default function HomePage() {
+  const navigate = useNavigate();
+
   return (
     <div className="min-h-screen bg-blue-600 text-white">
       {/* Navbar */}
@@ -14,10 +17,16 @@ export default function HomePage() {
           <h1 className="text-2xl font-semibold">Watch Tower</h1>
         </div>
         <div className="flex gap-4 mr-8"> {/* Added mr-8 for ~0.5 inch margin */}
-          <Button className="bg-yellow-400 hover:bg-yellow-500 text-black">
+          <Button 
+            className="bg-yellow-400 hover:bg-yellow-500 text-black"
+            onClick={() => navigate('./signup1.jsx')}
+          >
             Sign-up
           </Button>
-          <Button className="bg-yellow-400 hover:bg-yellow-500 text-black">
+          <Button 
+            className="bg-yellow-400 hover:bg-yellow-500 text-black"
+            onClick={() => navigate('/login')}          
+          >
             Login
           </Button>
         </div>
