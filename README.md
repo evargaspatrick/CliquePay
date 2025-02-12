@@ -1,7 +1,9 @@
 # WatchTower
 
 ## To run the frontend 
-- navigate to ../frontend directory in your machine and type `npm start`
+- navigate to ../frontend directory in your machine
+- npm install
+- npm run dev
 
 ## To start frontend development
 - download `ES7 React/Redux/GraphQL/React-Native snippets` in your VS code.
