@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'boto3',
     'botocore',
+    'jwt',
 ]
 
 MIDDLEWARE = [

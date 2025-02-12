@@ -1,4 +1,5 @@
 import boto3
+import jwt 
 import hmac
 import hashlib
 import base64
@@ -128,4 +129,96 @@ class CognitoService:
                 'status': 'ERROR',
                 'error_code': e.response['Error']['Code'],
                 'message': e.response['Error']['Message']
+            }
+    def login_user(self, username, password):
+        try:
+            params = {
+                'USERNAME': username,
+                'PASSWORD': password,
+            }
+            
+            if self.client_secret:
+                params['SECRET_HASH'] = self.get_secret_hash(username)
+
+            response = self.client.initiate_auth(
+                AuthFlow='USER_PASSWORD_AUTH',
+                AuthParameters=params,
+                ClientId=self.client_id
+            )
+            return{
+                'status': 'SUCCESS',
+                'message': 'Login successful',
+                'access_token': response['AuthenticationResult']['AccessToken'],
+                'refresh_token': response['AuthenticationResult']['RefreshToken'],
+                'id_token': response['AuthenticationResult']['IdToken']
+            }
+        except ClientError as e:
+            return {
+                'status': 'ERROR',
+                'error_code': e.response['Error']['Code'],
+                'message': e.response['Error']['Message']
+            }
+
+    def renew_tokens(self, refresh_token):
+        """
+        Renew access and ID tokens using a refresh token
+        
+        Args:
+            refresh_token (str): The refresh token from previous authentication
+            
+        Returns:
+            dict: New tokens or error message
+        """
+        try:
+            # Decode the refresh token to get the username
+            decoded_token = jwt.decode(refresh_token, options={"verify_signature": False})
+            username = decoded_token.get('username')
+
+            if not username:
+                return {
+                    'status': 'ERROR',
+                    'message': 'Could not extract username from refresh token'
+                }
+
+            params = {
+                'ClientId': self.client_id,
+                'AuthFlow': 'REFRESH_TOKEN_AUTH',
+                'AuthParameters': {
+                    'REFRESH_TOKEN': refresh_token
+                }
+            }
+
+            if self.client_secret:
+                params['AuthParameters']['SECRET_HASH'] = self.get_secret_hash(username)
+
+            response = self.client.initiate_auth(**params)
+            
+            if 'AuthenticationResult' in response:
+                return {
+                    'status': 'SUCCESS',
+                    'message': 'Tokens renewed successfully',
+                    'access_token': response['AuthenticationResult'].get('AccessToken'),
+                    'id_token': response['AuthenticationResult'].get('IdToken'),
+                    'expires_in': response['AuthenticationResult'].get('ExpiresIn', 3600)
+                }
+            
+            return {
+                'status': 'ERROR',
+                'message': 'Failed to renew tokens'
+            }
+
+        except jwt.InvalidTokenError:
+            return {
+                'status': 'ERROR',
+                'message': 'Invalid refresh token format'
+            }
+        except self.client.exceptions.NotAuthorizedException:
+            return {
+                'status': 'ERROR',
+                'message': 'Refresh token has expired or is invalid'
+            }
+        except Exception as e:
+            return {
+                'status': 'ERROR',
+                'message': str(e)
             }

@@ -17,3 +17,15 @@ class UserRegistrationSerializer(serializers.Serializer):
 class VerifySignupSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=255, required=True)
     confirmation_code = serializers.CharField(max_length=6, required=True)
+
+class UserLoginSerializer(serializers.Serializer):
+    username = serializers.CharField(max_length=255, required=True)
+    password = serializers.CharField(
+        max_length=128, 
+        required=True,
+        write_only=True,
+        style={'input_type': 'password'}
+    )
+
+class TokenRefreshSerializer(serializers.Serializer):
+    refresh_token = serializers.CharField(required=True)
