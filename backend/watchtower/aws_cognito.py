@@ -7,10 +7,13 @@ from django.conf import settings
 
 class CognitoService:
     def __init__(self):
-        self.client = boto3.client('cognito-idp', region_name=settings.COGNITO_AWS_REGION)
+        self.client = boto3.client(
+            'cognito-idp',
+            region_name=settings.COGNITO_AWS_REGION
+        )
         self.client_id = settings.COGNITO_APP_CLIENT_ID
         self.client_secret = settings.COGNITO_APP_CLIENT_SECRET
-
+        print(settings.COGNITO_AWS_REGION)
     def get_secret_hash(self, username):
         message = username + self.client_id
         dig = hmac.new(
@@ -25,34 +28,33 @@ class CognitoService:
             username_check = self.check_username_exists(username)
             if username_check['exists']:
                 return username_check
-            params = {
-                'ClientId': self.client_id,
-                'Username': username,
-                'Password': password,
-                'UserAttributes': [
-                    {
-                        'Name': 'email',
-                        'Value': email
-                    },
-                    '''
-                    UNCOMMENT ONLY WHILE TESTING 
-                    {
-                        'Name': 'email_verified',
-                        'Value': 'true'
-                    }
-                    '''
-                ]
-            }
+                
+            user_attributes = [
+                {
+                    'Name': 'email',
+                    'Value': email
+                }
+                # Uncomment for testing
+                # {
+                #     'Name': 'email_verified',
+                #     'Value': 'true'
+                # }
+            ]
 
-            # Add phone number if provided
             if phone_number:
-                params['UserAttributes'].append({
+                user_attributes.append({
                     'Name': 'phone_number',
                     'Value': phone_number
                 })
 
-            # Add secret hash if client secret exists
-            if hasattr(settings, 'COGNITO_APP_CLIENT_SECRET'):
+            params = {
+                'ClientId': self.client_id,
+                'Username': username,
+                'Password': password,
+                'UserAttributes': user_attributes
+            }
+
+            if self.client_secret:
                 params['SecretHash'] = self.get_secret_hash(username)
 
             response = self.client.sign_up(**params)

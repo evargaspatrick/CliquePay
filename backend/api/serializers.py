@@ -1,5 +1,7 @@
 from rest_framework import serializers
 
+
+
 class UserRegistrationSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=255, required=True)
     password = serializers.CharField(
@@ -10,7 +12,6 @@ class UserRegistrationSerializer(serializers.Serializer):
     )
     email = serializers.EmailField(required=True)
     phone_number = serializers.CharField(max_length=20, required=False)
-
 
 
 class VerifySignupSerializer(serializers.Serializer):
