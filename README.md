@@ -3,6 +3,7 @@
 ## To run the frontend 
 - navigate to ../frontend directory in your machine
 - npm install
+- npm install tailwindcss @tailwindcss/vite
 - npm run dev
 
 ## To start frontend development
