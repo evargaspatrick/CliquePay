@@ -12,7 +12,8 @@
 
 ## Backend Structure
 
-```/backend/               # Main project directory
+```
+/backend/               # Main project directory
 ├── backend/           # Project configuration directory
 │   ├── settings.py    # Project settings
 │   ├── urls.py       # Main URL configuration
@@ -28,4 +29,7 @@
     ├── models.py     # Database models
     ├── admin.py      # Admin interface config
     ├── views.py      # View logic
-    └── migrations/   # Database migrations```
+    └── migrations/   # Database migrations
+```
+
+- To preview api endpoints configure your .env file, enter `/backend` and run `python manage.py runserver`.
