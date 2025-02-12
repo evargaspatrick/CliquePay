@@ -26,3 +26,6 @@ class UserLoginSerializer(serializers.Serializer):
         write_only=True,
         style={'input_type': 'password'}
     )
+
+class TokenRefreshSerializer(serializers.Serializer):
+    refresh_token = serializers.CharField(required=True)

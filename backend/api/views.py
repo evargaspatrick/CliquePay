@@ -29,6 +29,11 @@ def api_root(request, format=None):
                 'description': 'Log in user and get tokens',
                 'tokens_provided' : 'Refresh, Id, Access Tokens'
             },
+            'refresh': {
+                'url': reverse('renew_tokens', request=request, format=format),
+                'method': 'POST',
+                'description': 'Renew access and ID tokens using refresh token'
+            }
         },
         'version': 'development',
         'status': 'online',
@@ -147,3 +152,29 @@ def user_login(request):
         'message': 'Invalid input',
         'errors': serializer.errors
     }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def renew_tokens(request):
+    """
+    Renew access and ID tokens using refresh token
+    
+    Request body:
+    {
+        "refresh_token": "your-refresh-token"
+    }
+    """
+    refresh_token = request.data.get('refresh_token')
+    
+    if not refresh_token:
+        return Response({
+            'status': 'error',
+            'message': 'Refresh token is required'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    cognito = CognitoService()
+    result = cognito.renew_tokens(refresh_token)
+    
+    if result['status'] == 'SUCCESS':
+        return Response(result, status=status.HTTP_200_OK)
+    
+    return Response(result, status=status.HTTP_401_UNAUTHORIZED)
