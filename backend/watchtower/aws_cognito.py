@@ -129,3 +129,32 @@ class CognitoService:
                 'error_code': e.response['Error']['Code'],
                 'message': e.response['Error']['Message']
             }
+    def login_user(self, username, password):
+        try:
+            params = {
+                'USERNAME': username,
+                'PASSWORD': password,
+            }
+            
+            if self.client_secret:
+                params['SECRET_HASH'] = self.get_secret_hash(username)
+
+            response = self.client.initiate_auth(
+                AuthFlow='USER_PASSWORD_AUTH',
+                AuthParameters=params,
+                ClientId=self.client_id
+            )
+            return{
+                'status': 'SUCCESS',
+                'message': 'Login successful',
+                'access_token': response['AuthenticationResult']['AccessToken'],
+                'refresh_token': response['AuthenticationResult']['RefreshToken'],
+                'id_token': response['AuthenticationResult']['IdToken']
+            }
+        except ClientError as e:
+            return {
+                'status': 'ERROR',
+                'error_code': e.response['Error']['Code'],
+                'message': e.response['Error']['Message']
+            }
+        
