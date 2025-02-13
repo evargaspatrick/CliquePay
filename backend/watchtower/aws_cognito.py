@@ -222,3 +222,22 @@ class CognitoService:
                 'status': 'ERROR',
                 'message': str(e)
             }
+
+    def logout_user(self, accessToken):
+        '''
+        Logs out the user from the app
+        '''
+        try:
+            response = self.client.global_sign_out(
+                AccessToken=accessToken
+            )
+            return {
+                'status': 'SUCCESS',
+                'message': 'Logout successful'
+            }
+        except ClientError as e:
+            return {
+                'status': 'ERROR',
+                'error_code': e.response['Error']['Code'],
+                'message': e.response['Error']['Message']
+            }

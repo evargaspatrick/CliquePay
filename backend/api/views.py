@@ -33,6 +33,11 @@ def api_root(request, format=None):
                 'url': reverse('renew_tokens', request=request, format=format),
                 'method': 'POST',
                 'description': 'Renew access and ID tokens using refresh token'
+            },
+            'logout': {
+                'url': reverse('logout_user', request=request, format=format),
+                'method': 'POST',
+                'description': 'Logout the user by rendering the access and refresh tokens invalid'
             }
         },
         'version': 'development',
@@ -173,6 +178,33 @@ def renew_tokens(request):
     
     cognito = CognitoService()
     result = cognito.renew_tokens(refresh_token)
+    
+    if result['status'] == 'SUCCESS':
+        return Response(result, status=status.HTTP_200_OK)
+    
+    return Response(result, status=status.HTTP_401_UNAUTHORIZED)
+
+@api_view(['POST'])
+def logout_user(request):
+    """
+    Pass the access token and make all the session tokens 
+    including refresh token invalid, hence 'Logging Out' the user.
+    
+    Request body:
+    {
+        "access_token": "QwErTYuioP"
+    }
+    """
+    access_token = request.data.get('access_token')
+    
+    if not access_token:
+        return Response({
+            'status': 'error',
+            'message': 'Access token is required'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    cognito = CognitoService()
+    result = cognito.logout_user(access_token)
     
     if result['status'] == 'SUCCESS':
         return Response(result, status=status.HTTP_200_OK)
