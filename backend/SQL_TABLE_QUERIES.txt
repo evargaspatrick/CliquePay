@@ -1,0 +1,13 @@
+User Table:
+
+CREATE TABLE users (
+    id             VARCHAR(128) UNIQUE NOT NULL PRIMARY KEY,
+    cognito_id     VARCHAR(255) UNIQUE NOT NULL,
+    name           VARCHAR(100) NOT NULL,
+    email          VARCHAR(255) UNIQUE NOT NULL,
+    avatar_url     VARCHAR(255) DEFAULT NULL,
+    currency       VARCHAR(10) DEFAULT 'USD',
+    created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+

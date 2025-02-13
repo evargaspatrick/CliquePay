@@ -5,6 +5,7 @@ import hashlib
 import base64
 from botocore.exceptions import ClientError
 from django.conf import settings
+from .db_service import *
 
 class CognitoService:
     def __init__(self):
@@ -60,6 +61,23 @@ class CognitoService:
 
             response = self.client.sign_up(**params)
             
+            # After successful Cognito registration, create database record
+            db_service = DatabaseService()
+            db_result = db_service.create_user(
+                cognito_id=response['UserSub'],
+                name=username,
+                email=email
+            )
+            
+            if db_result['status'] != 'SUCCESS':
+                # Delete Cognito user if database operation fails
+                delete_result = self.delete_cognito_user(username)
+                return {
+                    'status': 'ERROR',
+                    'message': 'Operation cancelled due to a server error. Please try again.',
+                    'details': f"Database error: {db_result['message']}"
+                }
+
             return {
                 'status': 'SUCCESS',
                 'user_sub': response['UserSub'],
@@ -67,13 +85,41 @@ class CognitoService:
             }
 
         except ClientError as e:
-            error_code = e.response['Error']['Code']
-            error_message = e.response['Error']['Message']
-            
             return {
                 'status': 'ERROR',
-                'error_code': error_code,
-                'message': error_message
+                'error_code': e.response['Error']['Code'],
+                'message': e.response['Error']['Message']
+            }
+
+    def delete_cognito_user(self, username):
+        """
+        Deletes a user from Cognito in case of database operation failure
+        
+        Args:
+            username (str): Username of the user to delete
+            
+        Returns:
+            dict: Status of the deletion operation
+        """
+        try:
+            self.client.admin_delete_user(
+                UserPoolId=self.user_pool_id,
+                Username=username
+            )
+            return {
+                'status': 'SUCCESS',
+                'message': 'User deleted successfully'
+            }
+        except self.client.exceptions.UserNotFoundException:
+            return {
+                'status': 'ERROR',
+                'message': 'User not found'
+            }
+        except ClientError as e:
+            return {
+                'status': 'ERROR',
+                'error_code': e.response['Error']['Code'],
+                'message': e.response['Error']['Message']
             }
 
     def confirm_sign_up(self, username, confirmation_code):
