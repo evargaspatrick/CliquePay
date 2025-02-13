@@ -241,3 +241,103 @@ class CognitoService:
                 'error_code': e.response['Error']['Code'],
                 'message': e.response['Error']['Message']
             }
+
+    def initiate_password_reset(self, id_token):
+        """
+        Initiates the password reset process for a user
+        
+        Args:
+            id_token (str): The ID token from authentication
+            
+        Returns:
+            dict: Status of the password reset initiation
+        """
+        try:
+            # Extract username from ID token
+            decoded_token = jwt.decode(id_token, options={"verify_signature": False})
+            username = decoded_token.get('cognito:username')
+
+            if not username:
+                return {
+                    'status': 'ERROR',
+                    'message': 'Could not extract username from ID token'
+                }
+
+            params = {
+                'ClientId': self.client_id,
+                'Username': username
+            }
+
+            if self.client_secret:
+                params['SecretHash'] = self.get_secret_hash(username)
+
+            self.client.forgot_password(**params)
+            
+            return {
+                'status': 'SUCCESS',
+                'message': 'Password reset code sent to your email'
+            }
+
+        except jwt.InvalidTokenError:
+            return {
+                'status': 'ERROR',
+                'message': 'Invalid token format'
+            }
+        except ClientError as e:
+            return {
+                'status': 'ERROR',
+                'error_code': e.response['Error']['Code'],
+                'message': e.response['Error']['Message']
+            }
+
+    def confirm_password_reset(self, id_token, confirmation_code, new_password):
+        """
+        Confirms password reset with the code and new password
+        
+        Args:
+            id_token (str): The ID token from authentication
+            confirmation_code (str): The code sent to user's email
+            new_password (str): The new password to set
+            
+        Returns:
+            dict: Status of the password reset confirmation
+        """
+        try:
+            # Extract username from ID token
+            decoded_token = jwt.decode(id_token, options={"verify_signature": False})
+            username = decoded_token.get('cognito:username')
+
+            if not username:
+                return {
+                    'status': 'ERROR',
+                    'message': 'Could not extract username from ID token'
+                }
+
+            params = {
+                'ClientId': self.client_id,
+                'Username': username,
+                'ConfirmationCode': confirmation_code,
+                'Password': new_password
+            }
+
+            if self.client_secret:
+                params['SecretHash'] = self.get_secret_hash(username)
+
+            self.client.confirm_forgot_password(**params)
+            
+            return {
+                'status': 'SUCCESS',
+                'message': 'Password has been reset successfully'
+            }
+
+        except jwt.InvalidTokenError:
+            return {
+                'status': 'ERROR',
+                'message': 'Invalid token format'
+            }
+        except ClientError as e:
+            return {
+                'status': 'ERROR',
+                'error_code': e.response['Error']['Code'],
+                'message': e.response['Error']['Message']
+            }

@@ -27,7 +27,7 @@ def api_root(request, format=None):
                 'url': reverse('user_login', request=request, format=format),
                 'method': 'POST',
                 'description': 'Log in user and get tokens',
-                'tokens_provided' : 'Refresh, Id, Access Tokens'
+                'tokens_provided': 'Refresh, Id, Access Tokens'
             },
             'refresh': {
                 'url': reverse('renew_tokens', request=request, format=format),
@@ -38,6 +38,16 @@ def api_root(request, format=None):
                 'url': reverse('logout_user', request=request, format=format),
                 'method': 'POST',
                 'description': 'Logout the user by rendering the access and refresh tokens invalid'
+            },
+            'initiate-reset-password': {
+                'url': reverse('initiate_reset_password', request=request, format=format),
+                'method': 'POST',
+                'description': 'Initiate password reset process'
+            },
+            'confirm-reset-password': {
+                'url': reverse('confirm_reset_password', request=request, format=format),
+                'method': 'POST',
+                'description': 'Confirm password reset with verification code'
             }
         },
         'version': 'development',
@@ -168,21 +178,21 @@ def renew_tokens(request):
         "refresh_token": "your-refresh-token"
     }
     """
-    refresh_token = request.data.get('refresh_token')
-    
-    if not refresh_token:
-        return Response({
-            'status': 'error',
-            'message': 'Refresh token is required'
-        }, status=status.HTTP_400_BAD_REQUEST)
-    
-    cognito = CognitoService()
-    result = cognito.renew_tokens(refresh_token)
-    
-    if result['status'] == 'SUCCESS':
-        return Response(result, status=status.HTTP_200_OK)
-    
-    return Response(result, status=status.HTTP_401_UNAUTHORIZED)
+    serializer = TokenRenewSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        result = cognito.renew_tokens(serializer.validated_data['refresh_token'])
+        
+        if result['status'] == 'SUCCESS':
+            return Response(result, status=status.HTTP_200_OK)
+        
+        return Response(result, status=status.HTTP_401_UNAUTHORIZED)
+        
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])
 def logout_user(request):
@@ -195,18 +205,76 @@ def logout_user(request):
         "access_token": "QwErTYuioP"
     }
     """
-    access_token = request.data.get('access_token')
+    serializer = LogoutUserSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        result = cognito.logout_user(serializer.validated_data['access_token'])
+        
+        if result['status'] == 'SUCCESS':
+            return Response(result, status=status.HTTP_200_OK)
+        
+        return Response(result, status=status.HTTP_401_UNAUTHORIZED)
+        
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def initiate_reset_password(request):
+    """
+    Initiate password reset process
     
-    if not access_token:
-        return Response({
-            'status': 'error',
-            'message': 'Access token is required'
-        }, status=status.HTTP_400_BAD_REQUEST)
+    Request body:
+    {
+        "id_token": "QwErTYuioP"
+    }
+    """
+    serializer = InitiateResetPasswordSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        result = cognito.initiate_password_reset(serializer.validated_data['id_token'])
+        
+        if result['status'] == 'SUCCESS':
+            return Response(result, status=status.HTTP_200_OK)
+        
+        return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def confirm_reset_password(request):
+    """
+    Confirm password reset with code
     
-    cognito = CognitoService()
-    result = cognito.logout_user(access_token)
-    
-    if result['status'] == 'SUCCESS':
-        return Response(result, status=status.HTTP_200_OK)
-    
-    return Response(result, status=status.HTTP_401_UNAUTHORIZED)
+    Request body:
+    {
+        "id_token": "QwErTYuioP",
+        "confirmation_code": "123456",
+        "new_password": "NewPassword123!"
+    }
+    """
+    serializer = ConfirmResetPasswordSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        result = cognito.confirm_password_reset(
+            id_token=serializer.validated_data['id_token'],
+            confirmation_code=serializer.validated_data['confirmation_code'],
+            new_password=serializer.validated_data['new_password']
+        )
+        
+        if result['status'] == 'SUCCESS':
+            return Response(result, status=status.HTTP_200_OK)
+        
+        return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
