@@ -25,7 +25,7 @@ class CognitoService:
         ).digest()
         return base64.b64encode(dig).decode()
 
-    def register_user(self, username, password, email, phone_number=None):
+    def register_user(self, username, fullname, password, email, phone_number=None):
         try:
             username_check = self.check_username_exists(username)
             if username_check['exists']:
@@ -36,11 +36,6 @@ class CognitoService:
                     'Name': 'email',
                     'Value': email
                 }
-                # Uncomment for testing
-                # {
-                #     'Name': 'email_verified',
-                #     'Value': 'true'
-                # }
             ]
 
             if phone_number:
@@ -66,7 +61,9 @@ class CognitoService:
             db_result = db_service.create_user(
                 cognito_id=response['UserSub'],
                 name=username,
-                email=email
+                full_name=fullname,  
+                email=email,
+                phone_number=phone_number if phone_number else None
             )
             
             if db_result['status'] != 'SUCCESS':
@@ -81,7 +78,8 @@ class CognitoService:
             return {
                 'status': 'SUCCESS',
                 'user_sub': response['UserSub'],
-                'message': 'User registration successful'
+                'message': 'User registration successful',
+                'user_data': db_result.get('user_data', {})  # Return user data from DB
             }
 
         except ClientError as e:
@@ -103,7 +101,7 @@ class CognitoService:
         """
         try:
             self.client.admin_delete_user(
-                UserPoolId=self.user_pool_id,
+                UserPoolId=settings.COGNITO_USER_POOL_ID,
                 Username=username
             )
             return {
@@ -205,38 +203,39 @@ class CognitoService:
                 'message': e.response['Error']['Message']
             }
 
-    def renew_tokens(self, refresh_token):
+    def renew_tokens(self, refresh_token, id_token):
         """
-        Renew access and ID tokens using a refresh token
+        Renew access and ID tokens using refresh token and id token for username extraction.
         
         Args:
-            refresh_token (str): The refresh token from previous authentication
+            refresh_token (str): The refresh token (opaque, not a JWT).
+            id_token (str): The id token containing user claims (including username).
             
         Returns:
-            dict: New tokens or error message
+            dict: Response with new tokens or error message.
         """
         try:
-            # Decode the refresh token to get the username
-            decoded_token = jwt.decode(refresh_token, options={"verify_signature": False})
-            username = decoded_token.get('username')
-
+            # Extract username from the id_token instead of refresh token.
+            decoded = jwt.decode(id_token, options={"verify_signature": False})
+            username = decoded.get("cognito:username") or decoded.get("username")
             if not username:
                 return {
-                    'status': 'ERROR',
-                    'message': 'Could not extract username from refresh token'
+                    "status": "ERROR",
+                    "message": "Could not extract username from id token"
                 }
-
+            
             params = {
                 'ClientId': self.client_id,
                 'AuthFlow': 'REFRESH_TOKEN_AUTH',
                 'AuthParameters': {
-                    'REFRESH_TOKEN': refresh_token
+                    'REFRESH_TOKEN': refresh_token,
+                    'USERNAME': username
                 }
             }
-
+            
             if self.client_secret:
                 params['AuthParameters']['SECRET_HASH'] = self.get_secret_hash(username)
-
+            
             response = self.client.initiate_auth(**params)
             
             if 'AuthenticationResult' in response:
@@ -252,16 +251,15 @@ class CognitoService:
                 'status': 'ERROR',
                 'message': 'Failed to renew tokens'
             }
-
-        except jwt.InvalidTokenError:
-            return {
-                'status': 'ERROR',
-                'message': 'Invalid refresh token format'
-            }
         except self.client.exceptions.NotAuthorizedException:
             return {
                 'status': 'ERROR',
                 'message': 'Refresh token has expired or is invalid'
+            }
+        except jwt.InvalidTokenError:
+            return {
+                'status': 'ERROR',
+                'message': 'Invalid token format'
             }
         except Exception as e:
             return {
@@ -386,4 +384,45 @@ class CognitoService:
                 'status': 'ERROR',
                 'error_code': e.response['Error']['Code'],
                 'message': e.response['Error']['Message']
+            }
+    
+    def get_user_id(self, id_token):
+        """
+        Extract the user sub (unique identifier) from the ID token
+        
+        Args:
+            id_token (str): The ID token from authentication
+            
+        Returns:
+            dict: User sub or error message
+        """
+        try:
+            # Decode the ID token without verification
+            decoded_token = jwt.decode(id_token, options={"verify_signature": False})
+            
+            # Extract the sub claim
+            user_sub = decoded_token.get('sub')
+            
+            if not user_sub:
+                return {
+                    'status': 'ERROR',
+                    'message': 'Could not extract user sub from ID token'
+                }
+            
+            return {
+                'status': 'SUCCESS',
+                'user_sub': user_sub,
+                'username': decoded_token.get('cognito:username'),
+                'email': decoded_token.get('email')
+            }
+
+        except jwt.InvalidTokenError:
+            return {
+                'status': 'ERROR',
+                'message': 'Invalid token format'
+            }
+        except Exception as e:
+            return {
+                'status': 'ERROR',
+                'message': str(e)
             }

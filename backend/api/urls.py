@@ -10,5 +10,5 @@ urlpatterns = [
     path('logout/',views.logout_user, name='logout_user'),
     path('reset-password/',views.initiate_reset_password, name='initiate_reset_password'),
     path('confirm-reset-password/',views.confirm_reset_password, name='confirm_reset_password'),
-
+    path('friendlist/',views.get_user_friends, name='get_user_friends')
     ]

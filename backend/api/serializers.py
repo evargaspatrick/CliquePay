@@ -4,6 +4,7 @@ from rest_framework import serializers
 
 class UserRegistrationSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=255, required=True)
+    fullname = serializers.CharField(max_length=255, required=True)
     password = serializers.CharField(
         max_length=128, 
         required=True,
@@ -29,6 +30,7 @@ class UserLoginSerializer(serializers.Serializer):
 
 class TokenRenewSerializer(serializers.Serializer):
     refresh_token = serializers.CharField(required=True)
+    id_token = serializers.CharField(required=True)
 
 class LogoutUserSerializer(serializers.Serializer):
     access_token = serializers.CharField(required=True)
@@ -45,3 +47,6 @@ class ConfirmResetPasswordSerializer(serializers.Serializer):
         write_only=True,
         style={'input_type': 'password'}
     )
+    
+class GetUserFriendsSerializer(serializers.Serializer):
+    id_token = serializers.CharField(required=True)
