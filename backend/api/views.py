@@ -4,6 +4,7 @@ from rest_framework.decorators import api_view
 from rest_framework import status
 from django.http import JsonResponse
 from watchtower.aws_cognito import CognitoService
+from watchtower.db_service import DatabaseService
 from .serializers import *
 
 @api_view(['GET'])
@@ -27,12 +28,32 @@ def api_root(request, format=None):
                 'url': reverse('user_login', request=request, format=format),
                 'method': 'POST',
                 'description': 'Log in user and get tokens',
-                'tokens_provided' : 'Refresh, Id, Access Tokens'
+                'tokens_provided': 'Refresh, Id, Access Tokens'
             },
             'refresh': {
                 'url': reverse('renew_tokens', request=request, format=format),
                 'method': 'POST',
                 'description': 'Renew access and ID tokens using refresh token'
+            },
+            'logout': {
+                'url': reverse('logout_user', request=request, format=format),
+                'method': 'POST',
+                'description': 'Logout the user by rendering the access and refresh tokens invalid'
+            },
+            'initiate-reset-password': {
+                'url': reverse('initiate_reset_password', request=request, format=format),
+                'method': 'POST',
+                'description': 'Initiate password reset process'
+            },
+            'confirm-reset-password': {
+                'url': reverse('confirm_reset_password', request=request, format=format),
+                'method': 'POST',
+                'description': 'Confirm password reset with verification code'
+            },
+            'friendlist': {
+                'url': reverse('get_user_friends', request=request, format=format),
+                'method': 'POST',
+                'description': 'Extracts the user_sub from ID token,gets the user_id from database using user_sub and then makes a db query to get user friends using the user_id.'
             }
         },
         'version': 'development',
@@ -44,10 +65,12 @@ def api_root(request, format=None):
 def register_user(request):
     """
     Register a new user with AWS Cognito
+    and store the user in database.
     
     Request body:
     {
         "username": "example_user",
+        "fullname": "Jhon Doe",
         "password": "Example123!",
         "email": "user@example.com",
         "phone_number": "+1234567890" (optional)
@@ -156,25 +179,146 @@ def user_login(request):
 @api_view(['POST'])
 def renew_tokens(request):
     """
-    Renew access and ID tokens using refresh token
+    Renew access and ID tokens using refresh token and id token
     
     Request body:
     {
-        "refresh_token": "your-refresh-token"
+        "refresh_token": "your-refresh-token",
+        "id_token": "your-id-token"
     }
     """
-    refresh_token = request.data.get('refresh_token')
+    serializer = TokenRenewSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        result = cognito.renew_tokens(
+            refresh_token=serializer.validated_data['refresh_token'],
+            id_token=serializer.validated_data['id_token']
+        )
+        
+        if result['status'] == 'SUCCESS':
+            return Response(result, status=status.HTTP_200_OK)
+        
+        return Response(result, status=status.HTTP_401_UNAUTHORIZED)
+        
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def logout_user(request):
+    """
+    Pass the access token and make all the session tokens 
+    including refresh token invalid, hence 'Logging Out' the user.
     
-    if not refresh_token:
+    Request body:
+    {
+        "access_token": "QwErTYuioP"
+    }
+    """
+    serializer = LogoutUserSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        result = cognito.logout_user(serializer.validated_data['access_token'])
+        
+        if result['status'] == 'SUCCESS':
+            return Response(result, status=status.HTTP_200_OK)
+        
+        return Response(result, status=status.HTTP_401_UNAUTHORIZED)
+        
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def initiate_reset_password(request):
+    """
+    Initiate password reset process
+    
+    Request body:
+    {
+        "id_token": "QwErTYuioP"
+    }
+    """
+    serializer = InitiateResetPasswordSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        result = cognito.initiate_password_reset(serializer.validated_data['id_token'])
+        
+        if result['status'] == 'SUCCESS':
+            return Response(result, status=status.HTTP_200_OK)
+        
+        return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def confirm_reset_password(request):
+    """
+    Confirm password reset with code
+    
+    Request body:
+    {
+        "id_token": "QwErTYuioP",
+        "confirmation_code": "123456",
+        "new_password": "NewPassword123!"
+    }
+    """
+    serializer = ConfirmResetPasswordSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        result = cognito.confirm_password_reset(
+            id_token=serializer.validated_data['id_token'],
+            confirmation_code=serializer.validated_data['confirmation_code'],
+            new_password=serializer.validated_data['new_password']
+        )
+        
+        if result['status'] == 'SUCCESS':
+            return Response(result, status=status.HTTP_200_OK)
+        
+        return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def get_user_friends(request):
+    """
+    Confirm password reset with code
+    
+    Request body:
+    {
+        "id_token": "QwErTYuioP",
+    }
+    """
+    serializer = GetUserFriendsSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        firstResult = cognito.get_user_id(serializer.validated_data['id_token'])
+        if firstResult['status'] == 'SUCCESS':
+            db = DatabaseService()
+            result = db.get_user_friends(firstResult.get('user_sub'))
+            if result['status'] == 'SUCCESS':
+                return Response(result, status=status.HTTP_200_OK)
+        
         return Response({
             'status': 'error',
-            'message': 'Refresh token is required'
-        }, status=status.HTTP_400_BAD_REQUEST)
+            'message': 'Could not verify user identity',
+            'details': firstResult.get('message')
+        }, status=status.HTTP_401_UNAUTHORIZED)
     
-    cognito = CognitoService()
-    result = cognito.renew_tokens(refresh_token)
-    
-    if result['status'] == 'SUCCESS':
-        return Response(result, status=status.HTTP_200_OK)
-    
-    return Response(result, status=status.HTTP_401_UNAUTHORIZED)
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
