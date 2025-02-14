@@ -3,8 +3,8 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework import status
 from django.http import JsonResponse
-from watchtower.aws_cognito import CognitoService
-from watchtower.db_service import DatabaseService
+from cliquepay.aws_cognito import CognitoService
+from cliquepay.db_service import DatabaseService
 from .serializers import *
 
 @api_view(['GET'])

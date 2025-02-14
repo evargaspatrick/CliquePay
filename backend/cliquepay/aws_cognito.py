@@ -63,7 +63,7 @@ class CognitoService:
                 name=username,
                 full_name=fullname,  
                 email=email,
-                phone_number=phone_number if phone_number else None
+                phone_number=phone_number 
             )
             
             if db_result['status'] != 'SUCCESS':
