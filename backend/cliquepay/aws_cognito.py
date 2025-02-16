@@ -144,7 +144,31 @@ class CognitoService:
                 'error_code': e.response['Error']['Code'],
                 'message': e.response['Error']['Message']
             }
-        
+
+    def resend_code(self, username):
+        try:
+            params = {
+                'ClientId': self.client_id,
+                'Username': username
+            }
+
+            if hasattr(settings, 'COGNITO_APP_CLIENT_SECRET'):
+                params['SecretHash'] = self.get_secret_hash(username)
+
+            self.client.resend_confirmation_code(**params)
+            
+            return {
+                'status': 'SUCCESS',
+                'message': 'successfully resent code'
+            }
+
+        except ClientError as e:
+            return {
+                'status': 'ERROR',
+                'error_code': e.response['Error']['Code'],
+                'message': e.response['Error']['Message']
+            }
+
     def check_username_exists(self, username):
         try:
             params = {

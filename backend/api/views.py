@@ -24,6 +24,11 @@ def api_root(request, format=None):
                 'method': 'POST',
                 'description': 'Verify user email'
             },
+            'resend-code': {
+                'url': reverse('resend_code', request=request, format=format),
+                'method': 'POST',
+                'description': 'resend email verification code'
+            },
             'login': {
                 'url': reverse('user_login', request=request, format=format),
                 'method': 'POST',
@@ -317,6 +322,31 @@ def get_user_friends(request):
             'details': firstResult.get('message')
         }, status=status.HTTP_401_UNAUTHORIZED)
     
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def get_resend_code(request):
+    """
+    get the resent verification code through email.
+    
+    Request body:
+    {
+        "username": "example_user"
+    }
+    """
+    serializer = GetResentVerificationCodeSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        result = cognito.resend_code(serializer.validated_data['username'])
+        if result['status'] == 'SUCCESS':
+            return Response(result, status=status.HTTP_200_OK)
+
+        return Response(result, status=status.HTTP_400_BAD_REQUEST)
+
     return Response({
         'status': 'error',
         'message': 'Invalid input',

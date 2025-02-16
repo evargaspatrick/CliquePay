@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Button from '../components/button';
 import { useNavigate } from 'react-router-dom';
 import Cookies from 'js-cookie';
- 
+
 function Verify() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
@@ -11,19 +11,16 @@ function Verify() {
   const [verificationCode, setVerificationCode] = useState('');
 
   useEffect(() => {
-    const username = Cookies.get('username');
-    if (username) {
-      setUsername(username);
-    } else {
+     setUsername(Cookies.get('username'));
+    if (!Cookies.get('username')) {
       navigate('/signup');
     }
-  }, []);
+  }, [navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
-
     try {
       const response = await fetch('http://127.0.0.1:8000/api/verify/', {
         method: 'POST',
@@ -41,14 +38,45 @@ function Verify() {
       if (response.ok) {
         // Verification successful
         console.log('Verification successful:', data);
-        //navigate('/login');
-    } else {
+        Cookies.remove('username');
+        navigate('/login');
+      } else {
         // Verification failed
         console.error('Verification failed:', data);
         setError(data.message || 'Verification failed. Please try again.');
       }
     } catch (err) {
       console.error('An error occurred:', err);
+      setError('Cannot connect to server. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    setError(null);
+
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/resend-code/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: username
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Resend code successful
+        alert('Verification code resent successfully. Please check your email.');
+      } else {
+        // Resend code failed
+        setError(data.message || 'Failed to resend verification code. Please try again.');
+      }
+    } catch (err) {
       setError('Cannot connect to server. Please try again.');
     } finally {
       setIsLoading(false);
@@ -93,6 +121,7 @@ function Verify() {
               required
             />
           </div>
+          
           <Button
             className="w-full mt-4"
             type="submit"
@@ -100,7 +129,7 @@ function Verify() {
           >
             {isLoading ? 'Verifying...' : 'Verify'}
           </Button>
-          <p>Didn't get the email? <a>Resend code</a></p>
+          <p>Didn't get the email? <a onClick={handleResendCode} style={{ cursor: 'pointer' }}>Resend code</a></p>
         </form>
       </div>
     </div>

@@ -10,5 +10,7 @@ urlpatterns = [
     path('api/logout/',views.logout_user, name='logout_user'),
     path('api/reset-password/',views.initiate_reset_password, name='initiate_reset_password'),
     path('api/confirm-reset-password/',views.confirm_reset_password, name='confirm_reset_password'),
-    path('api/friendlist/',views.get_user_friends, name='get_user_friends')
+    path('api/friendlist/',views.get_user_friends, name='get_user_friends'),
+    path('api/resend-code/',views.get_resend_code, name='resend_code')
+
     ]

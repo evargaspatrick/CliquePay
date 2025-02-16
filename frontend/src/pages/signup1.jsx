@@ -17,7 +17,6 @@ export default function SignupPage() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   useEffect(() => {
-    // Check if cookies are enabled
     if (!navigator.cookieEnabled) {
       setError("Cookies are disabled. Please enable cookies to sign up.");
     }
@@ -29,8 +28,13 @@ export default function SignupPage() {
       ...prev,
       [name]: value
     }));
-    // Clear error when user starts typing
     setError("");
+  };
+
+  const validatePhoneNumber = (number) => {
+    if (!number) return true; 
+    const phoneRegex = /^\+?1?\d{9,15}$/;
+    return phoneRegex.test(number);
   };
 
   const handleSubmit = async (e) => {
@@ -38,7 +42,6 @@ export default function SignupPage() {
     setIsLoading(true);
     setError("");
 
-    // Enhanced validation
     if (!formData.username.trim()) {
       setError("Username is required");
       setIsLoading(false);
@@ -69,6 +72,12 @@ export default function SignupPage() {
       return;
     }
 
+    if (formData.phoneNumber.trim() && !validatePhoneNumber(formData.phoneNumber.trim())) {
+      setError("Phone number must be entered in the format: '+999999999'. Up to 15 digits allowed.");
+      setIsLoading(false);
+      return;
+    }
+
     const requestBody = {
       username: formData.username.trim(),
       email: formData.email.trim(),
@@ -93,11 +102,29 @@ export default function SignupPage() {
     
 
       if (response.ok) {
-        // Store username in cookie with max expiration
-        const maxAge = 60 * 60 * 24 * 365 * 10; // 10 years in seconds
-        Cookies.set('username', formData.username, { expires: maxAge / 365 }); // expires in days
-        
-        navigate('/verify');
+        try {
+          Cookies.set('username', formData.username, {
+            expires: 365, // 1 year
+            path: '/', // accessible on all paths
+            sameSite: 'Lax',
+            secure: window.location.protocol === 'https:',
+          });
+      
+          const storedUsername = Cookies.get('username');
+          if (!storedUsername) {
+            throw new Error('Failed to store username');
+          }
+          
+          // a small delay to ensure cookie is set
+          setTimeout(() => {
+            navigate('/verify');
+          }, 100);
+        } catch (storageError) {
+          console.error('Storage error:', storageError);
+          setError('Failed to store user data. Please check your browser settings.');
+          setIsLoading(false);
+        }
+      
       } else {
         if (response.status === 400) {
           setError(data.message || "Please check your input data");
