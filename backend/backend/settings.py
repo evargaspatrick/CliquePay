@@ -51,7 +51,7 @@ CORS_ALLOW_HEADERS = [
 ]
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-#x^zvb6%yhwoxuc0^)tf9kbn(zoi7h3_2h5nt%5nr0i+8zz2(b'
+SECRET_KEY = os.getenv('DJANGO_SECRET')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True

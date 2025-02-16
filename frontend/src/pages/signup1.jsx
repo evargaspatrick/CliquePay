@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Button from '../components/button.tsx';
 import { useNavigate } from "react-router-dom";
+import Cookies from 'js-cookie';
 
 export default function SignupPage() {
   const navigate = useNavigate();
@@ -15,6 +16,12 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  useEffect(() => {
+    // Check if cookies are enabled
+    if (!navigator.cookieEnabled) {
+      setError("Cookies are disabled. Please enable cookies to sign up.");
+    }
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -86,8 +93,10 @@ export default function SignupPage() {
     
 
       if (response.ok) {
-        // Store username for verification page
-        // I am going to use cookies to store this data - sessionStorage.setItem('verificationUsername', formData.username);
+        // Store username in cookie with max expiration
+        const maxAge = 60 * 60 * 24 * 365 * 10; // 10 years in seconds
+        Cookies.set('username', formData.username, { expires: maxAge / 365 }); // expires in days
+        
         navigate('/verify');
       } else {
         if (response.status === 400) {
