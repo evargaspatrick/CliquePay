@@ -21,8 +21,37 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
+
+# CORS settings
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",  # Vite's default development server
+]
+
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-#x^zvb6%yhwoxuc0^)tf9kbn(zoi7h3_2h5nt%5nr0i+8zz2(b'
+SECRET_KEY = os.getenv('DJANGO_SECRET')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -47,14 +76,16 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     
     # manually installed apps
-    'watchtower',
+    'cliquepay',
     'rest_framework',
     'boto3',
     'botocore',
     'jwt',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware', 
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',

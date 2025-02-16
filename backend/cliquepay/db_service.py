@@ -38,6 +38,7 @@ class DatabaseService:
                 }
             }
         except Exception as e:
+            print(e)
             return {
                 'status': 'ERROR',
                 'message': str(e)

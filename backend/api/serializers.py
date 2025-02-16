@@ -50,3 +50,6 @@ class ConfirmResetPasswordSerializer(serializers.Serializer):
     
 class GetUserFriendsSerializer(serializers.Serializer):
     id_token = serializers.CharField(required=True)
+
+class GetResentVerificationCodeSerializer(serializers.Serializer):
+    username = serializers.CharField(max_length=255, required=True)
