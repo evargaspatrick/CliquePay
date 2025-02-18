@@ -48,12 +48,17 @@ def api_root(request, format=None):
             'initiate-reset-password': {
                 'url': reverse('initiate_reset_password', request=request, format=format),
                 'method': 'POST',
-                'description': 'Initiate password reset process'
+                'description': 'Initiate password reset process if the user FORGOT password'
             },
             'confirm-reset-password': {
                 'url': reverse('confirm_reset_password', request=request, format=format),
                 'method': 'POST',
-                'description': 'Confirm password reset with verification code'
+                'description': 'Confirm forgot-password reset with verification code'
+            },
+            'change-password': {
+                'url': reverse('change-password', request=request, format=format),
+                'method': 'POST',
+                'description': 'Change the user password if they provide the old one.'
             },
             'friendlist': {
                 'url': reverse('get_user_friends', request=request, format=format),
@@ -410,6 +415,35 @@ def get_user_profile(request):
             return Response(result, status=status.HTTP_404_NOT_FOUND)
         return Response(getId, status=status.HTTP_401_UNAUTHORIZED)
 
+
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def change_password(request):
+    """
+    Change the password IF AND ONLY IF user remembers
+    the current password and provides a valid accessToken.
+
+    Request body:
+    {
+        "old_password" : "Example123!",
+        "new_password" : "Example123!",
+        "access_token" : "QwerTy"
+    } 
+    """
+    serializer = ChangePasswordSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        result = cognito.change_password(serializer.validated_data['old_password'],
+                                         serializer.validated_data['new_password'],
+                                         serializer.validated_data['access_token'])
+        if result['status'] == 'SUCCESS':
+            return Response(result, status=status.HTTP_200_OK)
+        return Response(result, status=status.HTTP_400_BAD_REQUEST)
 
     return Response({
         'status': 'error',

@@ -312,7 +312,7 @@ class CognitoService:
 
     def initiate_password_reset(self, id_token):
         """
-        Initiates the password reset process for a user
+        Initiates the FORGOT password process for a user
         
         Args:
             id_token (str): The ID token from authentication
@@ -502,3 +502,47 @@ class CognitoService:
                 'error_code': e.response['Error']['Code'],
                 'message': e.response['Error']['Message']
             }
+    
+    def change_password(self, old_password, new_password, access_token):
+        """
+        Change the password IF AND ONLY IF user remembers
+        the current password and provides a valid accessToken.
+
+        Args:
+            access_token (str): The access token from the client
+            old_password(str): The user's previous password
+            new_password(str): Required
+        
+        Returns:
+            dict: The response from the server to the change password request.
+        """
+
+        try:
+            response = self.client.change_password(
+                PreviousPassword=old_password,
+                ProposedPassword=new_password,
+                AccessToken=access_token
+            )
+            
+            return {
+                'status': 'SUCCESS',
+                'message': 'Password changed successfully'
+            }
+
+        except self.client.exceptions.NotAuthorizedException:
+            return {
+                'status': 'ERROR',
+                'message': 'Invalid access token or incorrect previous password'
+            }
+        except self.client.exceptions.LimitExceededException:
+            return {
+                'status': 'ERROR',
+                'message': 'Attempt limit exceeded, please try after some time'
+            }
+        except ClientError as e:
+            return {
+                'status': 'ERROR',
+                'error_code': e.response['Error']['Code'],
+                'message': e.response['Error']['Message']
+            }
+            

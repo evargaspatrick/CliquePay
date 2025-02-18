@@ -59,3 +59,18 @@ class VerifyUserAccessSerializer(serializers.Serializer):
 
 class GetUserProfileSerializer(serializers.Serializer):
     id_token = serializers.CharField(required=True)
+
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(
+        max_length=128, 
+        required=True,
+        write_only=True,
+        style={'input_type': 'password'}
+    )
+    new_password = serializers.CharField(
+        max_length=128, 
+        required=True,
+        write_only=True,
+        style={'input_type': 'password'}
+    )
+    access_token = serializers.CharField(required=True)
