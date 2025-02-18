@@ -59,6 +59,11 @@ def api_root(request, format=None):
                 'url': reverse('get_user_friends', request=request, format=format),
                 'method': 'POST',
                 'description': 'Extracts the user_sub from ID token,gets the user_id from database using user_sub and then makes a db query to get user friends using the user_id.'
+            },
+            'user-access': {
+                'url': reverse('verify_user_access', request=request, format=format),
+                'method': 'POST',
+                'description': 'Posts the access token to aws and verfies if the user is registered.'
             }
         },
         'version': 'development',
@@ -347,6 +352,30 @@ def get_resend_code(request):
 
         return Response(result, status=status.HTTP_400_BAD_REQUEST)
 
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def verify_user_access(request):
+    """
+    to confirm if the user is allowed to access certain or all pages.
+    
+    Request body:
+    {
+        "access_token" : "QwerTy"
+    }
+    """
+    serializer = VerifyUserAccessSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        result = cognito.check_user_auth(serializer.validated_data['access_token'])
+        if result['status'] == 'SUCCESS':
+            return Response(result, status=status.HTTP_200_OK)
+        return Response(result, status=status.HTTP_401_UNAUTHORIZED)
+    
     return Response({
         'status': 'error',
         'message': 'Invalid input',
