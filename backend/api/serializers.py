@@ -36,10 +36,10 @@ class LogoutUserSerializer(serializers.Serializer):
     access_token = serializers.CharField(required=True)
 
 class InitiateResetPasswordSerializer(serializers.Serializer):
-    id_token = serializers.CharField(required=True)
+    email = serializers.EmailField(required=True)
 
 class ConfirmResetPasswordSerializer(serializers.Serializer):
-    id_token = serializers.CharField(required=True)
+    email = serializers.EmailField(required=True)
     confirmation_code = serializers.CharField(max_length=6, required=True)
     new_password = serializers.CharField(
         max_length=128, 

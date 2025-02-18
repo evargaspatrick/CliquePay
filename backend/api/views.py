@@ -260,13 +260,13 @@ def initiate_reset_password(request):
     
     Request body:
     {
-        "id_token": "QwErTYuioP"
+        "email": "abc@examplemail.com"
     }
     """
     serializer = InitiateResetPasswordSerializer(data=request.data)
     if serializer.is_valid():
         cognito = CognitoService()
-        result = cognito.initiate_password_reset(serializer.validated_data['id_token'])
+        result = cognito.initiate_password_reset(serializer.validated_data['email'])
         
         if result['status'] == 'SUCCESS':
             return Response(result, status=status.HTTP_200_OK)
@@ -286,7 +286,7 @@ def confirm_reset_password(request):
     
     Request body:
     {
-        "id_token": "QwErTYuioP",
+        "email": "abc@example.com",
         "confirmation_code": "123456",
         "new_password": "NewPassword123!"
     }
@@ -295,7 +295,7 @@ def confirm_reset_password(request):
     if serializer.is_valid():
         cognito = CognitoService()
         result = cognito.confirm_password_reset(
-            id_token=serializer.validated_data['id_token'],
+            email=serializer.validated_data['email'],
             confirmation_code=serializer.validated_data['confirmation_code'],
             new_password=serializer.validated_data['new_password']
         )
