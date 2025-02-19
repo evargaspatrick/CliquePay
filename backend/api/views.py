@@ -79,6 +79,11 @@ def api_root(request, format=None):
                 'url': reverse('update_user_profile', request=request, format=format),
                 'method': 'PATCH',
                 'description': 'updates the user-details into the database.'
+            },
+            'send-friend-request': {
+                'url': reverse('send_friend_request', request=request, format=format),
+                'method': 'POST',
+                'description': 'send friend request to mentioned user.'
             }
         },
         'version': 'development',
@@ -498,3 +503,47 @@ def update_user_profile(request):
         'message': 'Invalid input',
         'errors': serializer.errors
     }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def send_friend_request(request):
+    """
+    Send a friend request on behalf of the authenticated user.
+    
+    Request Body Example:
+    {
+        "id_token": "user-id-token",
+        "recieve_username": "friend_username" 
+        // OR "recieve_useremail": "friend@example.com"
+    }
+    """
+    serializer = FriendRequestSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        id_result = cognito.get_user_id(serializer.validated_data['id_token'])
+        if id_result['status'] == 'SUCCESS':
+            user_sub = id_result['user_sub']
+            db = DatabaseService()
+            result = db.get_user_id_by_cognito_id(user_sub)
+            if result['status'] == 'SUCCESS':
+                user_id = result['user_id']
+                expected_keys = ['recieve_username', 'recieve_useremail']
+                filtered_data = {key: value for key, value in serializer.validated_data.items() if key in expected_keys}
+                result1 = db.send_friend_request(user_id, **filtered_data)
+                if result1['status'] == 'SUCCESS':
+                    return Response(result1, status=status.HTTP_200_OK)
+                else:
+                    return Response(result1, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({
+                'status': 'error',
+                'message': 'User verification failed',
+                'details': id_result.get('message', 'Invalid id_token')
+            }, status=status.HTTP_401_UNAUTHORIZED)
+    
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)    

@@ -81,3 +81,14 @@ class UpdateUserProfileSerializer(serializers.Serializer):
     phone_number = serializers.CharField(required=False, max_length=16)
     avatar_url = serializers.URLField(required=False)
     currency = serializers.CharField(required=False, max_length=10)
+
+class FriendRequestSerializer(serializers.Serializer):
+    id_token = serializers.CharField(required=True)
+    recieve_username = serializers.CharField(max_length=255, required=False)
+    recieve_useremail = serializers.EmailField(required=False)
+
+    def validate(self, data):
+        if not ('recieve_username' in data or 'recieve_useremail' in data):
+            raise serializers.ValidationError("Either username or email must be provided")
+        return data
+
