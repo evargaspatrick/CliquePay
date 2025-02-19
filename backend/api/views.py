@@ -84,6 +84,11 @@ def api_root(request, format=None):
                 'url': reverse('send_friend_request', request=request, format=format),
                 'method': 'POST',
                 'description': 'send friend request to mentioned user.'
+            },
+            'accept-friend-request': {
+                'url': reverse('accept_friend_request', request=request, format=format),
+                'method': 'POST',
+                'description': 'accept friend request.'
             }
         },
         'version': 'development',
@@ -547,3 +552,34 @@ def send_friend_request(request):
         'message': 'Invalid input',
         'errors': serializer.errors
     }, status=status.HTTP_400_BAD_REQUEST)    
+
+@api_view(['POST'])
+def accept_friend_request(request):
+    """
+    Accept a friend request on behalf of the authenticated user.
+    
+    Request Body Example:
+    {
+        "id_token": "user-id-token",
+        "request_id": "FriEndReqUestId" 
+    }
+    """
+    serializer = AcceptFriendRequestSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        id_req = cognito.get_user_id(id_token=serializer.validated_data['id_token'])
+        if id_req['status'] == 'SUCCESS':
+            cognito_id = id_req['user_sub']
+            db = DatabaseService()
+            result = db.accept_friend_request(cognito_id=cognito_id, request_id=serializer.validated_data['request_id'])
+            if result['status'] == 'SUCCESS':
+                return Response(result, status=status.HTTP_202_ACCEPTED)
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        return Response(id_req, status=status.HTTP_401_UNAUTHORIZED)
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)    
+
+

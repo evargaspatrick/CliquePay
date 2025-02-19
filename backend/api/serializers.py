@@ -92,3 +92,8 @@ class FriendRequestSerializer(serializers.Serializer):
             raise serializers.ValidationError("Either username or email must be provided")
         return data
 
+class AcceptFriendRequestSerializer(serializers.Serializer):
+    id_token = serializers.CharField(required=True)
+    request_id = serializers.CharField(max_length=255, required=True)
+
+  

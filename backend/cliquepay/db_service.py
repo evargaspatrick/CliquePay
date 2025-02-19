@@ -241,3 +241,60 @@ class DatabaseService:
                 'status': 'ERROR',
                 'message': 'User not found'
             }
+
+    @staticmethod
+    def accept_friend_request(cognito_id, reqeust_id):
+        """
+        Accept friend request from the cognito account
+        provided in args.
+
+        Args:
+            cognito_id (str) : Cognito user ID
+            request_id (str) : Friendship model ID
+        Returns: 
+            dict: Status of friend request acceptance 
+        """
+
+        try:
+            user = User.objects.get(cognito_id=cognito_id)
+            friendship = Friendship.objects.get(id=reqeust_id)
+
+            # Verify the user is the recipient of the friend request
+            if friendship.user2 != user:
+                return {
+                    'status': 'ERROR',
+                    'message': 'User not authorized to accept this friend request'
+                }
+
+            # Verify the request is pending
+            if friendship.status != 'PENDING':
+                return {
+                    'status': 'ERROR',
+                    'message': f'Friend request is not pending, current status: {friendship.status}'
+                }
+
+            # Accept the friend request
+            friendship.status = 'ACCEPTED'
+            friendship.action_user = user
+            friendship.save()
+
+            return {
+                'status': 'SUCCESS',
+                'message': 'Friend request accepted successfully'
+            }
+
+        except User.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'User not found'
+            }
+        except Friendship.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'Friend request not found'
+            }
+        except Exception as e:
+            return {
+                'status': 'ERROR',
+                'message': str(e)
+            }

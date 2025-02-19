@@ -17,4 +17,6 @@ urlpatterns = [
     path('api/change-password/',views.change_password, name='change_password'),
     path('api/update-user-profile/',views.update_user_profile, name='update_user_profile'),
     path('api/send-friend-request/',views.send_friend_request, name='send_friend_request'),
+    path('api/accept-friend-request/',views.accept_friend_request, name='accept_friend_request'),
+
     ]
