@@ -107,3 +107,38 @@ class DatabaseService:
                 'status': 'ERROR',
                 'message': 'User not found'
             }
+
+    @staticmethod
+    def update_user_details(cognito_id, **kwargs):
+        """
+        Update user fields (full_name, phone_number, avatar_url, currency, etc.)
+        based on kwargs only if they exist.
+        """
+        try:
+            user = User.objects.get(cognito_id=cognito_id)
+
+            # Update only the fields provided:
+            if 'full_name' in kwargs:
+                user.full_name = kwargs['full_name']
+            if 'phone_number' in kwargs:
+                user.phone_number = kwargs['phone_number']
+            if 'avatar_url' in kwargs:
+                user.avatar_url = kwargs['avatar_url']
+            if 'currency' in kwargs:
+                user.currency = kwargs['currency']
+
+            user.save()
+            return {
+                'status': 'SUCCESS',
+                'message': 'User updated successfully'
+            }
+        except User.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'User not found'
+            }
+        except Exception as e:
+            return {
+                'status': 'ERROR',
+                'message': str(e)
+            }

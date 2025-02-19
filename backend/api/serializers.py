@@ -74,3 +74,10 @@ class ChangePasswordSerializer(serializers.Serializer):
         style={'input_type': 'password'}
     )
     access_token = serializers.CharField(required=True)
+
+class UpdateUserProfileSerializer(serializers.Serializer):
+    id_token = serializers.CharField(required=True)
+    full_name = serializers.CharField(required=False, max_length=150)
+    phone_number = serializers.CharField(required=False, max_length=16)
+    avatar_url = serializers.URLField(required=False)
+    currency = serializers.CharField(required=False, max_length=10)

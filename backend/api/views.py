@@ -56,7 +56,7 @@ def api_root(request, format=None):
                 'description': 'Confirm forgot-password reset with verification code'
             },
             'change-password': {
-                'url': reverse('change-password', request=request, format=format),
+                'url': reverse('change_password', request=request, format=format),
                 'method': 'POST',
                 'description': 'Change the user password if they provide the old one.'
             },
@@ -74,6 +74,11 @@ def api_root(request, format=None):
                 'url': reverse('get_user_profile', request=request, format=format),
                 'method': 'POST',
                 'description': 'Gets the user details from the database.'
+            },
+            'update-user-profile': {
+                'url': reverse('update_user_profile', request=request, format=format),
+                'method': 'PATCH',
+                'description': 'updates the user-details into the database.'
             }
         },
         'version': 'development',
@@ -445,6 +450,49 @@ def change_password(request):
             return Response(result, status=status.HTTP_200_OK)
         return Response(result, status=status.HTTP_400_BAD_REQUEST)
 
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['PATCH'])
+def update_user_profile(request):
+    """
+    Updates the user's profile fields using an id_token
+    and optional fields like full_name, phone_number, avatar_url, currency, etc.
+
+    Request Body:
+    {
+        "id_token": "your-id-token",
+        "full_name": "New Name",  # optional
+        "phone_number": "+1234567890",  # optional
+        "avatar_url": "https://example.com/avatar.jpg",  # optional
+        "currency": "USD"  # optional
+    }
+    """
+    serializer = UpdateUserProfileSerializer(data=request.data, partial=True)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        decoded = cognito.get_user_id(serializer.validated_data['id_token'])
+        if decoded['status'] == 'SUCCESS':
+            db = DatabaseService()
+            update_result = db.update_user_details(decoded['user_sub'],
+                full_name=serializer.validated_data.get('full_name'),
+                phone_number=serializer.validated_data.get('phone_number'),
+                avatar_url=serializer.validated_data.get('avatar_url'),
+                currency=serializer.validated_data.get('currency')
+            )
+            if update_result['status'] == 'SUCCESS':
+                return Response(update_result, status=status.HTTP_200_OK)
+            else:
+                return Response(update_result, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({
+                'status': 'ERROR',
+                'message': 'Could not decode user',
+                'details': decoded.get('message')
+            }, status=status.HTTP_401_UNAUTHORIZED)
     return Response({
         'status': 'error',
         'message': 'Invalid input',
