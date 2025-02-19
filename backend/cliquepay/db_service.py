@@ -298,3 +298,27 @@ class DatabaseService:
                 'status': 'ERROR',
                 'message': str(e)
             }
+
+    @staticmethod
+    def get_username_by_email(email):
+        """
+        Get username from email address
+        
+        Args:
+            email (str): User's email address
+            
+        Returns:
+            dict: Username or error message
+        """
+        try:
+            user = User.objects.get(email=email)
+            return {
+                'status': 'SUCCESS',
+                'username': user.name
+            }
+        except User.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'User not found'
+            }
+

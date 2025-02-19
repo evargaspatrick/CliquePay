@@ -20,7 +20,7 @@ class VerifySignupSerializer(serializers.Serializer):
     confirmation_code = serializers.CharField(max_length=6, required=True)
 
 class UserLoginSerializer(serializers.Serializer):
-    username = serializers.CharField(max_length=255, required=True)
+    email = serializers.EmailField(required=True)
     password = serializers.CharField(
         max_length=128, 
         required=True,

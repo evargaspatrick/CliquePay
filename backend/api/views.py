@@ -176,35 +176,38 @@ def verify_signup(request):
 @api_view(['POST'])
 def user_login(request):
     """
-    Login user with username and password
+    Login user with email and password
     
     Request body:
     {
-        "username": "example_user",
+        "email": "example@example.com",
         "password": "Example123!"
     }
     """
     serializer = UserLoginSerializer(data=request.data)
     if serializer.is_valid():
-        cognito = CognitoService()
-        result = cognito.login_user(**serializer.validated_data)
-        
-        if result['status'] == 'SUCCESS':
+        db = DatabaseService()
+        req = db.get_username_by_email(serializer.validated_data['email'])
+        if req['status'] == 'SUCCESS':
+            cognito = CognitoService()
+            result = cognito.login_user(username=req['username'],
+            password= serializer.validated_data['password'])
+            if result['status'] == 'SUCCESS':
+                return Response({
+                    'status': 'success',
+                    'message': result['message'],
+                    'access_token': result['access_token'],
+                    'refresh_token': result['refresh_token'],
+                    'id_token': result['id_token']
+                }, status=status.HTTP_200_OK)
+            
             return Response({
-                'status': 'success',
+                'status': 'error',
                 'message': result['message'],
-                'access_token': result['access_token'],
-                'refresh_token': result['refresh_token'],
-                'id_token': result['id_token']
-            }, status=status.HTTP_200_OK)
-        
-        return Response({
-            'status': 'error',
-            'message': result['message'],
-            'error_code': result.get('error_code'),
-            'details': 'Verification failed'
-        }, status=status.HTTP_400_BAD_REQUEST)
-        
+                'error_code': result.get('error_code'),
+                'details': 'Login failed'
+            }, status=status.HTTP_400_BAD_REQUEST) 
+        return Response(req,status=status.HTTP_400_BAD_REQUEST)       
     return Response({
         'status': 'error',
         'message': 'Invalid input',
@@ -581,5 +584,4 @@ def accept_friend_request(request):
         'message': 'Invalid input',
         'errors': serializer.errors
     }, status=status.HTTP_400_BAD_REQUEST)    
-
 
