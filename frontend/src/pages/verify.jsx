@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Button from '../components/button';
 import { useNavigate } from 'react-router-dom';
 import Cookies from 'js-cookie';
@@ -77,6 +77,7 @@ function Verify() {
         setError(data.message || 'Failed to resend verification code. Please try again.');
       }
     } catch (err) {
+      console.error('An error occurred while resending the code:', err);
       setError('Cannot connect to server. Please try again.');
     } finally {
       setIsLoading(false);
@@ -84,7 +85,7 @@ function Verify() {
   };
 
   return (
-    <div className="min-h-screen bg-blue-600 text-white flex items-center justify-center">
+    <div className="min-h-screen bg-gradient-to-b from-yellow-400 to-yellow-500 flex items-center justify-center">
       <div className="bg-white text-black p-8 rounded-lg shadow-lg w-96">
         <h2 className="text-2xl font-bold mb-4 text-center">Verify</h2>
         {error && (
@@ -98,11 +99,11 @@ function Verify() {
               Username
             </label>
             <input
-              type="text"
+              type="text" 
               id="username"
               name="username"
               value={username}
-              className="w-full bg-gray-300 p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full bg-gray-300 p-2 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500"
               disabled
             />
           </div>
@@ -112,24 +113,32 @@ function Verify() {
             </label>
             <input
               type="text"
-              id="verificationCode"
+              id="verificationCode" 
               name="verificationCode"
               placeholder="Enter verification code"
               value={verificationCode}
               onChange={(e) => setVerificationCode(e.target.value)}
-              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500"
               required
             />
           </div>
           
           <Button
-            className="w-full mt-4"
+            className="w-full mt-4 bg-green-600 hover:bg-green-700 text-white"
             type="submit"
             disabled={isLoading}
           >
             {isLoading ? 'Verifying...' : 'Verify'}
           </Button>
-          <p>Didn't get the email? <a onClick={handleResendCode} style={{ cursor: 'pointer' }}>Resend code</a></p>
+          <p className="text-center">
+            Didn&apos;t get the email? {' '}
+            <a 
+              onClick={handleResendCode} 
+              className="text-green-600 hover:text-green-700 cursor-pointer"
+            >
+              Resend code
+            </a>
+          </p>
         </form>
       </div>
     </div>
