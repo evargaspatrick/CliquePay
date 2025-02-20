@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
-import Button from '../components/button.tsx';
+import { useState } from 'react';
 import { useNavigate } from "react-router-dom";
-import Cookies from 'js-cookie'
+import Cookies from 'js-cookie';
+import Button from '../components/button.tsx';
+import logo from '/images/CliquePay Logo.png';
+
 function Login() {
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
@@ -91,77 +93,100 @@ function Login() {
     };
 
     return (
-        <div className="min-h-screen bg-blue-600 text-white flex items-center justify-center">
-            <div className="bg-white text-black p-8 rounded-lg shadow-lg w-96">
-                <h2 className="text-2xl font-bold mb-4 text-center">Login</h2>
-                
-                {error && (
-                    <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
-                        <p className="text-red-700">{error}</p>
-                    </div>
-                )}
-
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <input
-                            type="email"
-                            name="email"
-                            placeholder="Email"
-                            value={formData.email}
-                            onChange={handleChange}
-                            className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            disabled={isLoading}
-                        />
-                    </div>
-                    <div>
-                        <input
-                            type={showPassword ? "text" : "password"}
-                            name="password"
-                            placeholder="Password"
-                            value={formData.password}
-                            onChange={handleChange}
-                            className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            disabled={isLoading}
-                        />
-                    </div>
-                    <label className="flex items-center">
-                        <input
-                            type="checkbox"
-                            checked={showPassword}
-                            onChange={() => setShowPassword(!showPassword)}
-                            className="mr-2"
-                            disabled={isLoading}
-                        />
-                        <span className="text-sm">Show Password</span>
-                    </label>
-                    <Button 
-                        className="w-full mt-4" 
-                        type="submit"
-                        disabled={isLoading}
-                    >
-                        {isLoading ? 'Logging in...' : 'Login'}
-                    </Button>
-                    <div className="text-center mt-4">
-                        <p className="text-sm">
-                            Don't have an account?{' '}
-                            <a 
-                                onClick={() => navigate('/signup')} 
-                                className="text-blue-600 hover:text-blue-800 cursor-pointer"
-                            >
-                                Sign up
-                            </a>
-                        </p>
-                        <p className="text-sm mt-2">
-                            <a 
-                                onClick={() => navigate('/reset-password')} 
-                                className="text-blue-600 hover:text-blue-800 cursor-pointer"
-                            >
-                                Forgot Password?
-                            </a>
-                        </p>
-                    </div>
-                </form>
+        <div className="min-h-screen flex flex-col justify-between bg-yellow-400">
+            {/* Logo */}
+            <div className="p-6 flex justify-center">
+                <div 
+                    onClick={() => navigate('/')} 
+                    className="cursor-pointer hover:scale-105 transition-transform"
+                >
+                    <img 
+                        src={logo} 
+                        alt="CliquePay Logo" 
+                        className="h-40 w-auto"
+                    />
+                </div>
             </div>
+
+            {/* Login Box - Centered */}
+            <div className="flex justify-center">
+                <div className="bg-white p-8 shadow-lg rounded-md w-96">
+                    {error && (
+                        <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-4">
+                            <p className="text-red-700">{error}</p>
+                        </div>
+                    )}
+
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div>
+                            <p className="text-lg font-semibold mb-2">Login</p>
+                            <input
+                                type="email"
+                                name="email"
+                                placeholder="Enter your email"
+                                value={formData.email}
+                                onChange={handleChange}
+                                className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                disabled={isLoading}
+                            />
+                        </div>
+                        <div>
+                            <p className="text-lg font-semibold mb-2">Password</p>
+                            <input
+                                type={showPassword ? "text" : "password"}
+                                name="password"
+                                placeholder="Enter your password"
+                                value={formData.password}
+                                onChange={handleChange}
+                                className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                                disabled={isLoading}
+                            />
+                            <label className="flex items-center mt-2">
+                                <input
+                                    type="checkbox"
+                                    checked={showPassword}
+                                    onChange={() => setShowPassword(!showPassword)}
+                                    className="mr-2"
+                                    disabled={isLoading}
+                                />
+                                <span className="text-sm">Show Password</span>
+                            </label>
+                        </div>
+                        
+                        <Button 
+                            className="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-semibold py-2 rounded transition-colors" 
+                            type="submit"
+                            disabled={isLoading}
+                        >
+                            {isLoading ? 'Logging in...' : 'Login'}
+                        </Button>
+
+                        <div className="text-center mt-4">
+                            <p className="text-lg font-semibold mb-2">
+                                <a 
+                                    onClick={() => navigate('/signup')} 
+                                    className="text-yellow-600 hover:text-yellow-800 cursor-pointer"
+                                >
+                                    Sign up
+                                </a>
+                            </p>
+                            <p className="text-sm">
+                                <a 
+                                    onClick={() => navigate('/reset-password')} 
+                                    className="text-yellow-600 hover:text-yellow-800 cursor-pointer"
+                                >
+                                    Forgot Password?
+                                </a>
+                            </p>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            {/* Footer */}
+            <footer className="bg-green-600 text-white text-center py-4 text-lg">
+                © 2024 CliquePay. All rights reserved.
+            </footer>
         </div>
     );
 }
