@@ -3,6 +3,7 @@ import HomePage from "../pages/homepage";
 import SignupPage from "../pages/signup1";
 import Verify from "../pages/verify";
 import Login from "../pages/login";
+import Dashboard from "../pages/dashboard"; // Add this import
 
 const router = createBrowserRouter([
   {
@@ -11,15 +12,19 @@ const router = createBrowserRouter([
   },
   {
     path:"/signup",
-    element: < SignupPage/>
+    element: <SignupPage/>
   },
   {
     path:"/verify",
-    element: < Verify/>
+    element: <Verify/>
   },
   {
     path:"/login",
-    element: < Login/>
+    element: <Login/>
+  },
+  {
+    path:"/dashboard", // Add the dashboard route
+    element: <Dashboard/>
   }
 ]);
 
