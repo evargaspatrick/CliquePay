@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import Cookies from "js-cookie"
-import { Mail, Phone, Calendar, DollarSign, Clock, ArrowLeft, RefreshCw, Camera, Edit, Trash2 } from "lucide-react"
+import { Mail, Phone, Calendar, DollarSign, Clock, ArrowLeft, RefreshCw, Camera, Edit, Trash2, AlertTriangle } from "lucide-react"
 
 const UserProfile = () => {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -43,17 +45,67 @@ const UserProfile = () => {
     fetchUserProfile()
   }, [navigate])
 
-  if (loading) {
-    return <div className="flex justify-center items-center h-screen text-2xl text-white bg-blue-800">Loading...</div>
-  }
+  const handleDeleteProfile = async () => {
+    setIsDeleting(true);
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/delete-profile/', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id_token: Cookies.get('idToken')
+        })
+      });
 
-  if (error) {
-    return <div className="flex justify-center items-center h-screen text-2xl text-white bg-blue-800">{error}</div>
-  }
+      if (response.ok) {
+        Cookies.remove('idToken');
+        navigate('/login');
+      } else {
+        setError('Failed to delete profile');
+      }
+    } catch (error) {
+      setError('Failed to delete profile');
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteModal(false);
+    }
+  };
+
+  const DeleteConfirmationModal = () => (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4">
+        <div className="flex items-center justify-center mb-4 text-red-600">
+          <AlertTriangle size={48} />
+        </div>
+        <h3 className="text-xl font-bold text-center mb-4">Delete Profile?</h3>
+        <p className="text-gray-600 text-center mb-6">
+          This action cannot be undone. All your data will be permanently deleted.
+        </p>
+        <div className="flex gap-4">
+          <button
+            onClick={() => setShowDeleteModal(false)}
+            className="flex-1 py-2 px-4 rounded-lg border border-gray-300 hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleDeleteProfile}
+            disabled={isDeleting}
+            className="flex-1 py-2 px-4 rounded-lg bg-red-600 text-white hover:bg-red-700 
+                     disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isDeleting ? "Deleting..." : "Delete"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
 
   if (!user) {
     return (
-      <div className="flex justify-center items-center h-screen text-2xl text-white bg-blue-800">
+      <div className="flex justify-center items-center h-screen text-2xl text-white">
         No user data available.
       </div>
     )
@@ -61,7 +113,6 @@ const UserProfile = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-yellow-400 to-yellow-500 flex flex-col items-center p-8 font-sans">
-      {/* Add navigation buttons */}
       <div className="w-full max-w-md flex justify-between mb-8">
         <button 
           onClick={() => navigate(-1)}
@@ -131,7 +182,7 @@ const UserProfile = () => {
           Edit Profile
         </button>
         <button 
-          onClick={() => {/* Add delete confirmation logic */}}
+          onClick={() => setShowDeleteModal(true)}
           className="flex-1 flex items-center justify-center gap-2 bg-red-600 text-white py-3 px-6 rounded-lg
                    hover:bg-red-700 transition-colors shadow-lg"
         >
@@ -139,6 +190,7 @@ const UserProfile = () => {
           Delete Profile
         </button>
       </div>
+      {showDeleteModal && <DeleteConfirmationModal />}
     </div>
   )
 }
