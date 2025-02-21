@@ -7,6 +7,7 @@ import logo from '/images/CliquePay Logo.png';
 import '../App.css';
 import { useSecurity } from '../context/SecurityContext';
 import { useState, useEffect } from 'react';
+import AuthenticateUser from '../utils/AuthenticateUser';
 
 FriendCard.propTypes = {
   name: PropTypes.string.isRequired,
@@ -22,7 +23,7 @@ const Dashboard = () => {
   });
   const [recentActivity, setRecentActivity] = useState([]);
 
-  useEffect(() => {
+ /* useEffect(() => {
     fetchDashboardData();
   }, []);
 
@@ -60,9 +61,10 @@ const Dashboard = () => {
     } catch (error) {
       console.error('Failed to send reminder:', error);
     }
-  };
+  };*/
 
   return (
+    <AuthenticateUser>
     <div className="min-h-screen bg-gradient-to-b from-yellow-400 to-yellow-500 overflow-x-hidden">
       {/* Header */}
       <header className="flex items-center justify-between p-6">
@@ -115,7 +117,7 @@ const Dashboard = () => {
                   <FontAwesomeIcon icon={faDollarSign} className="mr-1" />{billSummary.totalBill}
                 </p>
               </div>
-              <button onClick={handleSettleUp} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+              <button /*onClick={handleSettleUp}*/ className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
                 Settle Up
               </button>
             </div>
@@ -155,6 +157,7 @@ const Dashboard = () => {
         </section>
       </main>
     </div>
+    </AuthenticateUser>
   );
 };
 

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import DOMPurify from 'dompurify';
 import Cookies from 'js-cookie';
-
+import { renewTokens } from './RenewTokens';
 // Define Zod schemas
 const passwordSchema = z.string()
   .min(8, "Password must be at least 8 characters long")
@@ -120,10 +120,19 @@ export const SecurityUtils = {
     });
   },
 
-  getCookie: (name) => {
+  getCookie: async (name) => {
     if (!name || typeof name !== 'string') {
       throw new Error('Invalid cookie name');
     }
+  
+    // If requesting auth-related cookies, check if renewal is needed
+    if (['accessToken', 'idToken'].includes(name)) {
+      const tokenValid = await renewTokens();
+      if (!tokenValid) {
+        return null;
+      }
+    }
+  
     return Cookies.get(name);
   },
 
@@ -235,23 +244,49 @@ export const SecurityUtils = {
 
     // Create a fetch wrapper with CSRF protection
     fetchWithCSRF: async (url, options = {}) => {
-      const csrfHeaders = SecurityUtils.csrf.getFetchHeaders();
-      const defaultOptions = {
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          ...csrfHeaders
-        }
+      const accessToken = await SecurityUtils.getCookie('accessToken');
+      if (!accessToken) {
+        throw new Error('No access token available');
+      }
+      
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+        ...options.headers,
       };
-
+    
       return fetch(url, {
-        ...defaultOptions,
         ...options,
-        headers: {
-          ...defaultOptions.headers,
-          ...options.headers
-        }
+        credentials: 'include',
+        headers,
       });
+    }
+},
+
+  auth: {
+    isAuthenticated: async () => {
+      try {
+        // Await the cookie retrieval so you get the actual token.
+        const accessToken = await SecurityUtils.getCookie('accessToken');
+        if (!accessToken) {
+          return false;
+        }
+
+        const response = await SecurityUtils.csrf.fetchWithCSRF(
+          'http://localhost:8000/api/verify-user-access/',
+          { 
+            method: 'POST',
+            body: JSON.stringify({
+              access_token: accessToken
+            })
+          }
+        );
+        const data = await response.json();
+        return data.status === 'SUCCESS';
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        return false;
+      }
     }
   }
 };
