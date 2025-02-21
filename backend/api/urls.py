@@ -19,5 +19,4 @@ urlpatterns = [
     path('api/send-friend-request/',views.send_friend_request, name='send_friend_request'),
     path('api/accept-friend-request/',views.accept_friend_request, name='accept_friend_request'),
     path('api/remove-friend/',views.remove_friend, name='remove_friend'),
-
     ]
