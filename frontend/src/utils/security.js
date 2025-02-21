@@ -171,5 +171,87 @@ export const SecurityUtils = {
         return config;
       });
     }
+  },
+
+  csrf: {
+    // Generate a new CSRF token
+    generateToken: () => {
+      const array = new Uint8Array(32);
+      crypto.getRandomValues(array);
+      return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+    },
+
+    // Set CSRF token in both cookie and meta tag
+    initCSRF: () => {
+      try {
+        const token = SecurityUtils.csrf.generateToken();
+        
+        // Set CSRF cookie with secure options
+        SecurityUtils.setCookie('csrf_token', token, {
+          sameSite: 'Strict',
+          secure: true,
+          httpOnly: true
+        });
+
+        // Set meta tag
+        let metaTag = document.querySelector('meta[name="csrf-token"]');
+        if (!metaTag) {
+          metaTag = document.createElement('meta');
+          metaTag.name = 'csrf-token';
+          document.head.appendChild(metaTag);
+        }
+        metaTag.content = token;
+
+        return token;
+      } catch (error) {
+        console.error('Failed to initialize CSRF:', error);
+        return null;
+      }
+    },
+
+    // Verify CSRF token from request against stored token
+    verifyToken: (requestToken) => {
+      try {
+        const storedToken = SecurityUtils.getCookie('csrf_token');
+        const metaToken = document.querySelector('meta[name="csrf-token"]')?.content;
+
+        return storedToken && metaToken && 
+               requestToken === storedToken && 
+               requestToken === metaToken;
+      } catch (error) {
+        console.error('CSRF verification failed:', error);
+        return false;
+      }
+    },
+
+    // Add CSRF headers to fetch requests
+    getFetchHeaders: () => {
+      const token = document.querySelector('meta[name="csrf-token"]')?.content;
+      return {
+        'X-CSRF-Token': token,
+        'X-Requested-With': 'XMLHttpRequest'
+      };
+    },
+
+    // Create a fetch wrapper with CSRF protection
+    fetchWithCSRF: async (url, options = {}) => {
+      const csrfHeaders = SecurityUtils.csrf.getFetchHeaders();
+      const defaultOptions = {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          ...csrfHeaders
+        }
+      };
+
+      return fetch(url, {
+        ...defaultOptions,
+        ...options,
+        headers: {
+          ...defaultOptions.headers,
+          ...options.headers
+        }
+      });
+    }
   }
 };

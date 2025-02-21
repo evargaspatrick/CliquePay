@@ -50,6 +50,13 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
 ]
 
+# CSRF settings
+CSRF_COOKIE_NAME = 'csrf_token'
+CSRF_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SAMESITE = 'Strict'
+CSRF_COOKIE_SECURE = True  # For HTTPS
+CSRF_TRUSTED_ORIGINS = ['http://localhost:5173']  # Add your frontend URL
+
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('DJANGO_SECRET')
 

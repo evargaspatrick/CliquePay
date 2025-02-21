@@ -3,8 +3,10 @@ import { ProfileDropdown } from '../components/ProfileDropdown';
 import PropTypes from 'prop-types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faDollarSign, faGears, faChartSimple, faMoneyBillTransfer, faHouseUser } from '@fortawesome/free-solid-svg-icons';
-import logo from '/images/CliquePay Logo.png'; // Add this import
+import logo from '/images/CliquePay Logo.png';
 import '../App.css';
+import { useSecurity } from '../context/SecurityContext';
+import { useState, useEffect } from 'react';
 
 FriendCard.propTypes = {
   name: PropTypes.string.isRequired,
@@ -12,6 +14,54 @@ FriendCard.propTypes = {
 };
 
 const Dashboard = () => {
+  const security = useSecurity();
+  const [billSummary, setBillSummary] = useState({
+    totalBill: 0,
+    youOwe: 0,
+    theyOwe: 0
+  });
+  const [recentActivity, setRecentActivity] = useState([]);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      const response = await security.csrf.fetchWithCSRF('http://127.0.0.1:8000/api/dashboard/', {
+        method: 'GET'
+      });
+      const data = await response.json();
+      setBillSummary(data.billSummary);
+      setRecentActivity(data.recentActivity);
+    } catch (error) {
+      console.error('Failed to fetch dashboard data:', error);
+    }
+  };
+
+  const handleSettleUp = async () => {
+    try {
+      await security.csrf.fetchWithCSRF('http://127.0.0.1:8000/api/settle-up/', {
+        method: 'POST'
+      });
+      // Refresh dashboard data after settling up
+      fetchDashboardData();
+    } catch (error) {
+      console.error('Failed to settle up:', error);
+    }
+  };
+
+  const handleRemind = async (activityId) => {
+    try {
+      await security.csrf.fetchWithCSRF(`http://127.0.0.1:8000/api/remind/${activityId}`, {
+        method: 'POST'
+      });
+      // Could show a success message here
+    } catch (error) {
+      console.error('Failed to send reminder:', error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-yellow-400 to-yellow-500 overflow-x-hidden">
       {/* Header */}
@@ -62,16 +112,16 @@ const Dashboard = () => {
               <div>
                 <p className="text-lg font-semibold">Total Bill</p>
                 <p className="text-3xl font-bold">
-                  <FontAwesomeIcon icon={faDollarSign} className="mr-1" />120.00
+                  <FontAwesomeIcon icon={faDollarSign} className="mr-1" />{billSummary.totalBill}
                 </p>
               </div>
-              <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+              <button onClick={handleSettleUp} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
                 Settle Up
               </button>
             </div>
             <p className="text-gray-600">
-              You owe <span className="font-bold"><FontAwesomeIcon icon={faDollarSign} className="mr-1" />40.00</span> and friends owe you{" "}
-              <span className="font-bold"><FontAwesomeIcon icon={faDollarSign} className="mr-1" />80.00</span>.
+              You owe <span className="font-bold"><FontAwesomeIcon icon={faDollarSign} className="mr-1" />{billSummary.youOwe}</span> and friends owe you{" "}
+              <span className="font-bold"><FontAwesomeIcon icon={faDollarSign} className="mr-1" />{billSummary.theyOwe}</span>.
             </p>
           </div>
         </section>
@@ -81,24 +131,14 @@ const Dashboard = () => {
           <h2 className="text-2xl font-bold mb-4 text-gray-800">Recent Activity</h2>
           <div className="bg-white/90 backdrop-blur-sm p-6 rounded-lg shadow-lg">
             <ul className="divide-y divide-gray-200">
-              <li className="py-4 flex justify-between items-center">
-                <span>
-                  Dinner at Italian Bistro - <span className="font-semibold">-<FontAwesomeIcon icon={faDollarSign} className="mr-1" />20.00</span>
-                </span>
-                <button className="text-green-600 hover:underline">Remind</button>
-              </li>
-              <li className="py-4 flex justify-between items-center">
-                <span>
-                  Movie Night - <span className="font-semibold">-<FontAwesomeIcon icon={faDollarSign} className="mr-1" />15.00</span>
-                </span>
-                <button className="text-green-600 hover:underline">Remind</button>
-              </li>
-              <li className="py-4 flex justify-between items-center">
-                <span>
-                  Brunch - <span className="font-semibold">-<FontAwesomeIcon icon={faDollarSign} className="mr-1" />10.00</span>
-                </span>
-                <button className="text-green-600 hover:underline">Remind</button>
-              </li>
+              {recentActivity.map(activity => (
+                <li key={activity.id} className="py-4 flex justify-between items-center">
+                  <span>
+                    {activity.description} - <span className="font-semibold">-<FontAwesomeIcon icon={faDollarSign} className="mr-1" />{activity.amount}</span>
+                  </span>
+                  <button onClick={() => handleRemind(activity.id)} className="text-green-600 hover:underline">Remind</button>
+                </li>
+              ))}
             </ul>
           </div>
         </section>
