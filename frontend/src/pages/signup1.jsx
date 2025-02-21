@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Button from '../components/button.tsx';
 import logo from '/images/CliquePay Logo.png';
 import { SecurityUtils } from '../utils/security.js'; // Add this import
+import "../App.css";
 
 export default function SignupPage() {
   const navigate = useNavigate();
@@ -233,14 +234,14 @@ export default function SignupPage() {
               {isLoading ? 'Signing up...' : 'Sign Up'}
             </Button>
           </form>
-          <p className="mt-4 text-gray-600 text-sm">
+          <p className="mt-4 text-gray-600 text-lg">
             Already have an account? {" "}
-            <button 
+            <a 
               onClick={() => navigate('/login')} 
-              className="text-green-600 hover:underline"
+              className="text-yellow-600 hover:text-yellow-800 cursor-pointer transition-colors"
             >
-              Log in
-            </button>
+              Login
+            </a>
           </p>
         </div>
       </div>
