@@ -1,7 +1,20 @@
+/* Add these rules at the top of App.css */
+html, body {
+  overflow-y: auto;
+  overflow-x: hidden;
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari, Opera */
+}
+
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+  width: 100%;
+  margin: 0;
+  padding: 0;
   text-align: center;
 }
 
@@ -11,9 +24,11 @@
   will-change: filter;
   transition: filter 300ms;
 }
+
 .logo:hover {
   filter: drop-shadow(0 0 2em #646cffaa);
 }
+
 .logo.react:hover {
   filter: drop-shadow(0 0 2em #61dafbaa);
 }
@@ -41,31 +56,31 @@
   color: #888;
 }
 
-/* App.css */
+/* Updated color scheme matching homepage.jsx and dashboard.jsx */
 body {
   font-family: Arial, sans-serif;
   margin: 0;
   padding: 0;
-  background-color: #1e3a8a; /* Deep blue */
-  color: white;
+  background: linear-gradient(to bottom, #facc15, #eab308); /* yellow-400 to yellow-500 */
+  color: #1f2937; /* gray-800 for text */
 }
 
 nav {
-  background-color: black;
+  background-color: transparent; /* Remove the white background */
   padding: 1rem;
 }
 
 nav button {
-  background: none;
+  background: transparent; /* Make button background transparent */
   border: none;
-  color: white;
+  color: black; /* Change text color to black to match design */
   font-size: 1rem;
   cursor: pointer;
-  transition: color 0.3s ease-in-out;
+  transition: all 0.3s ease-in-out;
 }
 
 nav button:hover {
-  color: yellow;
+  color: #db2777; /* pink-600 for hover state */
 }
 
 .hero-section {
@@ -78,17 +93,28 @@ nav button:hover {
 }
 
 button {
-  background-color: yellow;
-  color: black;
+  background-color: #16a34a; /* green-600 */
+  color: white;
   padding: 12px 24px;
   font-size: 1.2rem;
   font-weight: bold;
-  border-radius: 8px;
+  border-radius: 0.5rem;
   box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
   cursor: pointer;
   transition: background 0.3s ease-in-out;
 }
 
 button:hover {
-  background-color: gold;
+  background-color: #15803d; /* green-700 */
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+* {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
 }

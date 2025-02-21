@@ -3,6 +3,7 @@ import { FeatureCard } from '../components/FeatureCard';
 import { Metric } from '../components/Metric';
 import { useNavigate } from 'react-router-dom';
 import logo from '/images/CliquePay Logo.png';
+import '../App.css';
 
 export default function CliquePay() {
   const navigate = useNavigate();
@@ -21,9 +22,12 @@ export default function CliquePay() {
             className="h-28 w-auto"
           />
         </div>
-        <button className="text-black hover:text-pink-600 font-semibold px-4 py-2 rounded-lg flex items-center">
+        <div 
+          className="text-gray-900 hover:bg-gradient-to-r hover:from-green-600 hover:to-pink-600 hover:text-transparent hover:bg-clip-text font-semibold cursor-pointer flex items-center transition-all duration-300"
+          onClick={() => navigate('/download')}
+        >
           Download App <ArrowRight className="ml-2 h-4 w-4" />
-        </button>
+        </div>
       </nav>
 
       {/* Hero Section */}
