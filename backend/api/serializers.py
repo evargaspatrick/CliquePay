@@ -96,4 +96,6 @@ class AcceptFriendRequestSerializer(serializers.Serializer):
     id_token = serializers.CharField(required=True)
     request_id = serializers.CharField(max_length=255, required=True)
 
-  
+class RemoveFriendSerializer(serializers.Serializer):
+    id_token = serializers.CharField(required=True)
+    friend_id = serializers.CharField(required=True)

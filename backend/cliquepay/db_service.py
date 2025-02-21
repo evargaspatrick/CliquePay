@@ -322,3 +322,58 @@ class DatabaseService:
                 'message': 'User not found'
             }
 
+    @staticmethod
+    def remove_friend(cognito_id, friend_id):
+        """
+        Remove a friend connection between two users.
+        
+        Args:
+            cognito_id (str): Cognito ID of the user initiating the removal
+            friend_id (str): Database ID of the friend to remove
+            
+        Returns:
+            dict: Status of the friend removal operation
+        """
+        try:
+            # Get the user initiating the removal
+            user = User.objects.get(cognito_id=cognito_id)
+            
+            # Get the friend to remove
+            friend = User.objects.get(id=friend_id)
+            
+            # Find and delete the friendship
+            friendship = Friendship.objects.filter(
+                (models.Q(user1=user) & models.Q(user2=friend)) |
+                (models.Q(user1=friend) & models.Q(user2=user))
+            ).first()
+            
+            if not friendship:
+                return {
+                    'status': 'ERROR',
+                    'message': 'Friendship not found'
+                }
+                
+            if friendship.status != 'ACCEPTED':
+                return {
+                    'status': 'ERROR',
+                    'message': f'Cannot remove friend - current status is {friendship.status}'
+                }
+            
+            # Delete the friendship
+            friendship.delete()
+            
+            return {
+                'status': 'SUCCESS',
+                'message': 'Friend removed successfully'
+            }
+            
+        except User.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'User not found'
+            }
+        except Exception as e:
+            return {
+                'status': 'ERROR',
+                'message': str(e)
+            }
