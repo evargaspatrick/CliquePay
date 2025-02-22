@@ -95,6 +95,11 @@ def api_root(request, format=None):
                 'method': 'POST',
                 'description': 'remove friend.'
             },
+            'block-user': {
+                'url': reverse('block_user', request=request, format=format),
+                'method': 'POST',
+                'description': 'blocks another user.'
+            },
         },
         'version': 'development',
         'status': 'online',
@@ -625,3 +630,31 @@ def remove_friend(request):
         'errors': serializer.errors
     }, status=status.HTTP_400_BAD_REQUEST)
 
+@api_view(['POST'])
+def block_user(request):
+    """
+    Block a user from the given idToken account
+
+    Request Body Example:
+    {
+        "idToken": "user-ID-TOKEN",
+        "blocked_id": "blocker-user-id"
+    }
+    """
+    serializer = BlockUserSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        reqId = cognito.get_user_id(id_token=serializer.validated_data['id_token'])
+        if reqId['status'] == 'SUCCESS':
+            db = DatabaseService()
+            result = db.block_user(cognito_id=reqId['user_sub'], blocked_id=serializer.validated_data['blocked_id'])
+            if result['status'] == 'SUCCESS':
+                return Response(result, status=status.HTTP_200_OK)
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        return Response(reqId, status=status.HTTP_401_UNAUTHORIZED)
+    return Response({
+    'status': 'error',
+    'message': 'Invalid input',
+    'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+ 

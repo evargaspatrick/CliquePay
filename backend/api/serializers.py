@@ -1,7 +1,5 @@
 from rest_framework import serializers
 
-
-
 class UserRegistrationSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=255, required=True)
     fullname = serializers.CharField(max_length=255, required=True)
@@ -99,3 +97,7 @@ class AcceptFriendRequestSerializer(serializers.Serializer):
 class RemoveFriendSerializer(serializers.Serializer):
     id_token = serializers.CharField(required=True)
     friend_id = serializers.CharField(required=True)
+
+class BlockUserSerializer(serializers.Serializer):
+    id_token = serializers.CharField(required=True)
+    blocked_id = serializers.CharField(required=True)
