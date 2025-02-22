@@ -139,7 +139,7 @@ const UserProfile = () => {
         <p className="text-xl text-green-700">@{user.username}</p>
       </div>
 
-      {/* Info cards with hover animations */}
+        {/* Info cards with hover animations */}
       <div className="bg-white/90 backdrop-blur-sm rounded-lg p-8 w-full max-w-md shadow-xl 
                       transition-all duration-300 hover:shadow-2xl">
         <div className="grid gap-4">
@@ -197,12 +197,12 @@ const UserProfile = () => {
 
 // Updated InfoItem component with labels and hover effects
 const InfoItem = ({ icon, text, label }) => (
-  <div className="flex items-center p-3 rounded-lg transition-colors hover:bg-green-50 group">
-    <span className="mr-4 transition-transform group-hover:scale-110">{icon}</span>
+  <div className="flex items-center justify-between p-3 rounded-lg transition-colors hover:bg-green-50 group">
     <div className="flex items-center">
+      <span className="mr-4 transition-transform group-hover:scale-110">{icon}</span>
       <span className="text-gray-500 mr-2">{label}:</span>
-      <span className="text-gray-700 font-medium">{text}</span>
     </div>
+    <span className="text-gray-700 font-medium">{text}</span>
   </div>
 )
 

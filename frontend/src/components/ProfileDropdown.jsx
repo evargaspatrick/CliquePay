@@ -2,10 +2,16 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCircleUser } from '@fortawesome/free-regular-svg-icons';
+import PropTypes from 'prop-types';
 
-export const ProfileDropdown = () => {
+export const ProfileDropdown = ({ onLogout }) => {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
+
+  const handleLogout = () => {
+    setIsOpen(false);  // Close dropdown
+    onLogout();       // Trigger logout modal
+  };
 
   return (
     <div className="relative">
@@ -32,7 +38,7 @@ export const ProfileDropdown = () => {
           </div>
           <div 
             className="px-4 py-2 hover:bg-red-50 cursor-pointer flex items-center text-gray-800 hover:text-red-600"
-            onClick={() => navigate('/logout')}
+            onClick={handleLogout}
           >
             Logout
           </div>
@@ -40,4 +46,8 @@ export const ProfileDropdown = () => {
       )}
     </div>
   );
+};
+
+ProfileDropdown.propTypes = {
+  onLogout: PropTypes.func.isRequired
 };

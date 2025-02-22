@@ -7,23 +7,28 @@ export const renewTokens = async () => {
         const idToken = Cookies.get('idToken');
         const refreshToken = Cookies.get('refreshToken');
 
-        if (!accessToken || !idToken || !refreshToken) {
+        if (!refreshToken || !idToken) {
             console.log('Missing tokens, redirecting to login');
             return false;
         }
 
         let needsRenewal = false;
-        try {
-            const accessTokenDecoded = jwtDecode(accessToken);
-            const idTokenDecoded = jwtDecode(idToken);
-            const currentTime = Math.floor(Date.now() / 1000);
-            
-            needsRenewal = accessTokenDecoded.exp <= currentTime + 300 || 
-                           idTokenDecoded.exp <= currentTime + 300;
-        } catch (e) {
-            console.error('Token decode error:', e);
-            return false;
+        if(accessToken){
+            try {
+                const accessTokenDecoded = jwtDecode(accessToken);
+                const idTokenDecoded = jwtDecode(idToken);
+                const currentTime = Math.floor(Date.now() / 1000);
+                
+                needsRenewal = accessTokenDecoded.exp <= currentTime + 300 || 
+                               idTokenDecoded.exp <= currentTime + 300;
+            } catch (e) {
+                console.error('Token decode error:', e);
+                return false;
+            }
+        }else{
+            needsRenewal = true;
         }
+        
 
         if (needsRenewal) {
             const response = await fetch('http://127.0.0.1:8000/api/renew/', {

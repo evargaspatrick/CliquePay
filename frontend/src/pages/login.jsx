@@ -66,7 +66,7 @@ function Login() {
                 
                 // ID token - short lived (1 hour)
                 Cookies.set('idToken', data.id_token, {
-                    expires: 1/24, // This evaluates to almost 0, should be 1/24
+                    expires: 365, // THIS EXPIRES IN ONE HOUR, I set it 365 as backend just needs it to decode username
                     secure: true,
                     sameSite: 'strict',
                     path: '/'
