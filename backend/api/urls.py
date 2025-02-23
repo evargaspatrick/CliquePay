@@ -20,5 +20,6 @@ urlpatterns = [
     path('api/accept-friend-request/',views.accept_friend_request, name='accept_friend_request'),
     path('api/remove-friend/',views.remove_friend, name='remove_friend'),
     path('api/block-user/',views.block_user, name='block_user'),
-
+    path('api/update-profile-photo/',views.upload_profile_picture, name='update_profile_photo'),
+    path('api/reset-profile-photo/',views.reset_profile_picture, name='reset_profile_photo'),
 ]

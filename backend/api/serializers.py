@@ -101,3 +101,45 @@ class RemoveFriendSerializer(serializers.Serializer):
 class BlockUserSerializer(serializers.Serializer):
     id_token = serializers.CharField(required=True)
     blocked_id = serializers.CharField(required=True)
+
+class UploadProfilePictureSerializer(serializers.Serializer):
+    id_token = serializers.CharField(
+        required=True,
+        error_messages={
+            'required': 'ID token is required',
+            'blank': 'ID token cannot be blank'
+        }
+    )
+    profile_picture = serializers.ImageField(
+        required=True,
+        error_messages={
+            'required': 'Profile picture is required',
+            'invalid': 'Invalid image format',
+            'empty': 'Empty file submitted',
+            'invalid_image': 'Upload a valid image. The file you uploaded was either not an image or a corrupted image.'
+        }
+    )
+
+    def validate_profile_picture(self, value):
+        if value.size > 5 * 1024 * 1024:  # 5MB limit
+            raise serializers.ValidationError('Image file too large ( > 5MB )')
+        
+        allowed_types = ['image/jpeg', 'image/png', 'image/jpg']
+        if value.content_type not in allowed_types:
+            raise serializers.ValidationError('Unsupported file type. Please upload JPEG or PNG images only.')
+        
+        return value
+
+    def validate_id_token(self, value):
+        if not value or not isinstance(value, str):
+            raise serializers.ValidationError('Invalid ID token format')
+        return value
+
+class ResetProfilePictureSerializer(serializers.Serializer):
+    id_token = serializers.CharField(
+        required=True,
+        error_messages={
+            'required': 'ID token is required',
+            'blank': 'ID token cannot be blank'
+        }
+    )

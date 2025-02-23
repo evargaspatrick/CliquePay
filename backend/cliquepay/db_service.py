@@ -439,3 +439,38 @@ class DatabaseService:
                 'status': 'ERROR',
                 'message': str(e)
             }
+
+    @staticmethod
+    def update_profile_photo(cognito_id, photo_url):
+        """
+        Update user's profile photo URL
+        
+        Args:
+            cognito_id (str): Cognito user ID
+            photo_url (str): URL of the uploaded profile photo
+            
+        Returns:
+            dict: Status of the update operation
+        """
+        try:
+            user = User.objects.get(cognito_id=cognito_id)
+            user.avatar_url = photo_url
+            user.save()
+            
+            return {
+                'status': 'SUCCESS',
+                'message': 'Profile photo updated successfully',
+                'user_data': {
+                    'profile_photo': user.avatar_url
+                }
+            }
+        except User.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'User not found'
+            }
+        except Exception as e:
+            return {
+                'status': 'ERROR',
+                'message': str(e)
+            }
