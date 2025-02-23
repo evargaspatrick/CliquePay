@@ -22,7 +22,10 @@ class User(models.Model):
         null=True,
         help_text="Optional phone number in international format"
     )
-    avatar_url = models.URLField(null=True, blank=True)
+    avatar_url = models.URLField(
+        default='https://storage.cloud.google.com/cliquepay_profile_photo_bucket/Default_pfp.jpg',
+        blank=True
+    )
     currency = models.CharField(max_length=10, default='USD')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

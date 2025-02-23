@@ -66,7 +66,7 @@ function Login() {
                 
                 // ID token - short lived (1 hour)
                 Cookies.set('idToken', data.id_token, {
-                    expires: 1/24, // This evaluates to almost 0, should be 1/24
+                    expires: 365, // THIS EXPIRES IN ONE HOUR, I set it 365 as backend just needs it to decode username
                     secure: true,
                     sameSite: 'strict',
                     path: '/'
@@ -118,8 +118,8 @@ function Login() {
                     )}
 
                     <form onSubmit={handleSubmit} className="space-y-4">
+                    <p className="text-3xl font-semibold mb-4">User Login</p>
                         <div>
-                            <p className="text-lg font-semibold mb-2">Login</p>
                             <input
                                 type="email"
                                 name="email"
@@ -131,7 +131,6 @@ function Login() {
                             />
                         </div>
                         <div>
-                            <p className="text-lg font-semibold mb-2">Password</p>
                             <input
                                 type={showPassword ? "text" : "password"}
                                 name="password"

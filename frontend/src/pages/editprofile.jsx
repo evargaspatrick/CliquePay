@@ -1,7 +1,7 @@
 // EditProfile.jsx
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Save } from 'lucide-react'
+import { ArrowLeft, Lock, Save } from 'lucide-react'
 import Cookies from 'js-cookie'
 const EditProfile = () => {
   const navigate = useNavigate()
@@ -86,22 +86,24 @@ const EditProfile = () => {
             </div>
 
             <div>
-              <label className="block text-gray-700 mb-2">Email</label>
+              <label className="block text-gray-700 mb-2 flex justify-center gap-3">Email <Lock/></label>
               <input
+                disabled
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({...formData, email: e.target.value})}
-                className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:border-green-500"
+                className="w-full p-2 border border-gray-300 bg-gray-300 rounded focus:outline-none focus:border-green-500"
               />
             </div>
 
             <div>
-              <label className="block text-gray-700 mb-2">Phone Number</label>
+              <label className="block text-gray-700 mb-2 flex justify-center gap-3">Phone Number <Lock/></label>
               <input
+                disabled
                 type="tel"
                 value={formData.phone_number}
                 onChange={(e) => setFormData({...formData, phone_number: e.target.value})}
-                className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:border-green-500"
+                className="w-full p-2 border border-gray-300 bg-gray-300 rounded focus:outline-none focus:border-green-500"
               />
             </div>
 

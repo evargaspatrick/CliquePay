@@ -377,3 +377,100 @@ class DatabaseService:
                 'status': 'ERROR',
                 'message': str(e)
             }
+
+    @staticmethod
+    def block_user(cognito_id, blocked_id):
+        """
+        Block another user from the provided account
+
+        Args:
+            cognito_id (str): Cognito id of user who wants to block another user.
+            blocked_id (str): id of the user being blocked.
+            
+        Returns:
+            dict: Status of the friend block operation
+        """
+        try:
+            # Get both users
+            user = User.objects.get(cognito_id=cognito_id)
+            blocked_user = User.objects.get(id=blocked_id)
+
+            # Check if a friendship record already exists (either pending, accepted, or previously blocked)
+            friendship = Friendship.objects.filter(
+                (models.Q(user1=user) & models.Q(user2=blocked_user)) |
+                (models.Q(user1=blocked_user) & models.Q(user2=user))
+            ).first()
+
+            if friendship:
+                if friendship.status == 'BLOCKED':
+                    return {
+                        'status': 'ERROR',
+                        'message': 'User is already blocked'
+                    }
+                else:
+                    # Update existing relationship status to BLOCKED
+                    friendship.status = 'BLOCKED'
+                    friendship.action_user = user
+                    friendship.save()
+                    return {
+                        'status': 'SUCCESS',
+                        'message': 'User blocked successfully'
+                    }
+            else:
+                # No friendship record exists, so create a new one with BLOCKED status
+                friendship = Friendship.objects.create(
+                    user1=user,
+                    user2=blocked_user,
+                    action_user=user,
+                    status='BLOCKED'
+                )
+                return {
+                    'status': 'SUCCESS',
+                    'message': 'User blocked successfully',
+                    'friendship_id': friendship.id
+                }
+        except User.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'User not found'
+            }
+        except Exception as e:
+            return {
+                'status': 'ERROR',
+                'message': str(e)
+            }
+
+    @staticmethod
+    def update_profile_photo(cognito_id, photo_url):
+        """
+        Update user's profile photo URL
+        
+        Args:
+            cognito_id (str): Cognito user ID
+            photo_url (str): URL of the uploaded profile photo
+            
+        Returns:
+            dict: Status of the update operation
+        """
+        try:
+            user = User.objects.get(cognito_id=cognito_id)
+            user.avatar_url = photo_url
+            user.save()
+            
+            return {
+                'status': 'SUCCESS',
+                'message': 'Profile photo updated successfully',
+                'user_data': {
+                    'profile_photo': user.avatar_url
+                }
+            }
+        except User.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'User not found'
+            }
+        except Exception as e:
+            return {
+                'status': 'ERROR',
+                'message': str(e)
+            }

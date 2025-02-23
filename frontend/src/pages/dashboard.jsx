@@ -3,11 +3,15 @@ import { ProfileDropdown } from '../components/ProfileDropdown';
 import PropTypes from 'prop-types';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faDollarSign, faGears, faChartSimple, faMoneyBillTransfer, faHouseUser } from '@fortawesome/free-solid-svg-icons';
+import { Mail, Phone, Calendar, DollarSign, Clock, ArrowLeft, RefreshCw, Camera, Edit, Trash2, AlertTriangle } from "lucide-react"
+import Cookies from 'js-cookie';
 import logo from '/images/CliquePay Logo.png';
 import '../App.css';
 import { useSecurity } from '../context/SecurityContext';
 import { useState, useEffect } from 'react';
 import AuthenticateUser from '../utils/AuthenticateUser';
+import { renewTokens } from '../utils/RenewTokens';
+import { useNavigate } from 'react-router-dom';
 
 FriendCard.propTypes = {
   name: PropTypes.string.isRequired,
@@ -15,13 +19,17 @@ FriendCard.propTypes = {
 };
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const security = useSecurity();
+  const [showLogoutModal, setshowLogoutModal] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] =  useState(false)
   const [billSummary, setBillSummary] = useState({
     totalBill: 0,
     youOwe: 0,
     theyOwe: 0
   });
   const [recentActivity, setRecentActivity] = useState([]);
+  
 
  /* useEffect(() => {
     fetchDashboardData();
@@ -63,6 +71,73 @@ const Dashboard = () => {
     }
   };*/
 
+
+  const handleLogout = async() => {
+    setIsLoggingOut(true);
+    try {
+      const checkTokens = await renewTokens();
+      
+      if(!checkTokens) {
+        navigate('/login');
+        return;
+      }
+      
+      const accessToken = Cookies.get("accessToken");
+      const response = await fetch('http://127.0.0.1:8000/api/logout/', {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ access_token: accessToken })
+      });
+
+      if(!response.ok) {
+        throw new Error("Failed to logout");
+      }
+
+      // Clear cookies and navigate
+      Cookies.remove('accessToken');
+      Cookies.remove('idToken');
+      Cookies.remove('refreshToken');
+      navigate('/login');
+    } catch (error) {
+      console.error("Error logging out:", error);
+      setError("Failed to logout. Please try again later.");
+    } finally {
+      setIsLoggingOut(false);
+      setshowLogoutModal(false);
+    }
+  };
+
+  const LogoutConfirmationModal = () => (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4">
+        <div className="flex items-center justify-center mb-4 text-red-600">
+          <AlertTriangle size={48} />
+        </div>
+        <h3 className="text-xl font-bold text-center mb-4">Logout</h3>
+        <p className="text-gray-600 text-center mb-6">
+        Are you sure you want to logout?
+        </p>
+        <div className="flex gap-4">
+          <button
+            onClick={() => setshowLogoutModal(false)}
+            className="flex-1 py-2 px-4 rounded-lg border border-gray-300 hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            className="flex-1 py-2 px-4 rounded-lg bg-red-600 text-white hover:bg-red-700 
+                     disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoggingOut ? "Signing out..." : "Logout"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
   return (
     <AuthenticateUser>
     <div className="min-h-screen bg-gradient-to-b from-yellow-400 to-yellow-500 overflow-x-hidden">
@@ -82,7 +157,9 @@ const Dashboard = () => {
           <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition">
             Request Payment
           </button>
-          <ProfileDropdown />
+            <ProfileDropdown 
+              onLogout={() => setshowLogoutModal(true)} 
+            />
         </div>
       </header>
 
@@ -156,6 +233,7 @@ const Dashboard = () => {
           </div>
         </section>
       </main>
+      {showLogoutModal && <LogoutConfirmationModal />}
     </div>
     </AuthenticateUser>
   );
