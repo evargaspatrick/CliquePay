@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
-import { SecurityUtils } from './security';
+import { SecurityUtils } from '../utils/security';
 import Loading from '../components/Loading';
 
 function AuthenticateUser({ children }) {

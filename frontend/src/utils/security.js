@@ -266,14 +266,13 @@ export const SecurityUtils = {
   auth: {
     isAuthenticated: async () => {
       try {
-        // Await the cookie retrieval so you get the actual token.
         const accessToken = await SecurityUtils.getCookie('accessToken');
         if (!accessToken) {
           return false;
         }
 
         const response = await SecurityUtils.csrf.fetchWithCSRF(
-          'http://localhost:8000/api/verify-user-access/',
+          'http://127.0.0.1:8000/api/verify-user-access/',  
           { 
             method: 'POST',
             body: JSON.stringify({
@@ -281,6 +280,12 @@ export const SecurityUtils = {
             })
           }
         );
+        
+        if (!response.ok) {
+          console.error('Auth check failed with status:', response.status);
+          return false;
+        }
+
         const data = await response.json();
         return data.status === 'SUCCESS';
       } catch (error) {

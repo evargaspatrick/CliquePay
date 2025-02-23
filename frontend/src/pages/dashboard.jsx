@@ -29,6 +29,7 @@ const Dashboard = () => {
     theyOwe: 0
   });
   const [recentActivity, setRecentActivity] = useState([]);
+  
 
  /* useEffect(() => {
     fetchDashboardData();
@@ -156,7 +157,9 @@ const Dashboard = () => {
           <button className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition">
             Request Payment
           </button>
-          <ProfileDropdown onLogout={() => setshowLogoutModal(true)} />
+            <ProfileDropdown 
+              onLogout={() => setshowLogoutModal(true)} 
+            />
         </div>
       </header>
 

@@ -118,8 +118,8 @@ function Login() {
                     )}
 
                     <form onSubmit={handleSubmit} className="space-y-4">
+                    <p className="text-3xl font-semibold mb-4">User Login</p>
                         <div>
-                            <p className="text-lg font-semibold mb-2">Login</p>
                             <input
                                 type="email"
                                 name="email"
@@ -131,7 +131,6 @@ function Login() {
                             />
                         </div>
                         <div>
-                            <p className="text-lg font-semibold mb-2">Password</p>
                             <input
                                 type={showPassword ? "text" : "password"}
                                 name="password"
