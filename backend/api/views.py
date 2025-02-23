@@ -675,7 +675,7 @@ def upload_profile_picture(request):
     
     Request Body:
     {
-        "id_token": "your-id-token",
+        "id_token": "your-id-token", 
         "profile_picture": file
     }
     """
@@ -711,31 +711,56 @@ def upload_profile_picture(request):
                                 'user_data': update_result.get('user_data')
                             }, status=status.HTTP_200_OK)
                         
-                        return Response({
-                            'status': 'error',
-                            'message': 'Failed to update profile picture in database',
-                            'details': update_result.get('message')
-                        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                        # Return the original error response for debugging
+                        return Response(update_result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
                     
+                    # Return storage service error
                     return Response({
                         'status': 'error',
-                        'message': 'Failed to upload profile picture to storage'
+                        'message': 'Failed to get URL from storage service',
+                        'debug_info': {
+                            'new_url': new_url,
+                            'file_name': serializer.validated_data['profile_picture'].name,
+                            'file_size': serializer.validated_data['profile_picture'].size,
+                            'content_type': serializer.validated_data['profile_picture'].content_type
+                        }
                     }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
                 
                 except Exception as e:
+                    # Return detailed exception info for debugging
                     return Response({
                         'status': 'error',
                         'message': 'Error processing profile picture',
-                        'details': str(e)
+                        'error_type': type(e).__name__,
+                        'error_details': str(e),
+                        'debug_info': {
+                            'file_info': {
+                                'name': serializer.validated_data['profile_picture'].name,
+                                'size': serializer.validated_data['profile_picture'].size,
+                                'content_type': serializer.validated_data['profile_picture'].content_type
+                            },
+                            'user_info': {
+                                'cognito_id': getId['user_sub'],
+                                'current_avatar': user['user_data'].get('avatar_url')
+                            }
+                        }
                     }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
             
+            # Return the original user fetch error
             return Response(user, status=status.HTTP_404_NOT_FOUND)
+        
+        # Return the original Cognito error
         return Response(getId, status=status.HTTP_401_UNAUTHORIZED)
 
+    # Return serializer validation errors
     return Response({
         'status': 'error',
         'message': 'Invalid input',
-        'errors': serializer.errors
+        'errors': serializer.errors,
+        'received_data': {
+            'files': request.FILES.keys(),
+            'data': request.data
+        }
     }, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])

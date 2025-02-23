@@ -2,6 +2,7 @@ import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import Cookies from "js-cookie"
 import { Mail, Phone, Calendar, DollarSign, Clock, ArrowLeft, RefreshCw, Camera, Edit, Trash2, AlertTriangle } from "lucide-react"
+import ProfilePhotoModal from '../components/ProfilePhotoModal';
 
 const UserProfile = () => {
   const [user, setUser] = useState(null)
@@ -9,6 +10,7 @@ const UserProfile = () => {
   const [error, setError] = useState(null)
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isPhotoModalOpen, setIsPhotoModalOpen] = useState(false);
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -72,6 +74,13 @@ const UserProfile = () => {
     }
   };
 
+  const handlePhotoUpdate = (newPhotoUrl) => {
+    setUser(prev => ({
+      ...prev,
+      profile_photo: newPhotoUrl
+    }));
+  };
+
   const DeleteConfirmationModal = () => (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4">
@@ -128,10 +137,14 @@ const UserProfile = () => {
           <img
             src={user.profile_photo || "/placeholder.svg?height=150&width=150"}
             className="w-36 h-36 rounded-full object-cover border-4 border-green-600 mb-4 shadow-xl 
-                     transition-transform duration-300 group-hover:scale-105"
+                     transition-transform duration-300 group-hover:scale-105 cursor-pointer"
+            onClick={() => setIsPhotoModalOpen(true)}
           />
-          <div className="absolute bottom-6 right-0 bg-green-600 p-2 rounded-full shadow-lg 
-                        opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <div 
+            className="absolute bottom-6 right-0 bg-green-600 p-2 rounded-full shadow-lg 
+                      opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer"
+            onClick={() => setIsPhotoModalOpen(true)}
+          >
             <Camera className="w-5 h-5 text-white" />
           </div>
         </div>
@@ -191,6 +204,12 @@ const UserProfile = () => {
         </button>
       </div>
       {showDeleteModal && <DeleteConfirmationModal />}
+      <ProfilePhotoModal
+        isOpen={isPhotoModalOpen}
+        onClose={() => setIsPhotoModalOpen(false)}
+        currentPhoto={user.profile_photo}
+        onPhotoUpdate={handlePhotoUpdate}
+      />
     </div>
   )
 }

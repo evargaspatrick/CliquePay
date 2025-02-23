@@ -112,6 +112,8 @@ class UploadProfilePictureSerializer(serializers.Serializer):
     )
     profile_picture = serializers.ImageField(
         required=True,
+        allow_empty_file=False,
+        use_url=True,
         error_messages={
             'required': 'Profile picture is required',
             'invalid': 'Invalid image format',
@@ -122,12 +124,7 @@ class UploadProfilePictureSerializer(serializers.Serializer):
 
     def validate_profile_picture(self, value):
         if value.size > 5 * 1024 * 1024:  # 5MB limit
-            raise serializers.ValidationError('Image file too large ( > 5MB )')
-        
-        allowed_types = ['image/jpeg', 'image/png', 'image/jpg']
-        if value.content_type not in allowed_types:
-            raise serializers.ValidationError('Unsupported file type. Please upload JPEG or PNG images only.')
-        
+            raise serializers.ValidationError('File size must be less than 5MB')
         return value
 
     def validate_id_token(self, value):
