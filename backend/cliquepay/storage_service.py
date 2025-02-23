@@ -37,13 +37,31 @@ class CloudStorageService:
     def delete_profile_picture(self, url):
         """Delete a profile picture by its URL"""
         try:
-            # Extract filename from URL
-            filename = url.split('/')[-1]
-            blob = self.bucket.blob(f"profile_pictures/{filename}")
-            blob.delete()
+            if not url:
+                print("DEBUG: No URL provided")
+                return False
+
+            # Extract blob name from URL
+            blob_name = url.replace('https://storage.googleapis.com/cliquepay_profile_photo_bucket/', '')
+            if not blob_name:
+                print("DEBUG: Could not extract blob name from URL")
+                return False
+
+            blob = self.bucket.blob(blob_name)
+            
+            # Fetch blob metadata
+            blob.reload()
+            generation_match_precondition = blob.generation
+
+            # Delete with generation match precondition
+            blob.delete(if_generation_match=generation_match_precondition)
+            
+            print(f"DEBUG: Successfully deleted blob: {blob_name}")
             return True
+
         except Exception as e:
-            print(f"Error deleting file: {str(e)}")
+            print(f"DEBUG: Error deleting file: {type(e).__name__}")
+            print(f"DEBUG: Error details: {str(e)}")
             return False
         
     def reset_profile_picture(self, current_url):
