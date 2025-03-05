@@ -8,9 +8,75 @@ import '../App.css';
 import { useSecurity } from '../context/SecurityContext';
 import { useState, useEffect } from 'react';
 
+// Add these mock data constants at the top of the file, after the imports
+const MOCK_BILL_SUMMARY = {
+  totalBill: 1250.50,
+  youOwe: 485.75,
+  theyOwe: 764.75
+};
+
+const MOCK_RECENT_ACTIVITY = [
+  {
+    id: 1,
+    description: "Dinner at Olive Garden with Alice",
+    amount: 84.50,
+    date: "2024-02-20"
+  },
+  {
+    id: 2,
+    description: "Movie tickets with Bob",
+    amount: 32.00,
+    date: "2024-02-19"
+  },
+  {
+    id: 3,
+    description: "Grocery shopping with Charlie",
+    amount: 156.25,
+    date: "2024-02-18"
+  },
+  {
+    id: 4,
+    description: "Utilities split with Dana",
+    amount: 213.00,
+    date: "2024-02-17"
+  }
+];
+
+const MOCK_FRIENDS = [
+  {
+    name: "Alice Johnson",
+    imgSrc: "/images/avatars/alice.jpg",
+    owes: 125.50,
+    isOwed: false
+  },
+  {
+    name: "Bob Smith",
+    imgSrc: "/images/avatars/bob.jpg",
+    owes: 0,
+    isOwed: true,
+    amount: 45.75
+  },
+  {
+    name: "Charlie Brown",
+    imgSrc: "/images/avatars/charlie.jpg",
+    owes: 89.25,
+    isOwed: false
+  },
+  {
+    name: "Dana White",
+    imgSrc: "/images/avatars/dana.jpg",
+    owes: 0,
+    isOwed: true,
+    amount: 178.50
+  }
+];
+
 FriendCard.propTypes = {
   name: PropTypes.string.isRequired,
-  imgSrc: PropTypes.string.isRequired
+  imgSrc: PropTypes.string.isRequired,
+  owes: PropTypes.number,
+  isOwed: PropTypes.bool,
+  amount: PropTypes.number
 };
 
 const Dashboard = () => {
@@ -21,6 +87,7 @@ const Dashboard = () => {
     theyOwe: 0
   });
   const [recentActivity, setRecentActivity] = useState([]);
+  const [friends, setFriends] = useState([]);
 
   useEffect(() => {
     fetchDashboardData();
@@ -28,12 +95,13 @@ const Dashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const response = await security.csrf.fetchWithCSRF('http://127.0.0.1:8000/api/dashboard/', {
-        method: 'GET'
-      });
-      const data = await response.json();
-      setBillSummary(data.billSummary);
-      setRecentActivity(data.recentActivity);
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Use mock data instead of API call
+      setBillSummary(MOCK_BILL_SUMMARY);
+      setRecentActivity(MOCK_RECENT_ACTIVITY);
+      setFriends(MOCK_FRIENDS);
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
     }
@@ -130,13 +198,26 @@ const Dashboard = () => {
         <section className="mb-8">
           <h2 className="text-2xl font-bold mb-4 text-gray-800">Recent Activity</h2>
           <div className="bg-white/90 backdrop-blur-sm p-6 rounded-lg shadow-lg">
+            {/* Update the Recent Activity section: */}
             <ul className="divide-y divide-gray-200">
               {recentActivity.map(activity => (
                 <li key={activity.id} className="py-4 flex justify-between items-center">
-                  <span>
-                    {activity.description} - <span className="font-semibold">-<FontAwesomeIcon icon={faDollarSign} className="mr-1" />{activity.amount}</span>
-                  </span>
-                  <button onClick={() => handleRemind(activity.id)} className="text-green-600 hover:underline">Remind</button>
+                  <div>
+                    <p className="font-semibold">{activity.description}</p>
+                    <p className="text-sm text-gray-500">{activity.date}</p>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    <span className="font-semibold text-red-600">
+                      -<FontAwesomeIcon icon={faDollarSign} className="mr-1" />
+                      {activity.amount.toFixed(2)}
+                    </span>
+                    <button 
+                      onClick={() => handleRemind(activity.id)} 
+                      className="text-green-600 hover:underline"
+                    >
+                      Remind
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -147,10 +228,16 @@ const Dashboard = () => {
         <section>
           <h2 className="text-2xl font-bold mb-4 text-gray-800">Your Friends</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <FriendCard name="Alice" />
-            <FriendCard name="Bob" />
-            <FriendCard name="Charlie" />
-            <FriendCard name="Dana" />
+            {friends.map(friend => (
+              <FriendCard 
+                key={friend.name}
+                name={friend.name}
+                imgSrc={friend.imgSrc}
+                owes={friend.owes}
+                isOwed={friend.isOwed}
+                amount={friend.amount}
+              />
+            ))}
           </div>
         </section>
       </main>
