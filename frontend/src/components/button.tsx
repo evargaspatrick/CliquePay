@@ -15,12 +15,12 @@ const Button: React.FC<ButtonProps> = ({
   ...props 
 }) => {
   const variants = {
-    primary: "bg-yellow-400 text-black hover:bg-yellow-500 focus:outline-none",
-    secondary: "bg-blue-600 text-white hover:bg-blue-700 focus:outline-none",
-    outline: "border-2 border-yellow-400 text-yellow-400 hover:bg-yellow-400 hover:text-black focus:outline-none"
+    primary: "bg-primary text-primary-foreground hover:bg-primary/90",
+    secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+    outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground"
   };
 
-  const baseStyle = "px-4 py-2 rounded-lg transition-all duration-200 font-semibold focus:ring-0 hover-bounce";
+  const baseStyle = "px-4 py-2 rounded-lg transition-all duration-200 font-semibold focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring";
   
   return (
     <button 

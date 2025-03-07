@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { CreditCard, ArrowLeft, Check, Users, Eye, EyeOff } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../components/ui/card";
-import { SecurityUtils } from '../utils/security.js';
+import SecurityUtils from '../utils/SecurityUtils';
 
 export default function SignupPage() {
   const navigate = useNavigate();
@@ -298,122 +298,6 @@ export default function SignupPage() {
                     />
                     <button 
                       type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                    </button>
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    Must be at least 8 characters with a number and special character
-                  </p>
-                </div>
-
-                {/* Confirm Password */}
-                <div className="space-y-2">
-                  <label htmlFor="confirmPassword" className="text-sm font-medium leading-none">
-                    Confirm Password
-                  </label>
-                  <div className="relative">
-                    <input
-                      id="confirmPassword"
-                      name="confirmPassword"
-                      type={showConfirmPassword ? "text" : "password"}
-                      className="flex h-10 w-full rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50 pr-10"
-                      placeholder="••••••••"
-                      value={formData.confirmPassword}
-                      onChange={handleChange}
-                      required
-                    />
-                    <button 
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
-                    >
-                      {showConfirmPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Terms and Conditions */}
-                <div className="flex items-start space-x-2 pt-2">
-                  <input
-                    type="checkbox"
-                    id="terms"
-                    checked={agreedToTerms}
-                    onChange={(e) => setAgreedToTerms(e.target.checked)}
-                    className="h-4 w-4 mt-1 rounded border-zinc-700 bg-zinc-800 text-purple-600 focus:ring-purple-600"
-                    required
-                  />
-                  <label htmlFor="terms" className="text-sm text-gray-400">
-                    I agree to the{" "}
-                    <Link to="/terms" className="text-purple-400 hover:text-purple-300">
-                      Terms of Service
-                    </Link>{" "}
-                    and{" "}
-                    <Link to="/privacy" className="text-purple-400 hover:text-purple-300">
-                      Privacy Policy
-                    </Link>
-                  </label>
-                </div>
-
-                <Button 
-                  type="submit" 
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white"
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Creating Account..." : "Create Account"}
-                </Button>
-
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t border-zinc-700" />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-zinc-900 px-2 text-zinc-400">Or continue with</span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <Button 
-                    type="button"
-                    variant="outline" 
-                    className="border-zinc-700 bg-zinc-800 hover:bg-zinc-700 text-white"
-                    disabled={isLoading}
-                  >
-                    Google
-                  </Button>
-                  <Button 
-                    type="button"
-                    variant="outline" 
-                    className="border-zinc-700 bg-zinc-800 hover:bg-zinc-700 text-white"
-                    disabled={isLoading}
-                  >
-                    Apple
-                  </Button>
-                </div>
-              </CardContent>
-            </form>
-            <CardFooter className="flex flex-col space-y-4">
-              <div className="text-center text-sm text-gray-400">
-                Already have an account?{" "}
-                <Link to="/login" className="text-purple-400 hover:text-purple-300">
-                  Sign in
-                </Link>
-              </div>
-            </CardFooter>
-          </Card>
-
-          {/* Right Side Content */}
-          <div className="hidden md:flex flex-col justify-center items-center">
             <div className="relative w-full max-w-md aspect-square">
               <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 to-purple-600/20 rounded-2xl"></div>
               <div className="absolute -bottom-6 -right-6 w-64 h-64 bg-purple-600/20 rounded-full blur-3xl"></div>
@@ -451,13 +335,13 @@ export default function SignupPage() {
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-sm text-gray-400">© {new Date().getFullYear()} CliquePay. All rights reserved.</p>
             <div className="flex items-center gap-4">
-              <Link to="/terms" className="text-sm text-gray-400 hover:text-white transition-colors">
+              <Link href="/terms" className="text-sm text-gray-400 hover:text-white transition-colors">
                 Terms
               </Link>
-              <Link to="/privacy" className="text-sm text-gray-400 hover:text-white transition-colors">
+              <Link href="/privacy" className="text-sm text-gray-400 hover:text-white transition-colors">
                 Privacy
               </Link>
-              <Link to="/help" className="text-sm text-gray-400 hover:text-white transition-colors">
+              <Link href="/help" className="text-sm text-gray-400 hover:text-white transition-colors">
                 Help
               </Link>
             </div>
@@ -465,5 +349,6 @@ export default function SignupPage() {
         </div>
       </footer>
     </div>
-  );
+  )
 }
+

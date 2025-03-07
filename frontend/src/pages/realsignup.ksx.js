@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { CreditCard, ArrowLeft, Check, Users, Eye, EyeOff } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../components/ui/card";
-import { SecurityUtils } from '../utils/security.js';
+import SecurityUtils from '../utils/SecurityUtils';
 
 export default function SignupPage() {
   const navigate = useNavigate();
