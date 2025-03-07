@@ -5,6 +5,8 @@ import SignupPage from "../pages/signup1";
 import Verify from "../pages/verify";
 import Login from "../pages/login";
 import Dashboard from "../pages/dashboard";
+import UserProfile from "../pages/userprofile";
+import EditProfile from "../pages/editprofile"
 
 const router = createBrowserRouter([
   {
@@ -15,7 +17,9 @@ const router = createBrowserRouter([
       { path: "signup", element: <SignupPage /> },
       { path: "verify", element: <Verify /> },
       { path: "login", element: <Login /> },
-      { path: "dashboard", element: <Dashboard /> }
+      { path: "dashboard", element: <Dashboard /> },
+      { path: "profile", element: <UserProfile /> },
+      { path: "profile/edit", element: <EditProfile /> }
     ]
   }
 ]);

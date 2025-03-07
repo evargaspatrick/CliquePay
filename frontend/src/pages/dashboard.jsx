@@ -1,9 +1,13 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Link } from "react-router-dom" // Replace next/link
+import { Link, useNavigate } from "react-router-dom" // Replace next/link
 import { Bell, CreditCard, DollarSign, Home, LogOut, Settings, User, Users, Wallet, BarChart3 } from "lucide-react"
 import PropTypes from "prop-types"
+// import AuthenticateUser from '../utils/AuthenticateUser';
+import { renewTokens } from '../utils/RenewTokens';
+import { useSecurity } from '../context/SecurityContext';
+import Cookies from 'js-cookie';
 
 // Import the actual UI components from your project
 import { Button } from "../components/ui/button"
@@ -139,6 +143,48 @@ FriendCard.propTypes = {
 
 // Profile Dropdown Component
 function ProfileDropdown() {
+  const navigate = useNavigate();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [showLogoutModal, setshowLogoutModal] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleLogout = async() => {
+    setIsLoggingOut(true);
+    try {
+      const checkTokens = await renewTokens();
+      
+      if(!checkTokens) {
+        navigate('/login');
+        return;
+      }
+      
+      const accessToken = Cookies.get("accessToken");
+      const response = await fetch('http://127.0.0.1:8000/api/logout/', {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ access_token: accessToken })
+      });
+
+      if(!response.ok) {
+        throw new Error("Failed to logout");
+      }
+
+      // Clear cookies and navigate
+      Cookies.remove('accessToken');
+      Cookies.remove('idToken');
+      Cookies.remove('refreshToken');
+      navigate('/login');
+    } catch (error) {
+      console.error("Error logging out:", error);
+      setError("Failed to logout. Please try again later.");
+    } finally {
+      setIsLoggingOut(false);
+      setshowLogoutModal(false);
+    }
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -165,9 +211,13 @@ function ProfileDropdown() {
           <span>Settings</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator className="bg-zinc-700" />
-        <DropdownMenuItem className="hover:bg-zinc-700 cursor-pointer text-red-400">
+        <DropdownMenuItem 
+          className="hover:bg-zinc-700 cursor-pointer text-red-400"
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+        >
           <LogOut className="mr-2 h-4 w-4" />
-          <span>Log out</span>
+          <span>{isLoggingOut ? "Logging out..." : "Log out"}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
