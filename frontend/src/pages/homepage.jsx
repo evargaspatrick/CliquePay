@@ -29,8 +29,8 @@ export default function Home() {
         </nav>
         <div className="flex items-center gap-4">
           <Button 
-            variant="outline" 
-            className="hidden md:inline-flex text-gray-300 hover:text-white"
+            variant="highlight" 
+            className="hidden md:inline-flex"
             onClick={() => navigate('/login')}
           >
             Log in
@@ -65,6 +65,11 @@ export default function Home() {
             <Button 
               variant="outline" 
               className="text-lg px-8 py-6"
+              onClick={() => {
+                document.getElementById('features').scrollIntoView({
+                  behavior: 'smooth'
+                });
+              }}
             >
               Learn More
             </Button>
