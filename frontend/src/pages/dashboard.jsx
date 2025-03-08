@@ -6,7 +6,7 @@ import { Bell, CreditCard, DollarSign, Home, LogOut, Settings, User, Users, Wall
 import PropTypes from "prop-types"
 // import AuthenticateUser from '../utils/AuthenticateUser';
 import { renewTokens } from '../utils/RenewTokens';
-import { useSecurity } from '../context/SecurityContext';
+// import { useSecurity } from '../context/SecurityContext';
 import Cookies from 'js-cookie';
 
 // Import the actual UI components from your project
@@ -148,6 +148,11 @@ function ProfileDropdown() {
   const [showLogoutModal, setshowLogoutModal] = useState(false);
   const [error, setError] = useState(null);
 
+  // Add this handler function for profile navigation
+  const handleProfileClick = () => {
+    navigate('/profile');
+  };
+
   const handleLogout = async() => {
     setIsLoggingOut(true);
     try {
@@ -198,7 +203,10 @@ function ProfileDropdown() {
       <DropdownMenuContent className="w-56 bg-zinc-800 border-zinc-700 text-white" align="end">
         <DropdownMenuLabel>My Account</DropdownMenuLabel>
         <DropdownMenuSeparator className="bg-zinc-700" />
-        <DropdownMenuItem className="hover:bg-zinc-700 cursor-pointer">
+        <DropdownMenuItem 
+          className="hover:bg-zinc-700 cursor-pointer"
+          onClick={handleProfileClick}
+        >
           <User className="mr-2 h-4 w-4" />
           <span>Profile</span>
         </DropdownMenuItem>
@@ -213,13 +221,45 @@ function ProfileDropdown() {
         <DropdownMenuSeparator className="bg-zinc-700" />
         <DropdownMenuItem 
           className="hover:bg-zinc-700 cursor-pointer text-red-400"
-          onClick={handleLogout}
+          onClick={() => setshowLogoutModal(true)}
           disabled={isLoggingOut}
         >
           <LogOut className="mr-2 h-4 w-4" />
           <span>{isLoggingOut ? "Logging out..." : "Log out"}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
+      {showLogoutModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 max-w-sm w-full">
+            <h3 className="text-xl font-bold mb-4">Log Out</h3>
+            <p className="text-gray-400 mb-6">Are you sure you want to log out?</p>
+            
+            {error && (
+              <div className="mb-4 p-3 bg-red-900/30 border border-red-800 text-red-200 rounded-md">
+                {error}
+              </div>
+            )}
+            
+            <div className="flex justify-end gap-3">
+              <Button 
+                variant="outline" 
+                onClick={() => setshowLogoutModal(false)}
+                className="border-zinc-700 bg-zinc-800 hover:bg-zinc-700"
+                disabled={isLoggingOut}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleLogout}
+                className="bg-red-600 hover:bg-red-700"
+                disabled={isLoggingOut}
+              >
+                {isLoggingOut ? "Logging out..." : "Log out"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </DropdownMenu>
   )
 }
