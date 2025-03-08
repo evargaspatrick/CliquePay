@@ -1,4 +1,4 @@
-# WatchTower
+# CliquePay
 
 ## To run the frontend 
 - navigate to ../frontend directory in your machine

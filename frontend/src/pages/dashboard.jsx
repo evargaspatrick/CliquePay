@@ -1,9 +1,13 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Link } from "react-router-dom" // Replace next/link
+import { Link, useNavigate } from "react-router-dom" // Replace next/link
 import { Bell, CreditCard, DollarSign, Home, LogOut, Settings, User, Users, Wallet, BarChart3 } from "lucide-react"
 import PropTypes from "prop-types"
+// import AuthenticateUser from '../utils/AuthenticateUser';
+import { renewTokens } from '../utils/RenewTokens';
+// import { useSecurity } from '../context/SecurityContext';
+import Cookies from 'js-cookie';
 
 // Import the actual UI components from your project
 import { Button } from "../components/ui/button"
@@ -139,6 +143,53 @@ FriendCard.propTypes = {
 
 // Profile Dropdown Component
 function ProfileDropdown() {
+  const navigate = useNavigate();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [showLogoutModal, setshowLogoutModal] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Add this handler function for profile navigation
+  const handleProfileClick = () => {
+    navigate('/profile');
+  };
+
+  const handleLogout = async() => {
+    setIsLoggingOut(true);
+    try {
+      const checkTokens = await renewTokens();
+      
+      if(!checkTokens) {
+        navigate('/login');
+        return;
+      }
+      
+      const accessToken = Cookies.get("accessToken");
+      const response = await fetch('http://127.0.0.1:8000/api/logout/', {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ access_token: accessToken })
+      });
+
+      if(!response.ok) {
+        throw new Error("Failed to logout");
+      }
+
+      // Clear cookies and navigate
+      Cookies.remove('accessToken');
+      Cookies.remove('idToken');
+      Cookies.remove('refreshToken');
+      navigate('/login');
+    } catch (error) {
+      console.error("Error logging out:", error);
+      setError("Failed to logout. Please try again later.");
+    } finally {
+      setIsLoggingOut(false);
+      setshowLogoutModal(false);
+    }
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -152,7 +203,10 @@ function ProfileDropdown() {
       <DropdownMenuContent className="w-56 bg-zinc-800 border-zinc-700 text-white" align="end">
         <DropdownMenuLabel>My Account</DropdownMenuLabel>
         <DropdownMenuSeparator className="bg-zinc-700" />
-        <DropdownMenuItem className="hover:bg-zinc-700 cursor-pointer">
+        <DropdownMenuItem 
+          className="hover:bg-zinc-700 cursor-pointer"
+          onClick={handleProfileClick}
+        >
           <User className="mr-2 h-4 w-4" />
           <span>Profile</span>
         </DropdownMenuItem>
@@ -165,11 +219,47 @@ function ProfileDropdown() {
           <span>Settings</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator className="bg-zinc-700" />
-        <DropdownMenuItem className="hover:bg-zinc-700 cursor-pointer text-red-400">
+        <DropdownMenuItem 
+          className="hover:bg-zinc-700 cursor-pointer text-red-400"
+          onClick={() => setshowLogoutModal(true)}
+          disabled={isLoggingOut}
+        >
           <LogOut className="mr-2 h-4 w-4" />
-          <span>Log out</span>
+          <span>{isLoggingOut ? "Logging out..." : "Log out"}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
+      {showLogoutModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 max-w-sm w-full">
+            <h3 className="text-xl font-bold mb-4">Log Out</h3>
+            <p className="text-gray-400 mb-6">Are you sure you want to log out?</p>
+            
+            {error && (
+              <div className="mb-4 p-3 bg-red-900/30 border border-red-800 text-red-200 rounded-md">
+                {error}
+              </div>
+            )}
+            
+            <div className="flex justify-end gap-3">
+              <Button 
+                variant="outline" 
+                onClick={() => setshowLogoutModal(false)}
+                className="border-zinc-700 bg-zinc-800 hover:bg-zinc-700"
+                disabled={isLoggingOut}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleLogout}
+                className="bg-red-600 hover:bg-red-700"
+                disabled={isLoggingOut}
+              >
+                {isLoggingOut ? "Logging out..." : "Log out"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </DropdownMenu>
   )
 }

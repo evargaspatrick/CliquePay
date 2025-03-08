@@ -1,7 +1,5 @@
 from rest_framework import serializers
 
-
-
 class UserRegistrationSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=255, required=True)
     fullname = serializers.CharField(max_length=255, required=True)
@@ -96,4 +94,49 @@ class AcceptFriendRequestSerializer(serializers.Serializer):
     id_token = serializers.CharField(required=True)
     request_id = serializers.CharField(max_length=255, required=True)
 
-  
+class RemoveFriendSerializer(serializers.Serializer):
+    id_token = serializers.CharField(required=True)
+    friend_id = serializers.CharField(required=True)
+
+class BlockUserSerializer(serializers.Serializer):
+    id_token = serializers.CharField(required=True)
+    blocked_id = serializers.CharField(required=True)
+
+class UploadProfilePictureSerializer(serializers.Serializer):
+    id_token = serializers.CharField(
+        required=True,
+        error_messages={
+            'required': 'ID token is required',
+            'blank': 'ID token cannot be blank'
+        }
+    )
+    profile_picture = serializers.ImageField(
+        required=True,
+        allow_empty_file=False,
+        use_url=True,
+        error_messages={
+            'required': 'Profile picture is required',
+            'invalid': 'Invalid image format',
+            'empty': 'Empty file submitted',
+            'invalid_image': 'Upload a valid image. The file you uploaded was either not an image or a corrupted image.'
+        }
+    )
+
+    def validate_profile_picture(self, value):
+        if value.size > 5 * 1024 * 1024:  # 5MB limit
+            raise serializers.ValidationError('File size must be less than 5MB')
+        return value
+
+    def validate_id_token(self, value):
+        if not value or not isinstance(value, str):
+            raise serializers.ValidationError('Invalid ID token format')
+        return value
+
+class ResetProfilePictureSerializer(serializers.Serializer):
+    id_token = serializers.CharField(
+        required=True,
+        error_messages={
+            'required': 'ID token is required',
+            'blank': 'ID token cannot be blank'
+        }
+    )

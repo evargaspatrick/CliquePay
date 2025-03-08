@@ -6,7 +6,7 @@ from django.http import JsonResponse
 from cliquepay.aws_cognito import CognitoService
 from cliquepay.db_service import DatabaseService
 from .serializers import *
-
+from cliquepay.storage_service import CloudStorageService
 @api_view(['GET'])
 def api_root(request, format=None):
     """
@@ -89,7 +89,27 @@ def api_root(request, format=None):
                 'url': reverse('accept_friend_request', request=request, format=format),
                 'method': 'POST',
                 'description': 'accept friend request.'
-            }
+            },
+            'remove-friend': {
+                'url': reverse('remove_friend', request=request, format=format),
+                'method': 'POST',
+                'description': 'remove friend.'
+            },
+            'block-user': {
+                'url': reverse('block_user', request=request, format=format),
+                'method': 'POST',
+                'description': 'blocks another user.'
+            },
+            'update-profile-photo': {
+                'url': reverse('update_profile_photo', request=request, format=format),
+                'method': 'POST',
+                'description': 'updates profile photo in the cloud.'
+            },
+            'reset-profile-photo': {
+                'url': reverse('reset_profile_photo', request=request, format=format),
+                'method': 'POST',
+                'description': 'resets profile photo to default one.'
+            },
         },
         'version': 'development',
         'status': 'online',
@@ -583,5 +603,230 @@ def accept_friend_request(request):
         'status': 'error',
         'message': 'Invalid input',
         'errors': serializer.errors
-    }, status=status.HTTP_400_BAD_REQUEST)    
+    }, status=status.HTTP_400_BAD_REQUEST)
 
+@api_view(['POST'])
+def remove_friend(request):
+    """
+    Remove a friend connection between two users.
+    
+    Request Body Example:
+    {
+        "id_token": "user-id-token",
+        "friend_id": "friend-database-id"
+    }
+    """
+    serializer = RemoveFriendSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        id_result = cognito.get_user_id(serializer.validated_data['id_token'])
+        
+        if id_result['status'] == 'SUCCESS':
+            db = DatabaseService()
+            result = db.remove_friend(
+                cognito_id=id_result['user_sub'],
+                friend_id=serializer.validated_data['friend_id']
+            )
+            
+            if result['status'] == 'SUCCESS':
+                return Response(result, status=status.HTTP_200_OK)
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+            
+        return Response(id_result, status=status.HTTP_401_UNAUTHORIZED)
+        
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def block_user(request):
+    """
+    Block a user from the given idToken account
+
+    Request Body Example:
+    {
+        "idToken": "user-ID-TOKEN",
+        "blocked_id": "blocker-user-id"
+    }
+    """
+    serializer = BlockUserSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        reqId = cognito.get_user_id(id_token=serializer.validated_data['id_token'])
+        if reqId['status'] == 'SUCCESS':
+            db = DatabaseService()
+            result = db.block_user(cognito_id=reqId['user_sub'], blocked_id=serializer.validated_data['blocked_id'])
+            if result['status'] == 'SUCCESS':
+                return Response(result, status=status.HTTP_200_OK)
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        return Response(reqId, status=status.HTTP_401_UNAUTHORIZED)
+    return Response({
+    'status': 'error',
+    'message': 'Invalid input',
+    'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def upload_profile_picture(request):
+    """
+    Upload a profile picture for the user.
+    
+    Request Body:
+    {
+        "id_token": "your-id-token", 
+        "profile_picture": file
+    }
+    """
+    serializer = UploadProfilePictureSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        getId = cognito.get_user_id(serializer.validated_data['id_token'])
+        if getId['status'] == 'SUCCESS':
+            db = DatabaseService()
+            user = db.get_user_by_cognito_id(getId['user_sub'])
+            
+            if user['status'] == 'SUCCESS':
+                storage = CloudStorageService()
+                try:
+                    # Upload the new profile picture
+                    new_url = storage.upload_profile_picture(
+                        serializer.validated_data['profile_picture'],
+                        user['user_data'].get('avatar_url')
+                    )
+                    
+                    if new_url:
+                        # Update the profile photo URL in the database
+                        update_result = db.update_profile_photo(
+                            cognito_id=getId['user_sub'],
+                            photo_url=new_url
+                        )
+                        
+                        if update_result['status'] == 'SUCCESS':
+                            return Response({
+                                'status': 'success',
+                                'message': 'Profile picture updated successfully',
+                                'avatar_url': new_url,
+                                'user_data': update_result.get('user_data')
+                            }, status=status.HTTP_200_OK)
+                        
+                        # Return the original error response for debugging
+                        return Response(update_result, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    
+                    # Return storage service error
+                    return Response({
+                        'status': 'error',
+                        'message': 'Failed to get URL from storage service',
+                        'debug_info': {
+                            'new_url': new_url,
+                            'file_name': serializer.validated_data['profile_picture'].name,
+                            'file_size': serializer.validated_data['profile_picture'].size,
+                            'content_type': serializer.validated_data['profile_picture'].content_type
+                        }
+                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                
+                except Exception as e:
+                    # Return detailed exception info for debugging
+                    return Response({
+                        'status': 'error',
+                        'message': 'Error processing profile picture',
+                        'error_type': type(e).__name__,
+                        'error_details': str(e),
+                        'debug_info': {
+                            'file_info': {
+                                'name': serializer.validated_data['profile_picture'].name,
+                                'size': serializer.validated_data['profile_picture'].size,
+                                'content_type': serializer.validated_data['profile_picture'].content_type
+                            },
+                            'user_info': {
+                                'cognito_id': getId['user_sub'],
+                                'current_avatar': user['user_data'].get('avatar_url')
+                            }
+                        }
+                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+            # Return the original user fetch error
+            return Response(user, status=status.HTTP_404_NOT_FOUND)
+        
+        # Return the original Cognito error
+        return Response(getId, status=status.HTTP_401_UNAUTHORIZED)
+
+    # Return serializer validation errors
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors,
+        'received_data': {
+            'files': request.FILES.keys(),
+            'data': request.data
+        }
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def reset_profile_picture(request):
+    """
+    Reset user's profile picture to default.
+    
+    Request Body:
+    {
+        "id_token": "your-id-token"
+    }
+    """
+    serializer = ResetProfilePictureSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        getId = cognito.get_user_id(serializer.validated_data['id_token'])
+        if getId['status'] == 'SUCCESS':
+            db = DatabaseService()
+            user = db.get_user_by_cognito_id(getId['user_sub'])
+            
+            if user['status'] == 'SUCCESS':
+                storage = CloudStorageService()
+                try:
+                    # Reset the profile picture and get default URL
+                    default_url = storage.reset_profile_picture(
+                        user['user_data'].get('avatar_url')
+                    )
+                    
+                    if default_url:
+                        # Update the profile photo URL in the database
+                        update_result = db.update_profile_photo(
+                            cognito_id=getId['user_sub'],
+                            photo_url=default_url
+                        )
+                        
+                        if update_result['status'] == 'SUCCESS':
+                            return Response({
+                                'status': 'success',
+                                'message': 'Profile picture reset successfully',
+                                'avatar_url': default_url,
+                                'user_data': update_result.get('user_data')
+                            }, status=status.HTTP_200_OK)
+                        
+                        return Response({
+                            'status': 'error',
+                            'message': 'Failed to update profile picture in database',
+                            'details': update_result.get('message')
+                        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                    
+                    return Response({
+                        'status': 'error',
+                        'message': 'Failed to reset profile picture'
+                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                
+                except Exception as e:
+                    return Response({
+                        'status': 'error',
+                        'message': 'Error resetting profile picture',
+                        'details': str(e)
+                    }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+            return Response(user, status=status.HTTP_404_NOT_FOUND)
+        return Response(getId, status=status.HTTP_401_UNAUTHORIZED)
+
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)

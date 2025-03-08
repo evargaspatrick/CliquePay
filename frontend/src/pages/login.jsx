@@ -58,33 +58,30 @@ export default function Login() {
 
           const data = await response.json();
 
-          if (response.ok) {
-              // Cookie expiration based on remember me
-              const tokenExpiration = rememberMe ? 365 : 1/24; // 365 days or 1 hour
-              
-              // Refresh token
-              Cookies.set('refreshToken', data.refresh_token, {
-                  expires: rememberMe ? 365 : 7, // 365 days if remember me, 7 days otherwise
-                  secure: true,
-                  sameSite: 'strict',
-                  path: '/'
-              });
-              
-              // ID token
-              Cookies.set('idToken', data.id_token, {
-                  expires: tokenExpiration,
-                  secure: true,
-                  sameSite: 'strict',
-                  path: '/'
-              });
-              
-              // Access token
-              Cookies.set('accessToken', data.access_token, {
-                  expires: tokenExpiration,
-                  secure: true,
-                  sameSite: 'strict',
-                  path: '/'
-              });
+            if (response.ok) {
+                // Refresh token - long lived (365 days)
+                Cookies.set('refreshToken', data.refresh_token, {
+                    expires: 365,
+                    secure: true,
+                    sameSite: 'strict',
+                    path: '/'
+                });
+                
+                // ID token - short lived (1 hour)
+                Cookies.set('idToken', data.id_token, {
+                    expires: 365, // THIS EXPIRES IN ONE HOUR, I set it 365 as backend just needs it to decode username
+                    secure: true,
+                    sameSite: 'strict',
+                    path: '/'
+                });
+                
+                // Access token - short lived (1 hour)
+                Cookies.set('accessToken', data.access_token, {
+                    expires: new Date(new Date().getTime() + 60 * 60 * 1000), // 1 hour in milliseconds
+                    secure: true,
+                    sameSite: 'strict',
+                    path: '/'
+                });
 
               navigate('/dashboard');
           } else {

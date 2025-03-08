@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+from google.oauth2 import service_account
 load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -48,6 +49,7 @@ CORS_ALLOW_HEADERS = [
     'user-agent',
     'x-csrftoken',
     'x-requested-with',
+    'x-csrf-token', 
 ]
 
 # CSRF settings
@@ -145,6 +147,13 @@ DATABASES = {
     }
 }
 
+# Google Cloud Storage settings
+GS_CREDENTIALS = service_account.Credentials.from_service_account_file(
+    r"D:\WatchTower\WatchTower\balmy-renderer-451718-u7-3b6459d4e0fc.json"
+)
+GS_BUCKET_NAME = os.getenv('GS_BUCKET_NAME')
+GS_PROJECT_ID = os.getenv('GS_PROJECT_ID')
+GS_DEFAULT_ACL = 'publicRead'  # Makes uploaded files publicly readable
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
