@@ -1,5 +1,5 @@
 // EditProfile.jsx
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Lock, Save } from 'lucide-react'
 import Cookies from 'js-cookie'

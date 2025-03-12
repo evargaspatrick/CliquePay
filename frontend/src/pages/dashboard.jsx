@@ -1,15 +1,13 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Link, useNavigate } from "react-router-dom" // Replace next/link
+import { Link, useNavigate } from "react-router-dom"
 import { Bell, CreditCard, DollarSign, Home, LogOut, Settings, User, Users, Wallet, BarChart3 } from "lucide-react"
 import PropTypes from "prop-types"
-// import AuthenticateUser from '../utils/AuthenticateUser';
 import { renewTokens } from '../utils/RenewTokens';
-// import { useSecurity } from '../context/SecurityContext';
 import Cookies from 'js-cookie';
 
-// Import the actual UI components from your project
+// Import UI components
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar"
@@ -23,6 +21,9 @@ import {
 } from "../components/ui/dropdown-menu"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
 
+// Import layout components
+import { PageLayout, Section, Header, Footer } from "../components/layout/PageLayout"
+
 // Create a simple Logo component if it doesn't exist
 const Logo = () => (
   <div className="flex items-center gap-2">
@@ -33,7 +34,7 @@ const Logo = () => (
   </div>
 )
 
-// Mock data constants
+// Mock data and component definitions remain unchanged
 const MOCK_BILL_SUMMARY = {
   totalBill: 1250.5,
   youOwe: 485.75,
@@ -96,7 +97,7 @@ const MOCK_FRIENDS = [
   },
 ]
 
-// Friend Card Component
+// Friend Card Component remains unchanged
 function FriendCard({ name, imgSrc, owes, isOwed, amount }) {
   return (
     <Card className="bg-zinc-800 border-zinc-700 overflow-hidden">
@@ -141,7 +142,7 @@ FriendCard.propTypes = {
   amount: PropTypes.number
 }
 
-// Profile Dropdown Component
+// ProfileDropdown Component remains unchanged
 function ProfileDropdown() {
   const navigate = useNavigate();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -265,7 +266,7 @@ function ProfileDropdown() {
 }
 
 ProfileDropdown.propTypes = {
-  // Add any props if you pass them to ProfileDropdown in the future
+  // Add any props if needed
 }
 
 export default function Dashboard() {
@@ -318,27 +319,25 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <PageLayout>
       {/* Header */}
-      <header className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Logo />
-          <div className="flex items-center gap-4">
-            <Button variant="outline" className="border-zinc-700 bg-zinc-800 hover:bg-zinc-700">
-              <Bell className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Notifications</span>
-            </Button>
-            <Button className="bg-purple-600 hover:bg-purple-700">
-              <DollarSign className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">New Payment</span>
-            </Button>
-            <ProfileDropdown />
-          </div>
+      <Header className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-sm py-4">
+        <Logo />
+        <div className="flex items-center gap-4">
+          <Button variant="outline" className="border-zinc-700 bg-zinc-800 hover:bg-zinc-700">
+            <Bell className="h-4 w-4 mr-2" />
+            <span className="hidden sm:inline">Notifications</span>
+          </Button>
+          <Button className="bg-purple-600 hover:bg-purple-700">
+            <DollarSign className="h-4 w-4 mr-2" />
+            <span className="hidden sm:inline">New Payment</span>
+          </Button>
+          <ProfileDropdown />
         </div>
-      </header>
+      </Header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+      <Section className="py-8">
         <Tabs defaultValue="dashboard" className="w-full">
           <TabsList className="grid grid-cols-4 mb-8 bg-zinc-800 border border-zinc-700">
             <TabsTrigger value="dashboard" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
@@ -364,7 +363,7 @@ export default function Dashboard() {
 
           <TabsContent value="dashboard" className="space-y-8">
             {/* Bill Summary Section */}
-            <section>
+            <div>
               <h2 className="text-2xl font-bold mb-4">Bill Summary</h2>
               <Card className="bg-zinc-900 border-zinc-800">
                 <CardContent className="p-6">
@@ -395,10 +394,10 @@ export default function Dashboard() {
                   </div>
                 </CardContent>
               </Card>
-            </section>
+            </div>
 
             {/* Recent Activity Section */}
-            <section>
+            <div>
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold">Recent Activity</h2>
                 <Link to="/transactions" className="text-purple-400 hover:text-purple-300 text-sm">
@@ -430,10 +429,10 @@ export default function Dashboard() {
                   </ul>
                 </CardContent>
               </Card>
-            </section>
+            </div>
 
             {/* Friends Section */}
-            <section>
+            <div>
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold">Your Friends</h2>
                 <Button variant="link" className="text-purple-400 hover:text-purple-300 p-0">
@@ -453,7 +452,7 @@ export default function Dashboard() {
                   />
                 ))}
               </div>
-            </section>
+            </div>
           </TabsContent>
 
           <TabsContent value="transactions">
@@ -494,8 +493,26 @@ export default function Dashboard() {
             </Card>
           </TabsContent>
         </Tabs>
-      </main>
-    </div>
+      </Section>
+
+      {/* Footer */}
+      <Footer className="border-t border-zinc-800 py-6">
+        <div className="flex flex-col md:flex-row justify-between items-center">
+          <p className="text-sm text-gray-400">© {new Date().getFullYear()} CliquePay. All rights reserved.</p>
+          <div className="flex items-center gap-4 mt-4 md:mt-0">
+            <Link to="#" className="text-sm text-gray-400 hover:text-white transition-colors">
+              Privacy Policy
+            </Link>
+            <Link to="#" className="text-sm text-gray-400 hover:text-white transition-colors">
+              Terms of Service
+            </Link>
+            <Link to="#" className="text-sm text-gray-400 hover:text-white transition-colors">
+              Help Center
+            </Link>
+          </div>
+        </div>
+      </Footer>
+    </PageLayout>
   )
 }
 
