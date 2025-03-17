@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCircleUser } from '@fortawesome/free-regular-svg-icons';
+import { UserIcon } from 'lucide-react';
 import PropTypes from 'prop-types';
 import Cookies from 'js-cookie';
 
@@ -49,14 +49,14 @@ export const ProfileDropdown = ({ onLogout }) => {
         <img 
           src={profileData.profile_photo}
           alt="Profile" 
-          className="w-16 h-16 rounded-full cursor-pointer hover:opacity-90 transition object-cover"
+          className="w-12 h-12 rounded-full cursor-pointer hover:opacity-90 transition object-cover"
           onClick={() => setIsOpen(!isOpen)}
         />
       ) : (
-        <FontAwesomeIcon 
+        <UserIcon 
           icon={faCircleUser} 
           className="text-green-600 cursor-pointer hover:text-green-700 transition"
-          size="4x"
+          size = '20'
           onClick={() => setIsOpen(!isOpen)}
         />
       )}
@@ -77,7 +77,7 @@ export const ProfileDropdown = ({ onLogout }) => {
           </div>
           <div 
             className="px-4 py-2 hover:bg-red-50 cursor-pointer flex items-center text-gray-800 hover:text-red-600"
-            onClick={handleLogout}
+            onClick={() => handleLogout()}
           >
             Logout
           </div>

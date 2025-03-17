@@ -94,7 +94,7 @@ const UserProfile = () => {
         <div className="flex gap-4">
           <button
             onClick={() => setShowDeleteModal(false)}
-            className="flex-1 py-2 px-4 rounded-lg border border-gray-300 hover:bg-gray-50"
+            className="flex-1 py-2 px-4 rounded-lg border border-zinc-700 bg-zinc-800 text-white hover:bg-zinc-700"
           >
             Cancel
           </button>
@@ -199,7 +199,6 @@ const UserProfile = () => {
           className="flex-1 flex items-center justify-center gap-2 bg-red-600 text-white py-3 px-6 rounded-lg
                    hover:bg-red-700 transition-colors shadow-lg"
         >
-          <Trash2 className="w-5 h-5" />
           Delete Profile
         </button>
       </div>
