@@ -1,7 +1,6 @@
 import { useState, useRef } from 'react';
 import { X, Upload, Trash2 } from 'lucide-react';
 import Cookies from 'js-cookie';
-
 const ProfilePhotoModal = ({ isOpen, onClose, currentPhoto, onPhotoUpdate }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -152,10 +151,10 @@ const ProfilePhotoModal = ({ isOpen, onClose, currentPhoto, onPhotoUpdate }) => 
         )}
 
         <div className="flex gap-4">
-          <button
+        <button
             onClick={handleClose}
-            className="flex-1 py-2 px-4 border border-gray-300 rounded-lg hover:bg-gray-50"
-          >
+            className="flex-1 py-2 px-4 rounded-lg border border-zinc-700 bg-zinc-800 text-white hover:bg-zinc-700"
+          > 
             Cancel
           </button>
           {selectedFile && (

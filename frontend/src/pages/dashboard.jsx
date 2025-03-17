@@ -1,30 +1,17 @@
 "use client"
-
+import { AlertTriangle, Bell, CreditCard, DollarSign, Home, Settings, Users, BarChart3 } from "lucide-react";
 import { useState, useEffect } from "react"
 import { Link, useNavigate } from "react-router-dom"
-import { Bell, CreditCard, DollarSign, Home, LogOut, Settings, User, Users, Wallet, BarChart3 } from "lucide-react"
 import PropTypes from "prop-types"
 import { renewTokens } from '../utils/RenewTokens';
-<<<<<<< HEAD
-=======
-// import { useSecurity } from '../context/SecurityContext';
->>>>>>> 8bd2216cb773fc9c0355a7985b930246950a7d90
 import Cookies from 'js-cookie';
-
+import { ProfileDropdown } from "../components/ProfileDropdown"
 // Import UI components
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "../components/ui/dropdown-menu"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
-
+import ProfilePhotoModal from "../components/ProfilePhotoModal"
 // Import layout components
 import { PageLayout, Section, Header, Footer } from "../components/layout/PageLayout"
 
@@ -103,6 +90,7 @@ const MOCK_FRIENDS = [
 
 // Friend Card Component remains unchanged
 function FriendCard({ name, imgSrc, owes, isOwed, amount }) {
+
   return (
     <Card className="bg-zinc-800 border-zinc-700 overflow-hidden">
       <CardContent className="p-0">
@@ -146,134 +134,9 @@ FriendCard.propTypes = {
   amount: PropTypes.number
 }
 
-// ProfileDropdown Component remains unchanged
-function ProfileDropdown() {
-  const navigate = useNavigate();
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [showLogoutModal, setshowLogoutModal] = useState(false);
-  const [error, setError] = useState(null);
-
-  // Add this handler function for profile navigation
-  const handleProfileClick = () => {
-    navigate('/profile');
-  };
-
-  const handleLogout = async() => {
-    setIsLoggingOut(true);
-    try {
-      const checkTokens = await renewTokens();
-      
-      if(!checkTokens) {
-        navigate('/login');
-        return;
-      }
-      
-      const accessToken = Cookies.get("accessToken");
-      const response = await fetch('http://127.0.0.1:8000/api/logout/', {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ access_token: accessToken })
-      });
-
-      if(!response.ok) {
-        throw new Error("Failed to logout");
-      }
-
-      // Clear cookies and navigate
-      Cookies.remove('accessToken');
-      Cookies.remove('idToken');
-      Cookies.remove('refreshToken');
-      navigate('/login');
-    } catch (error) {
-      console.error("Error logging out:", error);
-      setError("Failed to logout. Please try again later.");
-    } finally {
-      setIsLoggingOut(false);
-      setshowLogoutModal(false);
-    }
-  };
-
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-          <Avatar className="h-10 w-10">
-            <AvatarImage src="/placeholder.svg?height=40&width=40" alt="User" />
-            <AvatarFallback className="bg-purple-900/50 text-white">JD</AvatarFallback>
-          </Avatar>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56 bg-zinc-800 border-zinc-700 text-white" align="end">
-        <DropdownMenuLabel>My Account</DropdownMenuLabel>
-        <DropdownMenuSeparator className="bg-zinc-700" />
-        <DropdownMenuItem 
-          className="hover:bg-zinc-700 cursor-pointer"
-          onClick={handleProfileClick}
-        >
-          <User className="mr-2 h-4 w-4" />
-          <span>Profile</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem className="hover:bg-zinc-700 cursor-pointer">
-          <Wallet className="mr-2 h-4 w-4" />
-          <span>Billing</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem className="hover:bg-zinc-700 cursor-pointer">
-          <Settings className="mr-2 h-4 w-4" />
-          <span>Settings</span>
-        </DropdownMenuItem>
-        <DropdownMenuSeparator className="bg-zinc-700" />
-        <DropdownMenuItem 
-          className="hover:bg-zinc-700 cursor-pointer text-red-400"
-          onClick={() => setshowLogoutModal(true)}
-          disabled={isLoggingOut}
-        >
-          <LogOut className="mr-2 h-4 w-4" />
-          <span>{isLoggingOut ? "Logging out..." : "Log out"}</span>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-      {showLogoutModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-zinc-900 border border-zinc-700 rounded-lg p-6 max-w-sm w-full">
-            <h3 className="text-xl font-bold mb-4">Log Out</h3>
-            <p className="text-gray-400 mb-6">Are you sure you want to log out?</p>
-            
-            {error && (
-              <div className="mb-4 p-3 bg-red-900/30 border border-red-800 text-red-200 rounded-md">
-                {error}
-              </div>
-            )}
-            
-            <div className="flex justify-end gap-3">
-              <Button 
-                variant="outline" 
-                onClick={() => setshowLogoutModal(false)}
-                className="border-zinc-700 bg-zinc-800 hover:bg-zinc-700"
-                disabled={isLoggingOut}
-              >
-                Cancel
-              </Button>
-              <Button 
-                onClick={handleLogout}
-                className="bg-red-600 hover:bg-red-700"
-                disabled={isLoggingOut}
-              >
-                {isLoggingOut ? "Logging out..." : "Log out"}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-    </DropdownMenu>
-  )
-}
-
-ProfileDropdown.propTypes = {
-  // Add any props if needed
-}
 
 export default function Dashboard() {
+  const navigate = useNavigate()
   const [billSummary, setBillSummary] = useState({
     totalBill: 0,
     youOwe: 0,
@@ -281,6 +144,12 @@ export default function Dashboard() {
   })
   const [recentActivity, setRecentActivity] = useState([])
   const [friends, setFriends] = useState([])
+  const [showLogoutModal, setShowLogoutModal] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [error, setError] = useState("")
+  
+  // API URL from environment variable or fallback
+  const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api'
 
   useEffect(() => {
     fetchDashboardData()
@@ -322,8 +191,78 @@ export default function Dashboard() {
     }
   }
 
+  const LogoutConfirmationModal = () => (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4">
+        <div className="flex items-center justify-center mb-4 text-red-600">
+          <AlertTriangle size={48} />
+        </div>
+        <h3 className="text-xl font-bold text-center mb-4">Logout</h3>
+        <p className="text-gray-600 text-center mb-6">
+        Are you sure you want to logout?
+        </p>
+        <div className="flex gap-4">
+          <button
+            onClick={() => setShowLogoutModal(false)}
+            className="flex-1 py-2 px-4 rounded-lg border border-zinc-700 bg-zinc-800 text-white hover:bg-zinc-700"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            className="flex-1 py-2 px-4 rounded-lg bg-red-600 text-white hover:bg-red-700 
+                     disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoggingOut ? "Signing out..." : "Logout"}
+          </button>
+        </div>
+        {error && <p className="mt-4 text-red-500 text-center">{error}</p>}
+      </div>
+    </div>
+  );
+  
+  const handleLogout = async() => {
+    setIsLoggingOut(true);
+    try {
+      const checkTokens = await renewTokens();
+      
+      if(!checkTokens) {
+        navigate('/login');
+        return;
+      }
+      
+      const accessToken = Cookies.get("accessToken");
+      const response = await fetch(`${API_URL}/logout/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ access_token: accessToken })
+      });
+
+      if(!response.ok) {
+        throw new Error("Failed to logout");
+      }
+
+      // Clear cookies and navigate
+      Cookies.remove('accessToken');
+      Cookies.remove('idToken');
+      Cookies.remove('refreshToken');
+      navigate('/login');
+    } catch (error) {
+      console.error("Error logging out:", error);
+      setError("Failed to logout. Please try again later.");
+    } finally {
+      setIsLoggingOut(false);
+      setShowLogoutModal(false);
+    }
+  };
+
   return (
     <PageLayout>
+      {showLogoutModal && <LogoutConfirmationModal />}
+      
       {/* Header */}
       <Header className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-sm py-4">
         <Logo />
@@ -336,7 +275,7 @@ export default function Dashboard() {
             <DollarSign className="h-4 w-4 mr-2" />
             <span className="hidden sm:inline">New Payment</span>
           </Button>
-          <ProfileDropdown />
+          <ProfileDropdown onLogout={() => setShowLogoutModal(true)} />
         </div>
       </Header>
 
