@@ -140,3 +140,41 @@ class ResetProfilePictureSerializer(serializers.Serializer):
             'blank': 'ID token cannot be blank'
         }
     )
+
+class ExpenseCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Expense
+        fields = ['group_id', 'friend_id', 'paid_by', 'total_amount', 
+                 'description', 'deadline', 'receipt_url']
+    
+    def create(self, validated_data):
+        # Auto-generate ID and set remaining_amount equal to total_amount initially
+        validated_data['id'] = str(uuid.uuid4())
+        validated_data['remaining_amount'] = validated_data['total_amount']
+        return super().create(validated_data)
+    
+class ExpenseUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Expense
+        fields = ['description', 'deadline', 'receipt_url', 'remaining_amount', 'total_amount']
+    
+class ExpenseListSerializer(serializers.ModelSerializer):
+    paid_by = serializers.CharField(source='paid_by.full_name', read_only=True)
+    friend_name = serializers.CharField(source='friend_id.full_name', read_only=True)
+    group_bane = serializers.CharField(source='group_id.name', read_only=True)
+
+    class Meta:
+        model = Expense
+        fields = ['id', 'paid_by_name', 'friend_name', 'group_name', 
+                 'total_amount', 'remaining_amount', 'description', 
+                 'created_at', 'deadline']
+
+class ExpensePaymentSerializer(serializers.Serializer):
+    expense_id = serializers.CharField(required=True)
+    amount = serializers.DecimalField(max_digits=10, decimal_places=2, required=True)
+    id_token = serializers.CharField(required=True)
+
+    def validate_amount(self, value):
+        if value <= 0:
+            raise serializers.ValidationError('Amount must be greater than zero')
+        return value
