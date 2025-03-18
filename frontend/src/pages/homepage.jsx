@@ -18,13 +18,13 @@ export default function Home() {
           <span className="font-bold text-xl">CliquePay</span>
         </div>
         <nav className="hidden md:flex items-center gap-8">
-          <a href="#features" className="text-gray-300 hover:text-white transition-colors">
+          <a href="#features" className="!text-white hover:!text-gray-300 transition-colors">
             Features
           </a>
-          <a href="#how-it-works" className="text-gray-300 hover:text-white transition-colors">
+          <a href="#how-it-works" className="!text-white hover:!text-gray-300 transition-colors">
             How it works
           </a>
-          <a href="#pricing" className="text-gray-300 hover:text-white transition-colors">
+          <a href="#pricing" className="!text-white hover:!text-gray-300 transition-colors">
             Pricing
           </a>
         </nav>
@@ -53,10 +53,10 @@ export default function Home() {
             <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-purple-600 bg-clip-text text-transparent">
               Split bills with friends, effortlessly
             </h1>
-            <p className="text-xl text-gray-400 mb-8 max-w-md">
+            <p className="text-xl text-gray-400 mb-8 max-w-md mx-auto text-center">
               CliquePay makes it easy to split expenses, track debts, and settle up with friends and family.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button 
                 variant="primary"
                 className="bg-purple-600 hover:bg-purple-700 text-lg px-8 py-6"
