@@ -140,3 +140,10 @@ class ResetProfilePictureSerializer(serializers.Serializer):
             'blank': 'ID token cannot be blank'
         }
     )
+
+class GetDirectMessagesSerializer(serializers.Serializer):
+    id_token = serializers.CharField(required=True)
+
+class GetGroupMessagesSerializer(serializers.Serializer):
+    id_token = serializers.CharField(required=True)
+    group_id = serializers.CharField(required=True)

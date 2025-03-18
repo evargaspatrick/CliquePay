@@ -110,6 +110,16 @@ def api_root(request, format=None):
                 'method': 'POST',
                 'description': 'resets profile photo to default one.'
             },
+            'get-direct-messages': {
+                'url': reverse('get_direct_messages', request=request, format=format),
+                'method': 'POST',
+                'description': 'get direct messages.'
+            },
+            'get-group-messages': {
+                'url': reverse('get_group_messages', request=request, format=format),
+                'method': 'POST',
+                'description': 'get group messages.'
+            }
         },
         'version': 'development',
         'status': 'online',
@@ -826,6 +836,63 @@ def reset_profile_picture(request):
         return Response(getId, status=status.HTTP_401_UNAUTHORIZED)
 
     return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def get_direct_messages(request):
+    """
+    Get direct messages belonging to a user.
+
+    Request Body:
+    {
+        id_token: "your-id-token",
+    }
+    """
+    serializer = serializers.GetDirectMessagesSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        decoded = cognito.get_user_id(serializer.validated_data['id_token'])
+        if decoded['status'] == 'SUCCESS':
+            db = DatabaseService()
+            result = db.get_direct_messages(decoded['user_sub'])
+            if result['status'] == 'SUCCESS':
+                return JsonResponse(result, status=status.HTTP_200_OK)
+            return JsonResponse(result, status=status.HTTP_400_BAD_REQUEST)
+        return JsonResponse(decoded, status=status.HTTP_401_UNAUTHORIZED)
+    
+    return JsonResponse({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def get_group_messages(request):
+    """
+    Get group messages belonging to a user.
+    
+    Request Body:
+
+    {
+        id_token: "your-id-token",
+        group_id: "your-group-id"
+    }
+    """
+    serializer = serializers.GetGroupMessagesSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        decoded = cognito.get_user_id(serializer.validated_data['id_token'])
+        if decoded['status'] == 'SUCCESS':
+            db = DatabaseService()
+            result = db.get_group_messages(decoded['user_sub'], serializer.validated_data['group_id'])
+            if result['status'] == 'SUCCESS':
+                return JsonResponse(result, status=status.HTTP_200_OK)
+            return JsonResponse(result, status=status.HTTP_400_BAD_REQUEST)
+        return JsonResponse(decoded, status=status.HTTP_401_UNAUTHORIZED)
+    return JsonResponse({
         'status': 'error',
         'message': 'Invalid input',
         'errors': serializer.errors

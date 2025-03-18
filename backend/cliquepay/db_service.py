@@ -475,3 +475,105 @@ class DatabaseService:
                 'message': str(e)
             }
     
+    @staticmethod
+    def get_direct_messages(cognito_id):
+        '''
+        Get user DMs, new and old.
+        Args:
+            cognito_id (str): Cognito user ID
+        Returns:
+            dict: Status of the get operation
+        '''
+        try:
+            user = User.objects.get(cognito_id=cognito_id)
+            messages = DirectMessage.objects.filter(
+                models.Q(sender=user) | models.Q(recipient=user)
+            ).select_related('sender', 'recipient')
+
+            messages_list = []
+
+            for message in messages:
+                messages_list.append({
+                    'message_id': message.id,
+                    'sender_id': message.sender.id,
+                    'sender_name': message.sender.full_name,
+                    'recipient_id': message.recipient.id,
+                    'recipient_name': message.recipient.full_name,
+                    'content': message.content,
+                    'message_type': message.message_type,
+                    'file_url': message.file_url,
+                    'created_at': message.created_at,
+                    'is_read': message.is_read,
+                    'read_at': message.read_at
+                })
+
+            return {
+                'status': 'SUCCESS',
+                'messages': messages_list
+            }
+        except User.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'User not found'
+            }
+        except Exception as e:
+            return {
+                'status': 'ERROR',
+                'message': str(e)
+            }
+
+    @staticmethod
+    def get_group_messages(cognito_id, group_id):
+        '''
+        Get group messages, new and old.
+        Args:
+            cognito_id (str): Cognito user ID
+            group_id (str): Group ID
+        Returns:
+            dict: Status of the get operation
+        '''
+        try:
+            user = User.objects.get(cognito_id=cognito_id)
+            group = Group.objects.get(id=group_id)
+            is_member = GroupMember.objects.filter(user=user, group=group).exists()
+            if(is_member):
+                messages = GroupMessage.objects.filter(group=group).select_related('sender', 'group')
+                message_list = []
+                for message in messages:
+                    message_list.append({
+                        'message_id': message.id,
+                        'sender_id': message.sender.id,
+                        'sender_name': message.sender.full_name,
+                        'group_id': message.group.id,
+                        'group_name': message.group.name,
+                        'content': message.content,
+                        'message_type': message.message_type,
+                        'file_url': message.file_url,
+                        'created_at': message.created_at,
+                        'is_deleted': message.is_deleted
+                    })
+                return {
+                    'status': 'SUCCESS',
+                    'messages': message_list
+                }
+            else:
+                return {
+                    'status': 'ERROR',
+                    'message': 'User is not a member of the group'
+                }
+        except User.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'User not found'
+            }
+        except Group.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'Group not found'
+            }
+        except Exception as e:
+            return {
+                'status': 'ERROR',
+                'message': str(e)
+            }
+        

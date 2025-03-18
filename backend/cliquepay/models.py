@@ -102,8 +102,7 @@ class GroupMember(models.Model):
             models.UniqueConstraint(
                 fields=['user', 'group'],
                 name='unique_group_membership'
-            )
-        ]
+            )        ]
 
     def __str__(self):
         return f"{self.user.full_name} in {self.group.name}"
