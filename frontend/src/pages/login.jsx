@@ -188,9 +188,9 @@ export default function Login() {
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
                     >
                       {showPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
                         <Eye className="h-4 w-4" />
+                      ) : (
+                        <EyeOff className="h-4 w-4" />
                       )}
                     </button>
                   </div>
