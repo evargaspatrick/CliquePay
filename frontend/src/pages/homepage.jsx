@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { PageLayout, Header, Section, Footer } from "../components/layout/PageLayout";
+import BillSplittingVisualization from "../components/designs/bill-splitting-visualization";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -47,26 +48,27 @@ export default function Home() {
       </Header>
 
       {/* Hero Section */}
-      <Section className="min-h-[calc(100vh-80px)] flex flex-col justify-center py-20 md:py-32">
-        <div className="flex flex-col md:flex-row items-center">
-          <div className="md:w-1/2 mb-10 md:mb-0">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-purple-600 bg-clip-text text-transparent">
+      <Section className="min-h-[calc(100vh-80px)] flex flex-col justify-center py-12 md:py-16">
+        <div className="flex flex-col md:flex-row items-center relative">
+          {/* Left column - Text content */}
+          <div className="md:w-1/2 mb-6 md:mb-0">
+            <h1 className="text-3xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-purple-600 bg-clip-text text-transparent">
               Split bills with friends, effortlessly
             </h1>
-            <p className="text-xl text-gray-400 mb-8 max-w-md mx-auto text-center">
+            <p className="text-lg text-gray-400 mb-6 max-w-md mx-auto text-center">
               CliquePay makes it easy to split expenses, track debts, and settle up with friends and family.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button 
                 variant="primary"
-                className="bg-purple-600 hover:bg-purple-700 text-lg px-8 py-6"
+                className="bg-purple-600 hover:bg-purple-700 text-lg px-6 py-5"
                 onClick={() => navigate('/signup')}
               >
                 Get Started
               </Button>
               <Button 
                 variant="outline" 
-                className="text-lg px-8 py-6"
+                className="text-lg px-6 py-5"
                 onClick={() => {
                   document.getElementById('features').scrollIntoView({
                     behavior: 'smooth'
@@ -77,13 +79,14 @@ export default function Home() {
               </Button>
             </div>
           </div>
-          <div className="md:w-1/2 relative">
-            <div className="bg-gradient-to-r from-purple-900/20 to-purple-600/20 rounded-2xl p-4 md:p-8 relative z-10">
-              <img
-                src="/images/CliquePay Logo.png"
-                alt="CliquePay App Interface"
-                className="rounded-xl shadow-2xl border border-purple-900/50 w-full max-w-[400px] mx-auto"
-              />
+          
+          {/* Empty placeholder to maintain layout */}
+          <div className="md:w-1/2"></div>
+          
+          {/* Absolutely positioned visualizer overlay */}
+          <div className="absolute top-0 right-0 md:right-0 w-full md:w-1/2 h-full flex items-center justify-center pointer-events-none">
+            <div className="w-9/12 md:w-8/12 relative z-10">
+              <BillSplittingVisualization />
             </div>
             <div className="absolute -bottom-6 -right-6 w-64 h-64 bg-purple-600/20 rounded-full blur-3xl -z-10"></div>
             <div className="absolute -top-6 -left-6 w-64 h-64 bg-purple-900/20 rounded-full blur-3xl -z-10"></div>
