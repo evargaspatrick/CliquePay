@@ -474,3 +474,4 @@ class DatabaseService:
                 'status': 'ERROR',
                 'message': str(e)
             }
+    

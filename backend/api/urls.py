@@ -22,4 +22,6 @@ urlpatterns = [
     path('api/block-user/',views.block_user, name='block_user'),
     path('api/update-profile-photo/',views.upload_profile_picture, name='update_profile_photo'),
     path('api/reset-profile-photo/',views.reset_profile_picture, name='reset_profile_photo'),
+    path('api/create-expense/', views.create_expense, name='create_expense'),
+    path('api/create-group/', views.create_group, name='create_group'),
 ]

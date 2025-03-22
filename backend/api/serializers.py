@@ -1,5 +1,6 @@
 from rest_framework import serializers
-
+import uuid
+from cliquepay.models import Expense, Group, User, GroupMember, ExpenseSplit
 class UserRegistrationSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=255, required=True)
     fullname = serializers.CharField(max_length=255, required=True)
@@ -141,17 +142,143 @@ class ResetProfilePictureSerializer(serializers.Serializer):
         }
     )
 
+class GroupCreateSerializer(serializers.ModelSerializer):
+    members = serializers.ListField(
+        child=serializers.CharField(),
+        required=False,
+        write_only=True
+    )
+    
+    class Meta:
+        model = Group
+        fields = ['name', 'created_by', 'members', 'created_at']
+        read_only_fields = ['created_at']
+
+    def create(self, validated_data):
+        # Get and remove members
+        members_id = validated_data.pop('members', [])
+        created_by = validated_data.get('created_by')
+
+        # Generate ID if needed
+        if 'id' not in validated_data:
+            validated_data['id'] = str(uuid.uuid4())
+        
+        # Create the group
+        group = Group.objects.create(**validated_data)
+        if created_by and created_by.id not in members_id:
+            members_id.append(created_by.id)
+        # Add members
+        for member_id in members_id:
+            try:
+                user = User.objects.get(id=member_id)
+                GroupMember.objects.create(
+                    group=group,
+                    user=user
+                )
+                print(f"Added member {user.full_name} to group {group.name}")
+            except User.DoesNotExist:
+                print(f"User with ID {member_id} not found, skipping")
+            except Exception as e:
+                print(f"Error adding member {member_id}: {str(e)}")
+        
+        return group
+
 class ExpenseCreateSerializer(serializers.ModelSerializer):
+
+    group_id = serializers.PrimaryKeyRelatedField(
+        queryset=Group.objects.all(),
+        required=False)
+    friend_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),
+        required=False)
+    
     class Meta:
         model = Expense
         fields = ['group_id', 'friend_id', 'paid_by', 'total_amount', 
                  'description', 'deadline', 'receipt_url']
     
+    def validate(self, data):
+        """
+            Check that exactly one of group_id or friend_id is provided.
+        """
+
+        if 'group_id' in data and 'friend_id' in data:
+            raise serializers.ValidationError('Only one of group_id or friend_id is required')
+        if 'group_id' not in data and 'friend_id' not in data:
+            raise serializers.ValidationError('One of group_id or friend_id is required')
+        
+        return data
+
     def create(self, validated_data):
-        # Auto-generate ID and set remaining_amount equal to total_amount initially
-        validated_data['id'] = str(uuid.uuid4())
-        validated_data['remaining_amount'] = validated_data['total_amount']
-        return super().create(validated_data)
+        expense_id = str(uuid.uuid4())
+
+
+        group_id = validated_data.pop('group_id', None).id if 'group_id' in validated_data else None
+        friend_id = validated_data.pop('friend_id', None).id if 'friend_id' in validated_data else None
+        paid_by_id = validated_data.pop('paid_by').id if 'paid_by' in validated_data else None
+
+        
+        expense = Expense.objects.create(
+            id=expense_id,
+            friend_id=friend_id,
+            group_id=group_id,
+            paid_by_id=paid_by_id,
+            remaining_amount=validated_data['total_amount'],
+            **validated_data
+        )
+
+        # Splitting the expense amount among group members or a friend
+        if group_id:
+            print(f"Group ID: {group_id}")
+            group_members = GroupMember.objects.filter(group_id=group_id)
+            member_count = group_members.count()
+
+            if member_count > 0:
+                print(member_count)
+                split_amount = validated_data['total_amount'] / member_count
+                
+                for member in group_members:
+                    if member.user_id != paid_by_id:
+                        ExpenseSplit.objects.create(
+                            id=str(uuid.uuid4()),
+                            expense_id=expense_id,
+                            user_id=member.user_id,
+                            total_amount=split_amount ,
+                            remaining_amount=split_amount
+                        )
+                    else: 
+                        ExpenseSplit.objects.create(
+                            id=str(uuid.uuid4()),
+                            expense_id=expense_id,
+                            user_id=member.user_id,
+                            total_amount=split_amount,
+                            remaining_amount=split_amount,
+                            is_paid=True
+                        )
+        
+        if friend_id:
+            if friend_id != paid_by_id:
+                ExpenseSplit.objects.create(
+                    id=str(uuid.uuid4()),
+                    expense_id=expense_id,
+                    user_id=friend_id,
+                    total_amount=validated_data['total_amount'] / 2,
+                    remaining_amount=validated_data['total_amount'] / 2
+                )
+            else:
+                ExpenseSplit.objects.create(
+                    id=str(uuid.uuid4()),
+                    expense_id=expense_id,
+                    user_id=member.user_id,
+                    total_amount=split_amount,
+                    remaining_amount=split_amount,
+                    is_paid=True
+                )
+
+        
+        expense.save()
+
+        return expense
     
 class ExpenseUpdateSerializer(serializers.ModelSerializer):
     class Meta:

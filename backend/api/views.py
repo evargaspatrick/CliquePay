@@ -7,6 +7,10 @@ from cliquepay.aws_cognito import CognitoService
 from cliquepay.db_service import DatabaseService
 from .serializers import *
 from cliquepay.storage_service import CloudStorageService
+import logging
+
+logger = logging.getLogger(__name__)
+
 @api_view(['GET'])
 def api_root(request, format=None):
     """
@@ -110,6 +114,16 @@ def api_root(request, format=None):
                 'method': 'POST',
                 'description': 'resets profile photo to default one.'
             },
+            'create-expense': {
+                'url': reverse('create_expense', request=request, format=format),
+                'method': 'POST',
+                'description': 'creates a new expense record in the database.'
+            },
+            'create-group': {
+                'url': reverse('create_group', request=request, format=format),
+                'method': 'POST',
+                'description': 'creates a new group with the authenticated user as the owner.'
+            }
         },
         'version': 'development',
         'status': 'online',
@@ -830,3 +844,79 @@ def reset_profile_picture(request):
         'message': 'Invalid input',
         'errors': serializer.errors
     }, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+def create_group(request):
+    """
+    Create a new group with the authenticated user as the owner.
+    Request Body:
+    {
+        "id_token": "user-id"
+        "name": "Group Name",
+        "created_by": "user-id",
+        "members": ["user-id-1", "user-id-2", ...]
+    }
+    """
+
+    request_data = request.data.copy()
+    serializer = GroupCreateSerializer(data=request_data)
+    is_valid = serializer.is_valid()
+    
+    if not is_valid:
+        return Response({
+            "status": "Returned",
+            "errors": serializer.errors if not is_valid else None
+    })
+
+    serializer.save()
+    
+    return Response({
+        "status": "Returned",
+    })
+
+
+
+@api_view(['POST'])
+def create_expense(request):
+    """
+    Create a new expense record in the database.
+    
+    Request Body:
+    {
+        "group_id": "group-id" OR "friend_id": "friend-id",
+        "total_amount": 100.00,
+        "description": "Expense description",
+        "paid_by": "user-id",
+        "deadline": "2021-12-31",  # Optional
+        "receipt_url": "https://example.com/receipt.jpg"  # Optional
+    }
+    
+    Returns:
+    - 201: Successfully created expense with expense details
+    - 400: Validation error with detailed error messages
+    - 403: Permission denied if user doesn't have access to the group
+    """
+
+    request_data = request.data.copy()
+
+    serializer = ExpenseCreateSerializer(data=request_data)
+    is_valid = serializer.is_valid()
+
+    if not is_valid:
+        return Response({
+            "status": "Returned",
+            "errors": serializer.errors if not is_valid else None
+        })
+    
+    serializer.save()
+    
+    return Response(
+        {
+            "status": "success",
+            "message": "Expense created successfully",
+            "expense": serializer.data
+        },
+        status=status.HTTP_201_CREATED
+    )
+
