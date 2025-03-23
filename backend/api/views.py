@@ -949,7 +949,6 @@ def get_expenses(request):
 
     
     try:
-
         user_id = request.data.get('user_id')
         if not user_id:
             return Response({
@@ -962,7 +961,6 @@ def get_expenses(request):
         ).distinct()
         
         serializer = ExpenseGetSerializer(data=expenses, many=True)
-
         serializer.is_valid()
 
         
@@ -987,24 +985,107 @@ def update_expense(request):
     Request Body:
     {
         "expense_id": "expense-id",
-        "total_amount": 100.00,
-        "description": "Expense description",
-        "deadline": "2021-12-31","
-        "receipt_url": "https://example.com/receipt.jpg",
-        "remaining_amount": 50.00
+        "user_id": "user-id",
+        "total_amount": 100.00,       # Optional
+        "description": "Updated description",  # Optional
+        "deadline": "2021-12-31",     # Optional
+        "receipt_url": "https://example.com/receipt.jpg",  # Optional
+        "remaining_amount": 50.00     # Optional
     }
     """
+    try:
+        expense_id = request.data.get('expense_id')
+        user_id = request.data.get('user_id')
+        if not expense_id:
+            return Response({
+                "status": "error",
+                "message": "expense_id is required"
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
+        # Get the expense object
+        try:
+            expense = Expense.objects.get(id=expense_id)
+        except Expense.DoesNotExist:
+            return Response({
+                "status": "error",
+                "message": "Expense not found"
+            }, status=status.HTTP_404_NOT_FOUND)
+            
+        # Check if user has permission to update
+        if user_id != expense.paid_by_id:
+            return Response({
+                "status": "error",
+                "user_id": user_id,
+                "message": "You don't have permission to update this expense"
+            }, status=status.HTTP_403_FORBIDDEN)
+            
 
-    expense = Expense.objects.get(id=request.data.get('expense_id'))
+        serializer = ExpenseUpdateSerializer(
+            instance=expense,
+            data=request.data,
+            partial=True 
+        )
+        
+        if not serializer.is_valid():
+            return Response({
+                "status": "error",
+                "errors": serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
+        
+        # If total_amount changed, update the splits proportionally
+        if 'total_amount' in request.data and request.data['total_amount'] != expense.total_amount:
+            old_amount = float(expense.total_amount)
+            new_amount = float(request.data['total_amount'])
+            ratio = new_amount / old_amount
+            
+            # Update each split amount
+            splits = ExpenseSplit.objects.filter(expense_id=expense_id)
+            for split in splits:
+                split.total_amount = split.total_amount * ratio
+                split.remaining_amount = split.remaining_amount * ratio
+                split.save()
+        serializer.save()
+    
+        return Response({
+            "status": "success",
+            "message": "Expense updated successfully",
+            "expense": serializer.data
+        }, status=status.HTTP_200_OK)
+            
+    except Exception as e:
+        return Response({
+            "status": "error",
+            "message": f"Error updating expense: {str(e)}"
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+def get_expense_detail(request, expense_id):
+    """Get detailed information about a specific expense"""
+    # Return expense details with all splits and payments
 
 
-    serializers = ExpenseUpdateSerializer(instance=expense, data=request.data, partial=True)
+@api_view(['POST'])
+def record_payment(request):
+    """Record a payment for an expense split"""
+    # Update the expense split with payment info
+    # Update expense remaining amount
 
-    serializers.is_valid()
-    serializers.save()
+@api_view(['DELETE'])
+def delete_expense(request, expense_id):
+    """Delete an expense and its related splits"""
+    # Check permissions
+    # Delete expense and related records
 
-    return Response({
-        "status": "Returned",
-        "message": "Expense updated successfully",
-        "expense": serializers.data
-    })
+@api_view(['GET'])
+def get_user_balance(request, user_id):
+    """Get summary of user's financial position"""
+    # Calculate total owed to others
+    # Calculate total others owe user
+    # Return net balance
+
+@api_view(['GET'])
+def get_settlement_summary(request, group_id=None):
+    """Get optimized settlement instructions for a group"""
+    # Calculate most efficient way to settle balances
+    # Return list of who pays whom and how much
