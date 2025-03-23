@@ -25,5 +25,8 @@ urlpatterns = [
     path('api/create-expense/', views.create_expense, name='create_expense'),
     path('api/get-expenses/', views.get_expenses, name='get_expenses'),
     path('api/update-expense/', views.update_expense, name='update_expense'),
-    path('api/create-group/', views.create_group, name='create_group'),   
+    path('api/get-expense-detail/', views.get_expense_detail, name='get_expense_detail'),
+
+    path('api/create-group/', views.create_group, name='create_group'),
+
 ]

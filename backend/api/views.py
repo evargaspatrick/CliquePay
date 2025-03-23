@@ -134,7 +134,12 @@ def api_root(request, format=None):
                 'url': reverse('update_expense', request=request, format=format),
                 'method': 'PATCH',
                 'description': 'updates an existing expense record in the database.'
-            }
+            },
+            'get-expense-detail': {
+                'url': reverse('get_expense_details', request=request, format=format),
+                'method': 'GET',
+                'description': 'gets the details of a specific expense record.'
+            },
         },
         'version': 'development',
         'status': 'online',
@@ -1060,9 +1065,32 @@ def update_expense(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])
-def get_expense_detail(request, expense_id):
-    """Get detailed information about a specific expense"""
-    # Return expense details with all splits and payments
+def get_expense_detail(request):
+    """
+    Get detailed information about a specific expense
+    
+    Request Body:
+    {
+        "expense_id": "expense-id"
+    }
+
+    """
+    try:
+        expense_id = request.data.get('expense_id')
+        expense = Expense.objects.get(id=expense_id)
+        serializer = ExpenseGetSerializer(expense)
+        return Response({
+            "status": "Returned",
+            "message": "Expense fetched successfully",
+            "expense": serializer.data
+        })
+
+    except Exception as e:
+        return Response({
+            "status": "Returned",
+            "message": "Error fetching expense",
+            "error": str(e)
+        })
 
 
 @api_view(['POST'])
