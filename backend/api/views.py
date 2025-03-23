@@ -130,6 +130,11 @@ def api_root(request, format=None):
                 'method': 'GET',
                 'description': 'gets a list of expenses for a group or friend.'
             },
+            'update-expense': {
+                'url': reverse('update_expense', request=request, format=format),
+                'method': 'PATCH',
+                'description': 'updates an existing expense record in the database.'
+            }
         },
         'version': 'development',
         'status': 'online',
@@ -973,3 +978,33 @@ def get_expenses(request):
             "message": "Error fetching expenses",
             "error": str(e)
         })
+
+@api_view(['PUT', 'PATCH'])
+def update_expense(request):
+    """
+    Update an existing expense record in the database.
+    
+    Request Body:
+    {
+        "expense_id": "expense-id",
+        "total_amount": 100.00,
+        "description": "Expense description",
+        "deadline": "2021-12-31","
+        "receipt_url": "https://example.com/receipt.jpg",
+        "remaining_amount": 50.00
+    }
+    """
+
+    expense = Expense.objects.get(id=request.data.get('expense_id'))
+
+
+    serializers = ExpenseUpdateSerializer(instance=expense, data=request.data, partial=True)
+
+    serializers.is_valid()
+    serializers.save()
+
+    return Response({
+        "status": "Returned",
+        "message": "Expense updated successfully",
+        "expense": serializers.data
+    })

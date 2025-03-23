@@ -24,5 +24,6 @@ urlpatterns = [
     path('api/reset-profile-photo/',views.reset_profile_picture, name='reset_profile_photo'),
     path('api/create-expense/', views.create_expense, name='create_expense'),
     path('api/get-expenses/', views.get_expenses, name='get_expenses'),
-    path('api/create-group/', views.create_group, name='create_group'),
+    path('api/update-expense/', views.update_expense, name='update_expense'),
+    path('api/create-group/', views.create_group, name='create_group'),   
 ]

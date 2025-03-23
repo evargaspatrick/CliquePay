@@ -281,7 +281,7 @@ class ExpenseCreateSerializer(serializers.ModelSerializer):
 class ExpenseUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Expense
-        fields = ['description', 'deadline', 'receipt_url', 'remaining_amount', 'total_amount']
+        fields = ['description', 'total_amount', 'deadline', 'receipt_url', 'remaining_amount', 'total_amount']
     
 class ExpenseGetSerializer(serializers.ModelSerializer):
     paid_by = serializers.CharField(source='paid_by.full_name', read_only=True)
