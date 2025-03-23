@@ -8,6 +8,7 @@ from cliquepay.db_service import DatabaseService
 from .serializers import *
 from cliquepay.storage_service import CloudStorageService
 import logging
+from django.db import models
 
 logger = logging.getLogger(__name__)
 
@@ -123,7 +124,12 @@ def api_root(request, format=None):
                 'url': reverse('create_group', request=request, format=format),
                 'method': 'POST',
                 'description': 'creates a new group with the authenticated user as the owner.'
-            }
+            },
+            'get-expenses': {
+                'url': reverse('get_expenses', request=request, format=format),
+                'method': 'GET',
+                'description': 'gets a list of expenses for a group or friend.'
+            },
         },
         'version': 'development',
         'status': 'online',
@@ -920,3 +926,50 @@ def create_expense(request):
         status=status.HTTP_201_CREATED
     )
 
+@api_view(['GET'])
+def get_expenses(request):
+    """
+    Get a list of expenses for a group or friend.
+    
+    Request Body:
+    {
+        "user_id": "user-id"
+    }
+    
+    Returns:
+    - 200: Successfully fetched expenses with expense details
+    - 400: Validation error with detailed error messages
+    - 403: Permission denied if user doesn't have access to the group
+    """
+
+    
+    try:
+
+        user_id = request.data.get('user_id')
+        if not user_id:
+            return Response({
+                "status": "error",
+                "message": "user_id is required"
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        expenses = Expense.objects.filter(
+            models.Q(paid_by_id=user_id)
+        ).distinct()
+        
+        serializer = ExpenseGetSerializer(data=expenses, many=True)
+
+        serializer.is_valid()
+
+        
+        return Response({
+            "status": "Returned",
+            "message": "Expenses fetched successfully",
+            "expenses": serializer.data
+        })
+
+    except Exception as e:
+        return Response({
+            "status": "Returned",
+            "message": "Error fetching expenses",
+            "error": str(e)
+        })

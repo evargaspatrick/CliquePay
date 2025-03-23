@@ -229,12 +229,10 @@ class ExpenseCreateSerializer(serializers.ModelSerializer):
 
         # Splitting the expense amount among group members or a friend
         if group_id:
-            print(f"Group ID: {group_id}")
             group_members = GroupMember.objects.filter(group_id=group_id)
             member_count = group_members.count()
 
             if member_count > 0:
-                print(member_count)
                 split_amount = validated_data['total_amount'] / member_count
                 
                 for member in group_members:
@@ -285,14 +283,14 @@ class ExpenseUpdateSerializer(serializers.ModelSerializer):
         model = Expense
         fields = ['description', 'deadline', 'receipt_url', 'remaining_amount', 'total_amount']
     
-class ExpenseListSerializer(serializers.ModelSerializer):
+class ExpenseGetSerializer(serializers.ModelSerializer):
     paid_by = serializers.CharField(source='paid_by.full_name', read_only=True)
     friend_name = serializers.CharField(source='friend_id.full_name', read_only=True)
-    group_bane = serializers.CharField(source='group_id.name', read_only=True)
+    group_name = serializers.CharField(source='group_id.name', read_only=True)
 
     class Meta:
         model = Expense
-        fields = ['id', 'paid_by_name', 'friend_name', 'group_name', 
+        fields = ['id', 'paid_by', 'friend_name', 'group_name', 
                  'total_amount', 'remaining_amount', 'description', 
                  'created_at', 'deadline']
 
