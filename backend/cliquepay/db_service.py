@@ -82,7 +82,7 @@ class DatabaseService:
         Get all friends efficiently using a single query
         """
         try:
-            user = User.objects.get(id=user_id)
+            user = User.objects.get(cognito_id=user_id)
             friendships = Friendship.objects.filter(
                 models.Q(user1=user) | models.Q(user2=user)
             ).select_related('user1', 'user2', 'action_user')
@@ -93,6 +93,8 @@ class DatabaseService:
                 friends_list.append({
                     'friend_id': friend.id,
                     'friend_name': friend.full_name,
+                    'email': friend.email,
+                    'profile_photo': friend.avatar_url,
                     'status': friendship.status,
                     'initiator': friendship.action_user.id == user_id,
                     'created_at': friendship.created_at

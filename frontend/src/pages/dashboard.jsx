@@ -246,6 +246,10 @@ export default function Dashboard() {
     </div>
   );
   
+  const handleFriendClick = () => {
+    navigate('/friends');
+  };
+
   const handleLogout = async() => {
     setIsLoggingOut(true);
     try {
@@ -416,9 +420,9 @@ export default function Dashboard() {
             <div>
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold">Your Friends</h2>
-                <Button variant="link" className="text-purple-400 hover:text-purple-300 p-0">
+                <Button variant="link" className="text-purple-400 hover:text-purple-300 p-0" onClick={handleFriendClick}>
                   <Users className="h-4 w-4 mr-2" />
-                  Add Friend
+                  Manage Friends
                 </Button>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
