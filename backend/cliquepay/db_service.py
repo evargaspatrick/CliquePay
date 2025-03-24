@@ -576,4 +576,50 @@ class DatabaseService:
                 'status': 'ERROR',
                 'message': str(e)
             }
-        
+    
+    @staticmethod
+    def send_direct_message(sender_id, recipient_id, content, message_type, file_url=None):
+        '''
+        Send a direct message to another user.
+        Args:
+            sender_id (str): ID of the sender
+            recipient_id (str): ID of the recipient
+            content (str): Message content
+            message_type (str): Type of message (text, image, )
+            file_url (str, optional): URL of the file being sent
+        Returns:
+            dict: Status of the send operation
+        '''
+        try:
+                sender = User.objects.get(id=sender_id)
+                recipient = User.objects.get(id=recipient_id)
+                relation = Friendship.objects.filter(   
+                    ((models.Q(user1=sender) & models.Q(user2=recipient)) |
+                    (models.Q(user1=recipient) & models.Q(user2=sender))) &
+                    models.Q(status='Accepted'|'accepted')
+                ).first()
+
+                if(relation):
+                    message = DirectMessage.objects.create(
+                        sender=sender,
+                        recipient=recipient,
+                        content=content,
+                        message_type=message_type,
+                        file_url=file_url
+                    )
+                    return {
+                        'status': 'SUCCESS',
+                        'message': 'Direct message sent successfully',
+                        'message_id': message.id
+                    }
+        except User.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'User not found'
+            }
+        except Exception as e:
+            return {
+                'status': 'ERROR',
+                'message': str(e)
+            }
+    

@@ -142,8 +142,41 @@ class ResetProfilePictureSerializer(serializers.Serializer):
     )
 
 class GetDirectMessagesSerializer(serializers.Serializer):
-    id_token = serializers.CharField(required=True)
+    id_token = serializers.CharField(
+        required=True,
+        error_messages={
+            'required': 'ID token is required',
+            'blank': 'ID token cannot be blank'
+        }
+    )
 
 class GetGroupMessagesSerializer(serializers.Serializer):
-    id_token = serializers.CharField(required=True)
+    id_token = serializers.CharField(
+        required=True,
+        error_messages={
+            'required': 'ID token is required',
+            'blank': 'ID token cannot be blank'
+        }
+    )
     group_id = serializers.CharField(required=True)
+
+class SendDirectMessageSerializer(serializers.Serializer):
+    id_token = serializers.CharField(
+        required=True,
+        error_messages={
+            'required': 'ID token is required',
+            'blank': 'ID token cannot be blank'
+        }
+    )
+    recipient_id = serializers.CharField(required=True)
+    content = serializers.CharField(required=True)
+    MESSAGE_TYPES = [
+        ('TEXT', 'Text'),
+        ('FILE', 'File'),
+        ('IMAGE', 'Image'),
+    ]
+    message_type = serializers.ChoiceField(
+        choices=MESSAGE_TYPES,
+        required=True
+    )
+    file_url = serializers.URLField(required=False)

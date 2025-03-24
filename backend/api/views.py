@@ -119,6 +119,11 @@ def api_root(request, format=None):
                 'url': reverse('get_group_messages', request=request, format=format),
                 'method': 'POST',
                 'description': 'get group messages.'
+            },
+            'send-direct-message': {
+                'url': reverse('send_direct_message', request=request, format=format),
+                'method': 'POST',
+                'description': 'send direct message.'
             }
         },
         'version': 'development',
@@ -888,6 +893,47 @@ def get_group_messages(request):
         if decoded['status'] == 'SUCCESS':
             db = DatabaseService()
             result = db.get_group_messages(decoded['user_sub'], serializer.validated_data['group_id'])
+            if result['status'] == 'SUCCESS':
+                return JsonResponse(result, status=status.HTTP_200_OK)
+            return JsonResponse(result, status=status.HTTP_400_BAD_REQUEST)
+        return JsonResponse(decoded, status=status.HTTP_401_UNAUTHORIZED)
+    return JsonResponse({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+def send_direct_message(request):
+    """
+    Send a direct message to another user.
+    
+    Request Body:
+    {
+        "id_token": "your-id-token",
+        "recipient_id": "recipient-user-id",
+        "content": "Hello there!",
+        "message_type": "TEXT",
+        "file_url (optional)": "https://example.com/file.jpg"
+    }
+
+    NOTE: message_type can only be one of:
+        - TEXT  or Text
+        - FILE  or File
+        - IMAGE or Image
+    """
+    serializer = serializers.SendDirectMessageSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        decoded = cognito.get_user_id(serializer.validated_data['id_token'])
+        if decoded['status'] == 'SUCCESS':
+            db = DatabaseService()
+            result = db.send_direct_message(
+                sender_id=decoded['user_sub'],
+                recipient_id=serializer.validated_data['recipient_id'],
+                content=serializer.validated_data['content'],
+                message_type=serializer.validated_data['message_type'],
+                file_url=serializer.validated_data.get('file_url')
+            )
             if result['status'] == 'SUCCESS':
                 return JsonResponse(result, status=status.HTTP_200_OK)
             return JsonResponse(result, status=status.HTTP_400_BAD_REQUEST)

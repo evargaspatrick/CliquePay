@@ -24,4 +24,5 @@ urlpatterns = [
     path('api/reset-profile-photo/',views.reset_profile_picture, name='reset_profile_photo'),
     path('api/get-direct-messages/',views.get_direct_messages, name='get_direct_messages'),
     path('api/get-group-messages/',views.get_group_messages, name='get_group_messages'),
+    path('api/send-direct-message/',views.send_direct_message, name='send_direct_message'),
 ]
