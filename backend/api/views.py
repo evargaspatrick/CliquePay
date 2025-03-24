@@ -9,6 +9,7 @@ from .serializers import *
 from cliquepay.storage_service import CloudStorageService
 import logging
 from django.db import models
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -140,6 +141,16 @@ def api_root(request, format=None):
                 'method': 'GET',
                 'description': 'gets the details of a specific expense record.'
             },
+            'record-payment': {
+                'url': reverse('record_payment', request=request, format=format),
+                'method': 'POST',
+                'description': 'records a payment for an expense.'
+            },
+            'delete-expense': {
+                'url': reverse('delete_expense', request=request, format=format),
+                'method': 'DELETE',
+                'description': 'deletes an existing expense record from the database.'
+            }
         },
         'version': 'development',
         'status': 'online',
@@ -1095,25 +1106,120 @@ def get_expense_detail(request):
 
 @api_view(['POST'])
 def record_payment(request):
-    """Record a payment for an expense split"""
-    # Update the expense split with payment info
-    # Update expense remaining amount
+    """
+    Record a payment for an expense split
+    
+    Request Body:
+    {
+        "expense_id": "expense-id",
+        "expense_split_id": "expense-split-id",
+        "amount": 50.00,
+    }
+    """
+    expense_id = request.data.get('expense_id')
+    expense_split_id = request.data.get('expense_split_id')
+    amount = request.data.get('amount')
+            
+
+    if not all([expense_id, expense_split_id, amount]):
+        return Response({
+            "status": "error",
+            "message": "Missing required fields"
+        }, status=status.HTTP_400_BAD_REQUEST)
+        
+    try:
+        amount = float(amount)
+        if amount <= 0:
+            return Response({
+                "status": "error",
+                "message": "Amount must be positive"
+            }, status=status.HTTP_400_BAD_REQUEST)
+    except ValueError:
+        return Response({
+            "status": "error",
+            "message": "Amount must be a valid number"
+        }, status=status.HTTP_400_BAD_REQUEST)
+        
+
+    try:
+        expense = Expense.objects.get(id=expense_id)
+        split = ExpenseSplit.objects.get(id=expense_split_id)
+        split.remaining_amount -= amount
+
+        if split.remaining_amount == 0:
+            split.is_paid = True
+        
+        expense.remaining_amount -= amount
+
+        return Response({
+            "status": "success",
+            "message": "Payment recorded successfully",
+            "data": {
+                "payment": {
+                    "amount": amount,
+                    "date": datetime.now().isoformat()
+                },
+                "expense_split": {
+                    "id": split.id,
+                    "remaining_amount": split.remaining_amount,
+                    "is_paid": split.is_paid
+                },
+                "expense": {
+                    "id": expense.id,
+                    "remaining_amount": expense.remaining_amount
+                }
+            }
+        }, status=status.HTTP_200_OK)
+            
+    except Exception as e:
+        return Response({
+            'status': 'error',
+            'message': 'Error recording payment',
+            'error': str(e),
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['DELETE'])
-def delete_expense(request, expense_id):
-    """Delete an expense and its related splits"""
-    # Check permissions
-    # Delete expense and related records
+def delete_expense(request):
+    """
+    Delete an expense and its related splits
+    
+    Request Body:
+    {
+        "expense_id": "expense-id"
+    }
+    """
 
-@api_view(['GET'])
-def get_user_balance(request, user_id):
-    """Get summary of user's financial position"""
-    # Calculate total owed to others
-    # Calculate total others owe user
-    # Return net balance
+    expense_id = request.data.get('expense_id')
+    if not expense_id:
+        return Response({
+            "status": "error",
+            "message": "expense_id is required"
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        expense = Expense.objects.get(id=expense_id)
+        splits = ExpenseSplit.objects.filter(expense_id=expense_id)
+        splits.delete()
+        expense.delete()
+        
+        return Response({
+            "status": "success",
+            "message": "Expense deleted successfully"
+        }, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({
+            "status": "error",
+            "message": f"Error deleting expense: {str(e)}"
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+
 
 @api_view(['GET'])
 def get_settlement_summary(request, group_id=None):
     """Get optimized settlement instructions for a group"""
     # Calculate most efficient way to settle balances
     # Return list of who pays whom and how much
+
+    

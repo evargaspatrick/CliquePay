@@ -26,7 +26,8 @@ urlpatterns = [
     path('api/get-expenses/', views.get_expenses, name='get_expenses'),
     path('api/update-expense/', views.update_expense, name='update_expense'),
     path('api/get-expense-detail/', views.get_expense_detail, name='get_expense_detail'),
-
+    path('api/record-payment/', views.record_payment, name='record_payment'),
+    path('api/delete-expense/', views.delete_expense, name='delete_expense'),
     path('api/create-group/', views.create_group, name='create_group'),
 
 ]
