@@ -3,6 +3,53 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { PlusCircle, UserPlus, MessageSquareDot } from "lucide-react";
 import PropTypes from "prop-types";
 
+// Separate Component for Chat Item
+const GroupChatItem = ({ chat, onOpenChat }) => {
+  return (
+    <Button 
+      variant="ghost" 
+      className="w-full p-0 h-auto bg-zinc-800 hover:bg-zinc-700 rounded-lg overflow-hidden"
+      onClick={() => onOpenChat(chat.id)}
+    >
+      <div className="w-full py-3 px-4 flex items-center">
+        {/* LEFT: Avatar and participant count */}
+        <div className="relative flex-shrink-0 mr-3">
+          {/* Adjusts size of avatar within the tab */}
+          <Avatar className="h-10 w-10">
+            <AvatarImage src={chat.avatarSrc} alt={chat.name} />
+            <AvatarFallback className="bg-purple-600 text-sm">{chat.name.charAt(0)}</AvatarFallback>
+            {/* Adjusts the avatar badge in group chat list */}
+          </Avatar>
+          <div className="absolute -bottom-0.5 -right-1.5 bg-zinc-700 text-gray-300 text-xs rounded-full h-5 min-w-5 px-1 flex items-center justify-center border border-zinc-600 text-[10px]">
+            {chat.participants}
+          </div>
+        </div>
+        
+        {/* MIDDLE: Chat name and message preview */}
+        <div className="flex-1 min-w-0 self-center">
+          <div className="flex items-center">
+            <p className="font-medium truncate">{chat.name}</p>
+            {chat.unreadCount > 0 && (
+              <MessageSquareDot className="h-4 w-4 ml-2 text-purple-400 flex-shrink-0" />
+            )}
+          </div>
+          <p className="text-sm text-gray-400 truncate">{chat.lastMessage}</p>
+        </div>
+        
+        {/* RIGHT: Time and unread count */}
+        <div className="flex-shrink-0 ml-2 flex flex-col items-end justify-center">
+          <span className="text-xs text-gray-400 mb-1">{chat.lastMessageTime}</span>
+          {chat.unreadCount > 0 && (
+            <span className="bg-purple-600 text-white text-xs rounded-full h-5 min-w-5 flex items-center justify-center px-1">
+              {chat.unreadCount > 9 ? "9+" : chat.unreadCount}
+            </span>
+          )}
+        </div>
+      </div>
+    </Button>
+  );
+};
+
 export default function GroupChatsList({ groupChats, onOpenChat }) {
   // Mock data for visual display purposes
   const demoGroups = [
@@ -71,40 +118,7 @@ export default function GroupChatsList({ groupChats, onOpenChat }) {
           <ul className="space-y-2">
             {displayGroups.map((chat) => (
               <li key={chat.id}>
-                <Button 
-                  variant="ghost" 
-                  className="w-full justify-start py-3 px-4 bg-zinc-800 hover:bg-zinc-700 rounded-lg"
-                  onClick={() => onOpenChat(chat.id)}
-                >
-                  <div className="flex items-center w-full">
-                    <div className="relative">
-                      <Avatar className="h-12 w-12 mr-3">
-                        <AvatarImage src={chat.avatarSrc} alt={chat.name} />
-                        <AvatarFallback className="bg-purple-600">{chat.name.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <div className="absolute -bottom-1 -right-1 bg-zinc-700 text-gray-300 text-xs rounded-full h-5 px-2 flex items-center justify-center border border-zinc-600">
-                        {chat.participants}
-                      </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center">
-                          <p className="font-medium truncate">{chat.name}</p>
-                          {chat.unreadCount > 0 && (
-                            <MessageSquareDot className="h-4 w-4 ml-2 text-purple-400" />
-                          )}
-                        </div>
-                        <span className="text-xs text-gray-400">{chat.lastMessageTime}</span>
-                      </div>
-                      <p className="text-sm text-gray-400 truncate">{chat.lastMessage}</p>
-                    </div>
-                    {chat.unreadCount > 0 && (
-                      <span className="ml-2 bg-purple-600 text-white text-xs rounded-full h-5 min-w-5 flex items-center justify-center px-1">
-                        {chat.unreadCount}
-                      </span>
-                    )}
-                  </div>
-                </Button>
+                <GroupChatItem chat={chat} onOpenChat={onOpenChat} />
               </li>
             ))}
           </ul>
@@ -124,6 +138,19 @@ export default function GroupChatsList({ groupChats, onOpenChat }) {
     </div>
   );
 }
+
+GroupChatItem.propTypes = {
+  chat: PropTypes.shape({
+    id: PropTypes.number.isRequired,
+    name: PropTypes.string.isRequired,
+    avatarSrc: PropTypes.string,
+    lastMessage: PropTypes.string,
+    lastMessageTime: PropTypes.string,
+    unreadCount: PropTypes.number,
+    participants: PropTypes.number
+  }).isRequired,
+  onOpenChat: PropTypes.func.isRequired
+};
 
 GroupChatsList.propTypes = {
   groupChats: PropTypes.arrayOf(
