@@ -1,5 +1,6 @@
 from django.db import models
 from django.core.validators import RegexValidator
+import uuid 
 
 class User(models.Model):
     id = models.CharField(max_length=128, primary_key=True, unique=True)
@@ -32,6 +33,11 @@ class User(models.Model):
 
     class Meta:
         db_table = 'users'
+        indexes = [
+            models.Index(fields=['name'], name='username_idx'),
+            models.Index(fields=['full_name'], name='full_name_idx'),
+            models.Index(fields=['email'], name='email_idx'),
+        ]
 
     def __str__(self):
         return f"{self.full_name} ({self.email})"
@@ -101,8 +107,44 @@ class GroupMember(models.Model):
             models.UniqueConstraint(
                 fields=['user', 'group'],
                 name='unique_group_membership'
-            )
-        ]
+            )        ]
 
     def __str__(self):
         return f"{self.user.full_name} in {self.group.name}"
+
+class ChatMessage(models.Model):
+    MESSAGE_TYPES = [
+        ('TEXT', 'Text'),
+        ('FILE', 'File'),
+        ('IMAGE', 'Image'),
+    ]
+    
+    id = models.CharField(max_length=128, primary_key=True, default=uuid.uuid4, unique=True)
+    sender = models.ForeignKey(User, on_delete=models.CASCADE)
+    content = models.TextField()
+    message_type = models.CharField(max_length=5, choices=MESSAGE_TYPES, default='TEXT')
+    file_url = models.URLField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_deleted = models.BooleanField(default=False)
+    
+    class Meta:
+        abstract = True
+
+class DirectMessage(ChatMessage):
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_direct_messages')
+    recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_messages')
+    is_read = models.BooleanField(default=False)
+    read_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'direct_messages'
+        ordering = ['created_at']
+
+class GroupMessage(ChatMessage):
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_group_messages')
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='messages')
+    read_by = models.ManyToManyField(User, related_name='read_group_messages', blank=True)
+    
+    class Meta:
+        db_table = 'group_messages'
+        ordering = ['created_at']

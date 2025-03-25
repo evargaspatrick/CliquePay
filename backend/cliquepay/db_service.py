@@ -1,5 +1,7 @@
 import uuid
 from .models import *
+from django.db.models import Exists, OuterRef 
+
 
 class DatabaseService:
     @staticmethod
@@ -82,7 +84,7 @@ class DatabaseService:
         Get all friends efficiently using a single query
         """
         try:
-            user = User.objects.get(id=user_id)
+            user = User.objects.get(cognito_id=user_id)
             friendships = Friendship.objects.filter(
                 models.Q(user1=user) | models.Q(user2=user)
             ).select_related('user1', 'user2', 'action_user')
@@ -93,6 +95,8 @@ class DatabaseService:
                 friends_list.append({
                     'friend_id': friend.id,
                     'friend_name': friend.full_name,
+                    'email': friend.email,
+                    'profile_photo': friend.avatar_url,
                     'status': friendship.status,
                     'initiator': friendship.action_user.id == user_id,
                     'created_at': friendship.created_at
@@ -463,6 +467,209 @@ class DatabaseService:
                 'user_data': {
                     'profile_photo': user.avatar_url
                 }
+            }
+        except User.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'User not found'
+            }
+        except Exception as e:
+            return {
+                'status': 'ERROR',
+                'message': str(e)
+            }
+    
+    @staticmethod
+    def get_direct_messages(cognito_id):
+        '''
+        Get user DMs, new and old.
+        Args:
+            cognito_id (str): Cognito user ID
+        Returns:
+            dict: Status of the get operation
+        '''
+        try:
+            user = User.objects.get(cognito_id=cognito_id)
+            messages = DirectMessage.objects.filter(
+                models.Q(sender=user) | models.Q(recipient=user)
+            ).select_related('sender', 'recipient')
+
+            messages_list = []
+
+            for message in messages:
+                messages_list.append({
+                    'message_id': message.id,
+                    'sender_id': message.sender.id,
+                    'sender_name': message.sender.full_name,
+                    'recipient_id': message.recipient.id,
+                    'recipient_name': message.recipient.full_name,
+                    'content': message.content,
+                    'message_type': message.message_type,
+                    'file_url': message.file_url,
+                    'created_at': message.created_at,
+                    'is_read': message.is_read,
+                    'read_at': message.read_at
+                })
+
+            return {
+                'status': 'SUCCESS',
+                'messages': messages_list
+            }
+        except User.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'User not found'
+            }
+        except Exception as e:
+            return {
+                'status': 'ERROR',
+                'message': str(e)
+            }
+
+    @staticmethod
+    def get_group_messages(cognito_id, group_id):
+        '''
+        Get group messages, new and old.
+        Args:
+            cognito_id (str): Cognito user ID
+            group_id (str): Group ID
+        Returns:
+            dict: Status of the get operation
+        '''
+        try:
+            user = User.objects.get(cognito_id=cognito_id)
+            group = Group.objects.get(id=group_id)
+            is_member = GroupMember.objects.filter(user=user, group=group).exists()
+            if(is_member):
+                messages = GroupMessage.objects.filter(group=group).select_related('sender', 'group')
+                message_list = []
+                for message in messages:
+                    message_list.append({
+                        'message_id': message.id,
+                        'sender_id': message.sender.id,
+                        'sender_name': message.sender.full_name,
+                        'group_id': message.group.id,
+                        'group_name': message.group.name,
+                        'content': message.content,
+                        'message_type': message.message_type,
+                        'file_url': message.file_url,
+                        'created_at': message.created_at,
+                        'is_deleted': message.is_deleted
+                    })
+                return {
+                    'status': 'SUCCESS',
+                    'messages': message_list
+                }
+            else:
+                return {
+                    'status': 'ERROR',
+                    'message': 'User is not a member of the group'
+                }
+        except User.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'User not found'
+            }
+        except Group.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'Group not found'
+            }
+        except Exception as e:
+            return {
+                'status': 'ERROR',
+                'message': str(e)
+            }
+    
+    @staticmethod
+    def send_direct_message(sender_id, recipient_id, content, message_type, file_url=None):
+        '''
+        Send a direct message to another user.
+        Args:
+            sender_id (str): ID of the sender
+            recipient_id (str): ID of the recipient
+            content (str): Message content
+            message_type (str): Type of message (text, image, )
+            file_url (str, optional): URL of the file being sent
+        Returns:
+            dict: Status of the send operation
+        '''
+        try:
+                sender = User.objects.get(id=sender_id)
+                recipient = User.objects.get(id=recipient_id)
+                relation = Friendship.objects.filter(   
+                    ((models.Q(user1=sender) & models.Q(user2=recipient)) |
+                    (models.Q(user1=recipient) & models.Q(user2=sender))) &
+                    models.Q(status='Accepted'|'accepted')
+                ).first()
+
+                if(relation):
+                    message = DirectMessage.objects.create(
+                        sender=sender,
+                        recipient=recipient,
+                        content=content,
+                        message_type=message_type,
+                        file_url=file_url
+                    )
+                    return {
+                        'status': 'SUCCESS',
+                        'message': 'Direct message sent successfully',
+                        'message_id': message.id
+                    }
+        except User.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'User not found'
+            }
+        except Exception as e:
+            return {
+                'status': 'ERROR',
+                'message': str(e)
+            }
+    
+    @staticmethod
+    def search_users(cognito_id, search_term, limit=15):
+        '''
+        Search for users by username, email or full name.
+        Args:
+            cognito_id (str): Cognito user ID
+            search_term (str): Search term
+            limit (int, optional): Maximum number of results to return
+        Returns:
+            dict: Status of the search operation
+        '''
+        try:
+            user = User.objects.get(cognito_id=cognito_id)
+
+            # Find users matching search criteria
+            users = User.objects.filter(
+                models.Q(name__icontains=search_term) |
+                models.Q(email__icontains=search_term) |
+                models.Q(full_name__icontains=search_term)
+            ).exclude(id=user.id)[:limit]
+
+            # Annotate each user with friendship status
+            users = users.annotate(
+                is_friend=Exists(
+                    Friendship.objects.filter(
+                        # The outerRef here refrences the user in the main query
+                        (models.Q(user1=OuterRef('pk')) & models.Q(user2=user)) |
+                        (models.Q(user1=user) & models.Q(user2=OuterRef('pk')))
+                    )
+                )
+            )[:limit]
+
+            # Then map results to dictionaries
+            users_list = [{
+                'user_id': u.id,
+                'username': u.name,
+                'full_name': u.full_name,               
+                'profile_photo': u.avatar_url,
+                'is_friend': u.is_friend
+            } for u in users]
+            return {
+                'status': 'SUCCESS',
+                'users': users_list
             }
         except User.DoesNotExist:
             return {

@@ -8,6 +8,7 @@ import Dashboard from "../pages/dashboard";
 import UserProfile from "../pages/userprofile";
 import EditProfile from "../pages/editprofile"
 // import FriendsList from "../pages/friendslist"
+import Friends from "../pages/friends";
 
 const router = createBrowserRouter([
   {
@@ -20,8 +21,10 @@ const router = createBrowserRouter([
       { path: "login", element: <Login /> },
       { path: "dashboard", element: <Dashboard /> },
       { path: "profile", element: <UserProfile /> },
-      { path: "profile/edit", element: <EditProfile /> }
       // { path: "friends-list", element: <FriendsList /> }
+      { path: "profile/edit", element: <EditProfile /> },
+      { path: "friends", element: <Friends /> }
+
     ]
   }
 ]);

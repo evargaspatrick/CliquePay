@@ -130,6 +130,7 @@ export const SecurityUtils = {
       const tokenValid = await renewTokens();
       if (!tokenValid) {
         return null;
+        
       }
     }
   
@@ -270,7 +271,6 @@ export const SecurityUtils = {
         if (!accessToken) {
           return false;
         }
-
         const response = await SecurityUtils.csrf.fetchWithCSRF(
           'http://127.0.0.1:8000/api/verify-user-access/',  
           { 
@@ -287,7 +287,7 @@ export const SecurityUtils = {
         }
 
         const data = await response.json();
-        return data.status === 'SUCCESS';
+        return data;
       } catch (error) {
         console.error('Auth check failed:', error);
         return false;
@@ -295,3 +295,4 @@ export const SecurityUtils = {
     }
   }
 };
+
