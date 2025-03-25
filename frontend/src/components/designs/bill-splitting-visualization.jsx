@@ -122,38 +122,32 @@ export default function BillSplittingVisualization() {
       ctx.fill()
 
       // CliquePay logo
-      ctx.font = `bold ${width * 0.04}px Arial`
+      ctx.font = `bold ${width * 0.04}px Inter`
       ctx.fillStyle = "white"
-      ctx.textAlign = "left"
-      ctx.fillText("CliquePay", width * 0.18, height * 0.135)
-
-      // Small credit card icon
-      ctx.fillStyle = "white"
-      ctx.beginPath()
-      ctx.roundRect(width * 0.15, height * 0.125, width * 0.02, width * 0.015, 1)
-      ctx.fill()
+      ctx.textAlign = "center"
+      ctx.fillText("CliquePay", width * 0.5, height * 0.135)
 
       // Status icons
       ctx.fillStyle = "rgba(255, 255, 255, 0.9)"
-      ctx.font = `${width * 0.025}px Arial`
+      ctx.font = `${width * 0.033}px Inter`
       ctx.textAlign = "right"
-      ctx.fillText("9:41", width * 0.84, height * 0.135)
+      const now = new Date();
+      const timeString = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+      ctx.fillText(timeString, width * 0.84, height * 0.135);
+      
 
       // App subtitle - make it explicit about the bill splitting concept
       if (animationStage >= 1) {
-        ctx.font = `${width * 0.03}px Arial`
+        ctx.font = `${width * 0.03}px Inter`
         ctx.fillStyle = "white"
         ctx.textAlign = "center"
 
-        if (animationStage === 1) {
-          ctx.fillText("You paid the bill upfront", width * 0.5, height * 0.19)
-        } else if (animationStage === 2) {
-          ctx.fillText("Friends are paying you back", width * 0.5, height * 0.19)
-        } else if (animationStage >= 3) {
+        if (animationStage >= 3) {
           ctx.fillText("Everyone has paid their share", width * 0.5, height * 0.19)
         }
-      }
-    }
+            }
+          }
+
 
     // Draw avatar with initial and emoji
     const drawAvatar = (x, y, size, color, name, highlight = false, emoji = null) => {
@@ -184,14 +178,14 @@ export default function BillSplittingVisualization() {
 
       // Initial
       ctx.fillStyle = "white"
-      ctx.font = `bold ${size * 0.7}px Arial`
+      ctx.font = `bold ${size * 0.7}px Inter`
       ctx.textAlign = "center"
       ctx.textBaseline = "middle"
       ctx.fillText(name.charAt(0), x, y)
 
       // Emoji if provided
       if (emoji) {
-        ctx.font = `${size * 0.5}px Arial`
+        ctx.font = `${size * 0.5}px Inter`
         ctx.fillText(emoji, x + size * 1.3, y)
       }
     }
@@ -199,9 +193,9 @@ export default function BillSplittingVisualization() {
     // Draw bill receipt with clearer user-paid-first indication
     const drawBillReceipt = (progress) => {
       const cardWidth = width * 0.7
-      const cardHeight = height * 0.6 // Increased from 0.55 to 0.6
+      const cardHeight = height * 0.70 // Bottom of screen layer
       const cardX = width * 0.15
-      const cardY = height * 0.2 // Slightly higher starting position (was 0.22)
+      const cardY = height * 0.18 // Y axis of screen layer 
 
       // Card background with receipt-like appearance
       ctx.fillStyle = "#1a1a1a"
@@ -233,32 +227,32 @@ export default function BillSplittingVisualization() {
 
       // Restaurant logo - small icon
       ctx.fillStyle = "rgba(255, 255, 255, 0.9)"
-      ctx.font = `${width * 0.03}px Arial`
+      ctx.font = `${width * 0.07}px Inter`
       ctx.textAlign = "center"
-      ctx.fillText("🍽️", cardX + width * 0.06, cardY + height * 0.04)
+      ctx.fillText("🍽️", cardX + cardWidth/2.1 - width * 0.15, cardY + height * 0.04)
 
       // Restaurant name
-      ctx.font = `bold ${width * 0.035}px Arial`
+      ctx.font = `bold ${width * 0.035}px Inter`
       ctx.fillStyle = "rgba(255, 255, 255, 0.9)"
-      ctx.textAlign = "left"
-      ctx.fillText("Olive Garden", cardX + width * 0.12, cardY + height * 0.035)
+      ctx.textAlign = "Center"
+      ctx.fillText("Olive Garden", cardX + cardWidth/2, cardY + height * 0.035)
 
       // Date
-      ctx.font = `${width * 0.025}px Arial`
+      ctx.font = `${width * 0.025}px Inter`
       ctx.fillStyle = "rgba(255, 255, 255, 0.6)"
-      ctx.fillText("Today at 8:30 PM", cardX + width * 0.12, cardY + height * 0.065)
+      ctx.fillText("Today at 8:30 PM", cardX + cardWidth/2, cardY + height * 0.065)
 
       // "You paid" label - make it explicit
-      ctx.font = `bold ${width * 0.03}px Arial`
+      ctx.font = `bold ${width * 0.03}px Inter`
       ctx.fillStyle = "rgba(255, 255, 255, 0.8)"
       ctx.textAlign = "center"
-      ctx.fillText("You paid for everyone", width * 0.5, cardY + height * 0.1)
+      ctx.fillText("", width * 0.5, cardY + height * 0.1)
 
       // Total amount
-      ctx.font = `bold ${width * 0.06}px Arial`
+      ctx.font = `bold ${width * 0.06}px Inter`
       ctx.fillStyle = "rgba(139, 92, 246, 0.9)"
       ctx.textAlign = "center"
-      ctx.fillText("$96.00", width * 0.5, cardY + height * 0.165)
+      ctx.fillText("$120.00", width * 0.5, cardY + height * 0.165)
 
       // "Your balance" section - shows money coming back to you
       ctx.fillStyle = "rgba(20, 20, 20, 0.8)"
@@ -267,51 +261,42 @@ export default function BillSplittingVisualization() {
       ctx.fill()
 
       // Balance label
-      ctx.font = `${width * 0.025}px Arial`
+      ctx.font = `${width * 0.025}px Inter`
       ctx.fillStyle = "rgba(255, 255, 255, 0.7)"
       ctx.textAlign = "left"
       ctx.fillText("Your friends owe:", cardX + width * 0.08, cardY + height * 0.23)
 
-      // Animate balance amount increasing as friends pay
+      // Animate balance amount decreasing as friends pay
       if (animationStage >= 1) {
         // Only show initial amount in first stage
         if (animationStage === 1) {
-          currentBalance = -96 // You paid, so negative balance
+          currentBalance = 96 // Starting balance
         }
-        // Start receiving money in stage 2
+        // Gradually decrease balance in stage 2
         else if (animationStage === 2) {
-          if (frameCount < 180) {
-            // First payment comes in
-            currentBalance = Math.min(-72, -96 + frameCount * 0.5) // $24 coming in
-          } else if (frameCount < 240) {
-            // Second payment comes in
-            currentBalance = Math.min(-40, -72 + (frameCount - 180) * 0.5) // $32 coming in
-          } else if (frameCount < 300) {
-            // Third payment comes in
-            currentBalance = Math.min(0, -40 + (frameCount - 240) * 0.5) // $40 coming in
+          // 1 second = 60 frames at 60fps (3x faster than before)
+          const totalFrames = 60;
+          const framesSinceStage2 = frameCount - 90;
+          
+          if (framesSinceStage2 >= 0) {
+        // Linear decrease from 96 to 0 over 60 frames
+        currentBalance = Math.max(0, 96 * (1 - framesSinceStage2 / totalFrames));
           }
         }
         // All settled in stage 3
         else if (animationStage === 3) {
-          currentBalance = 0 // Everything is balanced
+          currentBalance = 0
         }
 
         // Display balance
-        ctx.font = `bold ${width * 0.035}px Arial`
+        ctx.font = `bold ${width * 0.035}px Inter`
         ctx.textAlign = "right"
-
-        if (currentBalance < 0) {
-          ctx.fillStyle = "rgba(239, 68, 68, 0.9)" // Red for negative
-          ctx.fillText(
-            `-$${Math.abs(currentBalance).toFixed(2)}`,
-            cardX + cardWidth - width * 0.08,
-            cardY + height * 0.23,
-          )
-        } else if (currentBalance > 0) {
-          ctx.fillStyle = "rgba(34, 197, 94, 0.9)" // Green for positive
-          ctx.fillText(`+$${currentBalance.toFixed(2)}`, cardX + cardWidth - width * 0.08, cardY + height * 0.23)
+        
+        if (currentBalance > 0) {
+          ctx.fillStyle = "rgba(242, 8, 8, 0.9)"
+          ctx.fillText(`-$${currentBalance.toFixed(2)}`, cardX + cardWidth - width * 0.08, cardY + height * 0.23)
         } else {
-          ctx.fillStyle = "rgba(34, 197, 94, 0.9)" // Green for zero/balanced
+          ctx.fillStyle = "rgba(34, 197, 94, 0.9)"
           ctx.fillText(`$0.00`, cardX + cardWidth - width * 0.08, cardY + height * 0.23)
         }
       }
@@ -325,14 +310,14 @@ export default function BillSplittingVisualization() {
       ctx.stroke()
 
       // "Split details" heading
-      ctx.font = `bold ${width * 0.03}px Arial`
+      ctx.font = `bold ${width * 0.03}px Inter`
       ctx.fillStyle = "rgba(255, 255, 255, 0.8)"
       ctx.textAlign = "left"
       ctx.fillText("Split Details", cardX + width * 0.05, cardY + height * 0.32)
 
       // Split details
-      const itemY = cardY + height * 0.35 // Moved up slightly (was 0.37)
-      const itemHeight = height * 0.07 // Increased item height (was 0.065)
+      const itemY = cardY + height * 0.38 // Y axis of each transaction within phone card
+      const itemHeight = height * 0.085 // Heigh size of each transaction within phone card
 
       // Draw each friend's portion with clearer indicators
       friends.forEach((friend, index) => {
@@ -364,13 +349,13 @@ export default function BillSplittingVisualization() {
         drawAvatar(cardX + width * 0.08, y, width * 0.03, friend.color, friend.name, isHighlighted, friend.icon)
 
         // Name
-        ctx.font = `${width * 0.03}px Arial`
+        ctx.font = `${width * 0.03}px Inter`
         ctx.fillStyle = isHighlighted ? "rgba(255, 255, 255, 0.9)" : "rgba(255, 255, 255, 0.7)"
         ctx.textAlign = "left"
         ctx.fillText(friend.name, cardX + width * 0.15, y - height * 0.01)
 
         // Status
-        ctx.font = `${width * 0.02}px Arial`
+        ctx.font = `${width * 0.02}px Inter`
         ctx.fillStyle =
           isPaidIndicator === "Paid full bill"
             ? "rgba(139, 92, 246, 0.9)"
@@ -380,7 +365,7 @@ export default function BillSplittingVisualization() {
         ctx.fillText(isPaidIndicator, cardX + width * 0.15, y + height * 0.015)
 
         // Amount
-        ctx.font = `${width * 0.035}px Arial`
+        ctx.font = `${width * 0.035}px Inter`
         ctx.fillStyle = isHighlighted ? "rgba(139, 92, 246, 0.9)" : "rgba(255, 255, 255, 0.7)"
         ctx.textAlign = "right"
         ctx.fillText(friend.amount, cardX + cardWidth - width * 0.08, y)
@@ -449,7 +434,7 @@ export default function BillSplittingVisualization() {
       if (animationStage >= 3) {
         const buttonWidth = cardWidth * 0.6
         const buttonX = cardX + (cardWidth - buttonWidth) / 2
-        const buttonY = cardY + cardHeight - height * 0.09 // Adjust button position
+        const buttonY = cardY + cardHeight - height * 0.07 // Adjust button position up slightly
 
         const buttonGradient = ctx.createLinearGradient(buttonX, buttonY, buttonX + buttonWidth, buttonY)
         buttonGradient.addColorStop(0, darkPurple)
@@ -460,7 +445,7 @@ export default function BillSplittingVisualization() {
         ctx.roundRect(buttonX, buttonY, buttonWidth, height * 0.05, 25)
         ctx.fill()
 
-        ctx.font = `bold ${width * 0.03}px Arial`
+        ctx.font = `bold ${width * 0.03}px Inter`
         ctx.fillStyle = "white"
         ctx.textAlign = "center"
         ctx.fillText("All Settled Up! 🎉", width * 0.5, buttonY + height * 0.03)
@@ -505,7 +490,7 @@ export default function BillSplittingVisualization() {
         }
 
         // Draw particle
-        ctx.font = `${particle.size}px Arial`
+        ctx.font = `${particle.size}px Inter`
         ctx.fillStyle = particle.color.replace("0.9", particle.opacity)
         ctx.textAlign = "center"
         ctx.textBaseline = "middle"
