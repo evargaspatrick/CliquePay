@@ -11,7 +11,6 @@ urlpatterns = [
     path('api/reset-password/',views.initiate_reset_password, name='initiate_reset_password'),
     path('api/confirm-reset-password/',views.confirm_reset_password, name='confirm_reset_password'),
     path('api/friendlist/',views.get_user_friends, name='get_user_friends'),
-<<<<<<< HEAD
     path('api/resend-code/',views.get_resend_code, name='resend_code'),
     path('api/verify-user-access/',views.verify_user_access, name='verify_user_access'),
     path('api/user-profile/',views.get_user_profile, name='get_user_profile'),
@@ -30,5 +29,4 @@ urlpatterns = [
     path('api/record-payment/', views.record_payment, name='record_payment'),
     path('api/delete-expense/', views.delete_expense, name='delete_expense'),
     path('api/create-group/', views.create_group, name='create_group'),
-
 ]
