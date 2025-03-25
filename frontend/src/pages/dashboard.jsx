@@ -1,5 +1,5 @@
 "use client"
-import { AlertTriangle, Bell, CreditCard, DollarSign, Home, Settings, Users, BarChart3 } from "lucide-react";
+import { AlertTriangle, Bell, CreditCard, DollarSign, Home, Users, BarChart3, MessagesSquare, MessageSquareDot } from "lucide-react";
 import { useState, useEffect } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import PropTypes from "prop-types"
@@ -328,7 +328,11 @@ export default function Dashboard() {
               <span className="hidden sm:inline">Analytics</span>
             </TabsTrigger>
             <TabsTrigger value="Chats" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white relative">
-              <Settings className="h-4 w-4 mr-2" />
+              {getTotalUnreadCount(groupChats, directChats) > 0 ? (
+                <MessageSquareDot className="h-4 w-4 mr-2 text-purple-400" />
+              ) : (
+                <MessagesSquare className="h-4 w-4 mr-2" />
+              )}
               <span className="hidden sm:inline">Chats</span>
               {getTotalUnreadCount(groupChats, directChats) > 0 && (
                 <span className="absolute -top-1 right-0 bg-purple-600 text-white text-xs rounded-full h-5 min-w-5 flex items-center justify-center">
