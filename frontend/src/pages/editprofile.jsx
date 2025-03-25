@@ -1,8 +1,11 @@
-// EditProfile.jsx
+"use client"
+
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Lock, Save } from 'lucide-react'
+import { ArrowLeft, Lock, Save, CreditCard } from 'lucide-react'
 import Cookies from 'js-cookie'
+import { PageLayout, Header, Section } from "../components/layout/PageLayout"
+
 const EditProfile = () => {
   const navigate = useNavigate()
   const [formData, setFormData] = useState({
@@ -60,81 +63,126 @@ const EditProfile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-yellow-400 to-yellow-500 p-8">
-      <div className="max-w-md mx-auto">
-        <button 
-          onClick={() => navigate(-1)}
-          className="text-green-700 hover:text-green-800 flex items-center mb-8"
-        >
-          <ArrowLeft className="w-5 h-5 mr-1" /> Back
-        </button>
+    <PageLayout>
+      {/* Header */}
+      <Header className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-sm py-4">
+        <div className="flex items-center gap-2">
+          <div className="bg-purple-600 w-8 h-8 rounded-md flex items-center justify-center">
+            <CreditCard className="w-5 h-5" />
+          </div>
+          <span className="font-bold text-xl">CliquePay</span>
+        </div>
+      </Header>
 
-        <form onSubmit={handleSubmit} className="bg-white/90 backdrop-blur-sm rounded-lg p-8 shadow-xl">
-          <h2 className="text-2xl font-bold mb-6 text-gray-800">Edit Profile</h2>
+      <Section 
+        className="py-8 relative overflow-hidden"
+        style={{
+          background: "linear-gradient(to bottom, #0c0613 0%, #1a0b2e 50%, #130a1f 100%)"
+        }}
+      >
+        {/* Static background effects - no animation */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {/* Static gradient overlay */}
+          <div 
+            className="absolute inset-0 bg-gradient-to-tr from-purple-900/0 via-purple-800/10 to-purple-600/0 blur-3xl opacity-70"
+          ></div>
           
-          {error && <div className="mb-4 text-red-600">{error}</div>}
-          
-          <div className="space-y-4">
-            <div>
-              <label className="block text-gray-700 mb-2">Full Name</label>
-              <input
-                type="text"
-                value={formData.full_name}
-                onChange={(e) => setFormData({...formData, full_name: e.target.value})}
-                className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:border-green-500"
-              />
-            </div>
+          {/* Static positioned orbs for depth */}
+          <div className="absolute -top-32 -left-32 w-96 h-96 bg-purple-900/30 rounded-full blur-3xl -z-10"></div>
+          <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-purple-600/30 rounded-full blur-3xl -z-10"></div>
+          <div className="absolute top-1/4 right-1/4 w-64 h-64 bg-purple-600/20 rounded-full blur-3xl -z-10"></div>
+          <div className="absolute bottom-1/4 left-1/3 w-48 h-48 bg-indigo-600/20 rounded-full blur-3xl -z-10"></div>
+        </div>
+        
+        <div className="relative z-10 max-w-md mx-auto">
+          <button 
+            onClick={() => navigate(-1)}
+            className="text-gray-400 hover:text-white flex items-center mb-8"
+          >
+            <ArrowLeft className="w-5 h-5 mr-2" /> Back
+          </button>
 
-            <div>
-              <label className="block text-gray-700 mb-2 flex justify-center gap-3">Email <Lock/></label>
-              <input
-                disabled
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
-                className="w-full p-2 border border-gray-300 bg-gray-300 rounded focus:outline-none focus:border-green-500"
-              />
-            </div>
+          <div className="bg-zinc-900/60 backdrop-blur-sm border border-zinc-800 rounded-lg overflow-hidden shadow-xl">
+            <div className="p-6">
+              <h2 className="text-2xl font-bold mb-6">Edit Profile</h2>
+              
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {error && (
+                  <div className="bg-red-900/20 border border-red-800 text-red-400 p-3 rounded-md">
+                    {error}
+                  </div>
+                )}
 
-            <div>
-              <label className="block text-gray-700 mb-2 flex justify-center gap-3">Phone Number <Lock/></label>
-              <input
-                disabled
-                type="tel"
-                value={formData.phone_number}
-                onChange={(e) => setFormData({...formData, phone_number: e.target.value})}
-                className="w-full p-2 border border-gray-300 bg-gray-300 rounded focus:outline-none focus:border-green-500"
-              />
-            </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-300">Full Name</label>
+                  <input
+                    type="text"
+                    value={formData.full_name}
+                    onChange={(e) => setFormData({...formData, full_name: e.target.value})}
+                    className="w-full p-2 rounded-md bg-zinc-800/80 border border-zinc-700 text-white 
+                             focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-purple-600"
+                  />
+                </div>
 
-            <div>
-              <label className="block text-gray-700 mb-2">Preferred Currency</label>
-              <select
-                value={formData.currency}
-                onChange={(e) => setFormData({...formData, currency: e.target.value})}
-                className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:border-green-500"
-              >
-                <option value="USD">USD</option>
-                <option value="EUR">EUR</option>
-                <option value="GBP">GBP</option>
-              </select>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-300 flex items-center">
+                    Email <Lock className="w-4 h-4 ml-2 text-gray-500" />
+                  </label>
+                  <input
+                    disabled
+                    type="email"
+                    value={formData.email}
+                    className="w-full p-2 rounded-md bg-zinc-800/50 border border-zinc-700 text-gray-500 
+                             focus:outline-none"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-300 flex items-center">
+                    Phone Number <Lock className="w-4 h-4 ml-2 text-gray-500" />
+                  </label>
+                  <input
+                    disabled
+                    type="tel"
+                    value={formData.phone_number}
+                    className="w-full p-2 rounded-md bg-zinc-800/50 border border-zinc-700 text-gray-500 
+                             focus:outline-none"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-300">Preferred Currency</label>
+                  <select
+                    value={formData.currency}
+                    onChange={(e) => setFormData({...formData, currency: e.target.value})}
+                    className="w-full p-2 rounded-md bg-zinc-800/80 border border-zinc-700 text-white 
+                             focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-purple-600"
+                  >
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="GBP">GBP</option>
+                  </select>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 px-6 rounded-md 
+                           transition-colors flex items-center justify-center gap-2 mt-6 disabled:opacity-70"
+                >
+                  {loading ? (
+                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                  ) : (
+                    <Save className="w-5 h-5" />
+                  )}
+                  {loading ? "Saving..." : "Save Changes"}
+                </button>
+              </form>
             </div>
           </div>
-
-          <div className="flex gap-4 mt-8">
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex-1 bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 
-                       transition-colors shadow-lg flex items-center justify-center gap-2"
-            >
-              <Save className="w-5 h-5" />
-              Save 
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+        </div>
+      </Section>
+    </PageLayout>
   )
 }
 

@@ -298,9 +298,9 @@ export default function Dashboard() {
               <BarChart3 className="h-4 w-4 mr-2" />
               <span className="hidden sm:inline">Analytics</span>
             </TabsTrigger>
-            <TabsTrigger value="settings" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
+            <TabsTrigger value="Chats" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
               <Settings className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Settings</span>
+              <span className="hidden sm:inline">Chats</span>
             </TabsTrigger>
           </TabsList>
 
@@ -422,16 +422,16 @@ export default function Dashboard() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="settings">
+          <TabsContent value="Chats">
             <Card className="bg-zinc-900 border-zinc-800">
               <CardHeader>
-                <CardTitle>Settings</CardTitle>
+                <CardTitle>Chats</CardTitle>
                 <CardDescription className="text-gray-400">
-                  Manage your account preferences and settings.
+                  Manage your friends and group chats here.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-400">Your account settings will appear here.</p>
+                <p className="text-gray-400">Your friends and group chats will appear here.</p>
               </CardContent>
             </Card>
           </TabsContent>
