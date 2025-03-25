@@ -7,6 +7,8 @@ from cliquepay.aws_cognito import CognitoService
 from cliquepay.db_service import DatabaseService
 from .serializers import *
 from cliquepay.storage_service import CloudStorageService
+from api.serializers import SearchUserSerializer
+
 @api_view(['GET'])
 def api_root(request, format=None):
     """
@@ -124,6 +126,11 @@ def api_root(request, format=None):
                 'url': reverse('send_direct_message', request=request, format=format),
                 'method': 'POST',
                 'description': 'send direct message.'
+            },
+            'search-user': {
+                'url': reverse('search_user', request=request, format=format),
+                'method': 'POST',
+                'description': 'search user by username or email.'
             }
         },
         'version': 'development',
@@ -903,17 +910,18 @@ def get_group_messages(request):
         'errors': serializer.errors
     }, status=status.HTTP_400_BAD_REQUEST)
 
+@api_view(['POST'])
 def send_direct_message(request):
     """
     Send a direct message to another user.
     
     Request Body:
     {
-        "id_token": "your-id-token",
-        "recipient_id": "recipient-user-id",
-        "content": "Hello there!",
-        "message_type": "TEXT",
-        "file_url (optional)": "https://example.com/file.jpg"
+        id_token: "your-id-token",
+        recipient_id: "recipient-user-id"
+        content: "Hello there!",
+        message_type: "TEXT",
+        file_url (optional): "https://example.com/file.jpg"
     }
 
     NOTE: message_type can only be one of:
@@ -936,6 +944,35 @@ def send_direct_message(request):
             )
             if result['status'] == 'SUCCESS':
                 return JsonResponse(result, status=status.HTTP_200_OK)
+            return JsonResponse(result, status=status.HTTP_400_BAD_REQUEST)
+        return JsonResponse(decoded, status=status.HTTP_401_UNAUTHORIZED)
+    return JsonResponse({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def search_user(request):
+    """
+    Search for a user by full name, username or email .
+    
+    Request Body:
+    {
+        id_token: "your-id-token",
+        query: "abcd",
+        limit (optional) : "400",
+    }
+    """
+    serializer = SearchUserSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        decoded = cognito.get_user_id(serializer.validated_data['id_token'])
+        if decoded['status'] == 'SUCCESS':
+            db = DatabaseService()
+            result = db.search_users(decoded['user_sub'], serializer.validated_data['query'], serializer.validated_data.get('limit'))
+            if result['status'] == 'SUCCESS':
+                return Response(result, status=status.HTTP_200_OK)
             return JsonResponse(result, status=status.HTTP_400_BAD_REQUEST)
         return JsonResponse(decoded, status=status.HTTP_401_UNAUTHORIZED)
     return JsonResponse({

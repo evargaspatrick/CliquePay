@@ -49,6 +49,34 @@ function FriendCard({ name, imgSrc, email, onRemove }) {
   )
 }
 
+//Search Card Component
+function SearchCard({ name, imgSrc, username, onRequest}) {
+    // Add fallback values for name and username
+    const displayName = name || 'Unknown User';
+    
+    return (
+        <Card className="bg-zinc-800 border-zinc-700 overflow-hidden">
+            <CardContent className="p-4">
+                <div className="flex items-center gap-4">
+                    <Avatar className="h-16 w-16">
+                        <AvatarImage src={imgSrc} alt={displayName} />
+                        <AvatarFallback className="bg-purple-900/50 text-white">
+                            {displayName.split(" ").map((n) => n[0]).join("")}
+                        </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1">
+                        <h3 className="font-medium text-white">{displayName}</h3>
+                        <p className="text-sm text-zinc-400">{username || 'No username'}</p>
+                    </div>
+                    <Button onClick={onRequest} className="bg-purple-600 hover:bg-purple-700">
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        Request
+                    </Button>
+                </div>
+            </CardContent>
+        </Card>
+    )
+}
 // Request Card Component
 function RequestCard({ name, imgSrc, email, onAccept, onDecline }) {
   return (
@@ -91,6 +119,7 @@ const Content = () => {
     const [blocked, setBlocked] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [searchResults, setSearchResults] = useState([]);
+    const [hasSearched, setHasSearched] = useState(false);
     const navigate = useNavigate();
 
     const fetchUserProfile = async () => {
@@ -170,14 +199,44 @@ const Content = () => {
 
 
     const handleSearch = async (e) => {
-      e.preventDefault();
-      // Simulate API search
-      setSearchResults(
-        MOCK_FRIENDS.filter(friend => 
-          friend.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          friend.email.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-      );
+        e.preventDefault();
+        if (!searchTerm) {
+            return;
+        }
+        
+        setHasSearched(true); // Always set this to true to show "no results" message
+        
+        try {
+            const token = await SecurityUtils.getCookie('idToken');
+            if (!token) {
+                setError('No authentication token found');
+                return;
+            }
+            
+            const response = await fetch(`${API_URL}/search-user/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ id_token: token, query: searchTerm })
+            }); 
+    
+            const data = await response.json();
+            console.log("Search results:", data); // Add this line for debugging
+            
+            if (data.status === 'SUCCESS') {
+                // Check for different possible result structures
+                const results = data.users || data.results || [];
+                setSearchResults(results);
+            } else {
+                setError(data.message || 'Failed to fetch search results');
+                setSearchResults([]); // Clear previous results
+            }
+        } catch(error) {
+            console.error('Error fetching search results:', error);
+            setSearchResults([]); // Clear previous results on error
+            setError('Error searching for users');
+        }
     };
 
     const handleRemoveFriend = (id) => {
@@ -198,6 +257,12 @@ const Content = () => {
 
     const handleDashboardClick = () => {
         navigate('/dashboard');
+    };
+
+    const handleSearchTermChange = (e) => {
+        setSearchTerm(e.target.value);
+        // Uncomment the line below if you want to hide results as soon as typing starts
+        // setHasSearched(false);
     };
 
     if (error) {
@@ -331,12 +396,12 @@ const Content = () => {
                     </TabsContent>
 
                     {/* Search Tab Content */}
-                    <TabsContent value="search" className="space-y-4">
+                     <TabsContent value="search" className="space-y-4">
                         <Card className="bg-zinc-900 border-zinc-800">
                             <CardHeader>
                                 <CardTitle>Find Friends</CardTitle>
                                 <CardDescription className="text-gray-400">
-                                    Search for friends by name or email
+                                    Search for friends by name, username or email.
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
@@ -344,7 +409,7 @@ const Content = () => {
                                     <input
                                         type="text"
                                         value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        onChange={handleSearchTermChange} 
                                         placeholder="Search for friends..."
                                         className="flex-1 bg-zinc-800 border border-zinc-700 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
                                     />
@@ -355,33 +420,25 @@ const Content = () => {
                                 </form>
                                 
                                 <div className="space-y-4">
-                                    {searchResults.length > 0 ? (
-                                        searchResults.map(result => (
-                                            <Card key={result.id} className="bg-zinc-800 border-zinc-700 overflow-hidden">
-                                                <CardContent className="p-4">
-                                                    <div className="flex items-cent</Card>er gap-4">
-                                                        <Avatar className="h-16 w-16">
-                                                            <AvatarImage src={result.imgSrc} alt={result.name} />
-                                                            <AvatarFallback className="bg-purple-900/50 text-white">
-                                                                {result.name.split(" ").map((n) => n[0]).join("")}
-                                                            </AvatarFallback>
-                                                        </Avatar>
-                                                        <div className="flex-1">
-                                                            <h3 className="font-medium text-white">{result.name}</h3>
-                                                            <p className="text-sm text-zinc-400">{result.email}</p>
-                                                        </div>
-                                                        <Button className="bg-purple-600 hover:bg-purple-700">
-                                                            <UserPlus className="h-4 w-4 mr-2" />
-                                                            Add Friend
-                                                        </Button>
-                                                    </div>
-                                                </CardContent>
-                                            </Card>
-                                        ))
-                                    ) : searchTerm ? (
-                                        <p className="text-center text-zinc-400 py-4">No results found for "{searchTerm}"</p>
-                                    ) : (
-                                        <p className="text-center text-zinc-400 py-4">Enter a name or email to search</p>
+                                    {/* Only show results or messages if hasSearched is true */}
+                                    {hasSearched && (
+                                        searchResults.length > 0 ? (
+                                            searchResults.map(result => (
+                                                !result.is_friend ? (
+                                                    <SearchCard 
+                                                        key={result.id}
+                                                        name={result.full_name}
+                                                        username={result.username}
+                                                        imgSrc={result.profile_photo}
+                                                        //onRequest={() => handleRequest(result.id)}
+                                                    />
+                                                ) : null
+                                            ))
+                                        ) : (
+                                            <p className="text-center text-zinc-400 py-4">
+                                                No results found for "{searchTerm}"
+                                            </p>
+                                        )
                                     )}
                                 </div>
                             </CardContent>

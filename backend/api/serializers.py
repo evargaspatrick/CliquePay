@@ -160,6 +160,11 @@ class GetGroupMessagesSerializer(serializers.Serializer):
     )
     group_id = serializers.CharField(required=True)
 
+class SearchUserSerializer(serializers.Serializer):
+    id_token = serializers.CharField(required=True)
+    query = serializers.CharField( required=True)
+    limit = serializers.IntegerField(required=False, default=10, min_value=1, max_value=100)
+
 class SendDirectMessageSerializer(serializers.Serializer):
     id_token = serializers.CharField(
         required=True,
@@ -180,3 +185,4 @@ class SendDirectMessageSerializer(serializers.Serializer):
         required=True
     )
     file_url = serializers.URLField(required=False)
+

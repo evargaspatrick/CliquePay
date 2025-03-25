@@ -1,5 +1,7 @@
 import uuid
 from .models import *
+from django.db.models import Exists, OuterRef 
+
 
 class DatabaseService:
     @staticmethod
@@ -625,3 +627,57 @@ class DatabaseService:
                 'message': str(e)
             }
     
+    @staticmethod
+    def search_users(cognito_id, search_term, limit=15):
+        '''
+        Search for users by username, email or full name.
+        Args:
+            cognito_id (str): Cognito user ID
+            search_term (str): Search term
+            limit (int, optional): Maximum number of results to return
+        Returns:
+            dict: Status of the search operation
+        '''
+        try:
+            user = User.objects.get(cognito_id=cognito_id)
+
+            # Find users matching search criteria
+            users = User.objects.filter(
+                models.Q(name__icontains=search_term) |
+                models.Q(email__icontains=search_term) |
+                models.Q(full_name__icontains=search_term)
+            ).exclude(id=user.id)[:limit]
+
+            # Annotate each user with friendship status
+            users = users.annotate(
+                is_friend=Exists(
+                    Friendship.objects.filter(
+                        # The outerRef here refrences the user in the main query
+                        (models.Q(user1=OuterRef('pk')) & models.Q(user2=user)) |
+                        (models.Q(user1=user) & models.Q(user2=OuterRef('pk')))
+                    )
+                )
+            )[:limit]
+
+            # Then map results to dictionaries
+            users_list = [{
+                'user_id': u.id,
+                'username': u.name,
+                'full_name': u.full_name,               
+                'profile_photo': u.avatar_url,
+                'is_friend': u.is_friend
+            } for u in users]
+            return {
+                'status': 'SUCCESS',
+                'users': users_list
+            }
+        except User.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'User not found'
+            }
+        except Exception as e:
+            return {
+                'status': 'ERROR',
+                'message': str(e)
+            }

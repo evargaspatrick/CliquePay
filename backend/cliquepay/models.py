@@ -33,6 +33,11 @@ class User(models.Model):
 
     class Meta:
         db_table = 'users'
+        indexes = [
+            models.Index(fields=['name'], name='username_idx'),
+            models.Index(fields=['full_name'], name='full_name_idx'),
+            models.Index(fields=['email'], name='email_idx'),
+        ]
 
     def __str__(self):
         return f"{self.full_name} ({self.email})"
