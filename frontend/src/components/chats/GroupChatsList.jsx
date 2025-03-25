@@ -77,12 +77,14 @@ export default function GroupChatsList({ groupChats, onOpenChat }) {
                   onClick={() => onOpenChat(chat.id)}
                 >
                   <div className="flex items-center w-full">
-                    <div className="relative">
-                      <Avatar className="h-12 w-12 mr-3">
+                    <div className="relative mr-3">
+                      {/* Adjusts avatar size for group chats*/}
+                      <Avatar className="h-7.5 w-7.5">
                         <AvatarImage src={chat.avatarSrc} alt={chat.name} />
-                        <AvatarFallback className="bg-purple-600">{chat.name.charAt(0)}</AvatarFallback>
+                        <AvatarFallback className="bg-purple-600 text-sm">{chat.name.charAt(0)}</AvatarFallback>
                       </Avatar>
-                      <div className="absolute -bottom-1 -right-1 bg-zinc-700 text-gray-300 text-xs rounded-full h-5 px-2 flex items-center justify-center border border-zinc-600">
+                      {/* Adjusts participant badge position and size */}
+                      <div className="absolute -bottom-1 -right-1.5 bg-zinc-700 text-gray-300 text-xs rounded-full h- min-w-4 px-1 flex items-center justify-center border border-zinc-600 text-[10px]">
                         {chat.participants}
                       </div>
                     </div>
@@ -91,15 +93,15 @@ export default function GroupChatsList({ groupChats, onOpenChat }) {
                         <div className="flex items-center">
                           <p className="font-medium truncate">{chat.name}</p>
                           {chat.unreadCount > 0 && (
-                            <MessageSquareDot className="h-4 w-4 ml-2 text-purple-400" />
+                            <MessageSquareDot className="h-4 w-4 ml-2 text-purple-400 flex-shrink-0" />
                           )}
                         </div>
-                        <span className="text-xs text-gray-400">{chat.lastMessageTime}</span>
+                        <span className="text-xs text-gray-400 ml-2 flex-shrink-0">{chat.lastMessageTime}</span>
                       </div>
                       <p className="text-sm text-gray-400 truncate">{chat.lastMessage}</p>
                     </div>
                     {chat.unreadCount > 0 && (
-                      <span className="ml-2 bg-purple-600 text-white text-xs rounded-full h-5 min-w-5 flex items-center justify-center px-1">
+                      <span className="ml-2 bg-purple-600 text-white text-xs rounded-full h-5 min-w-5 flex items-center justify-center px-1 flex-shrink-0">
                         {chat.unreadCount}
                       </span>
                     )}
