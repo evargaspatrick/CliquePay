@@ -7,6 +7,7 @@ import Login from "../pages/login";
 import Dashboard from "../pages/dashboard";
 import UserProfile from "../pages/userprofile";
 import EditProfile from "../pages/editprofile"
+// import FriendsList from "../pages/friendslist"
 
 const router = createBrowserRouter([
   {
@@ -20,6 +21,7 @@ const router = createBrowserRouter([
       { path: "dashboard", element: <Dashboard /> },
       { path: "profile", element: <UserProfile /> },
       { path: "profile/edit", element: <EditProfile /> }
+      // { path: "friends-list", element: <FriendsList /> }
     ]
   }
 ]);

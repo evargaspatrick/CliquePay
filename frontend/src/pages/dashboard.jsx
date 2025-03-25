@@ -14,6 +14,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
 import ProfilePhotoModal from "../components/ProfilePhotoModal"
 // Import layout components
 import { PageLayout, Section, Header, Footer } from "../components/layout/PageLayout"
+import ChatsContainer from "../components/chats/ChatsContainer";
+import { getTotalUnreadCount } from "../components/chats/ChatNotifications";
 
 // Create a simple Logo component if it doesn't exist
 const Logo = () => (
@@ -147,6 +149,8 @@ export default function Dashboard() {
   const [showLogoutModal, setShowLogoutModal] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [error, setError] = useState("")
+  const [groupChats, setGroupChats] = useState([]);
+  const [directChats, setDirectChats] = useState([]);
   
   // API URL from environment variable or fallback
   const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api'
@@ -190,6 +194,26 @@ export default function Dashboard() {
       console.error("Failed to send reminder:", error)
     }
   }
+
+  const handleOpenGroupChat = (chatId) => {
+    // Mark as read
+    setGroupChats(groupChats.map(chat => 
+      chat.id === chatId ? {...chat, unreadCount: 0} : chat
+    ));
+    
+    // Here you would navigate to the chat or open a chat modal
+    console.log(`Opening group chat ${chatId}`);
+  };
+  
+  const handleOpenDirectChat = (chatId) => {
+    // Mark as read
+    setDirectChats(directChats.map(chat => 
+      chat.id === chatId ? {...chat, unreadCount: 0} : chat
+    ));
+    
+    // Here you would navigate to the chat or open a chat modal
+    console.log(`Opening direct chat ${chatId}`);
+  };
 
   const LogoutConfirmationModal = () => (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -267,9 +291,14 @@ export default function Dashboard() {
       <Header className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-sm py-4">
         <Logo />
         <div className="flex items-center gap-4">
-          <Button variant="outline" className="border-zinc-700 bg-zinc-800 hover:bg-zinc-700">
+          <Button variant="outline" className="border-zinc-700 bg-zinc-800 hover:bg-zinc-700 relative">
             <Bell className="h-4 w-4 mr-2" />
             <span className="hidden sm:inline">Notifications</span>
+            {getTotalUnreadCount(groupChats, directChats) > 0 && (
+              <span className="absolute -top-1 -right-1 bg-purple-600 text-white text-xs rounded-full h-5 min-w-5 flex items-center justify-center">
+                {getTotalUnreadCount(groupChats, directChats)}
+              </span>
+            )}
           </Button>
           <Button className="bg-purple-600 hover:bg-purple-700">
             <DollarSign className="h-4 w-4 mr-2" />
@@ -298,9 +327,14 @@ export default function Dashboard() {
               <BarChart3 className="h-4 w-4 mr-2" />
               <span className="hidden sm:inline">Analytics</span>
             </TabsTrigger>
-            <TabsTrigger value="Chats" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
+            <TabsTrigger value="Chats" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white relative">
               <Settings className="h-4 w-4 mr-2" />
               <span className="hidden sm:inline">Chats</span>
+              {getTotalUnreadCount(groupChats, directChats) > 0 && (
+                <span className="absolute -top-1 right-0 bg-purple-600 text-white text-xs rounded-full h-5 min-w-5 flex items-center justify-center">
+                  {getTotalUnreadCount(groupChats, directChats)}
+                </span>
+              )}
             </TabsTrigger>
           </TabsList>
 
@@ -423,17 +457,12 @@ export default function Dashboard() {
           </TabsContent>
 
           <TabsContent value="Chats">
-            <Card className="bg-zinc-900 border-zinc-800">
-              <CardHeader>
-                <CardTitle>Chats</CardTitle>
-                <CardDescription className="text-gray-400">
-                  Manage your friends and group chats here.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-400">Your friends and group chats will appear here.</p>
-              </CardContent>
-            </Card>
+            <ChatsContainer 
+              groupChats={groupChats}
+              directChats={directChats}
+              onOpenGroupChat={handleOpenGroupChat}
+              onOpenDirectChat={handleOpenDirectChat}
+            />
           </TabsContent>
         </Tabs>
       </Section>
