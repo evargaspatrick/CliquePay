@@ -7,8 +7,8 @@ import Login from "../pages/login";
 import Dashboard from "../pages/dashboard";
 import UserProfile from "../pages/userprofile";
 import EditProfile from "../pages/editprofile"
-// import FriendsList from "../pages/friendslist"
 import Friends from "../pages/friends";
+import NotFound from "../pages/not-found"; // Add this import
 
 const router = createBrowserRouter([
   {
@@ -21,10 +21,9 @@ const router = createBrowserRouter([
       { path: "login", element: <Login /> },
       { path: "dashboard", element: <Dashboard /> },
       { path: "profile", element: <UserProfile /> },
-      // { path: "friends-list", element: <FriendsList /> }
       { path: "profile/edit", element: <EditProfile /> },
-      { path: "friends", element: <Friends /> }
-
+      { path: "friends", element: <Friends /> },
+      { path: "*", element: <NotFound /> } // Add this line
     ]
   }
 ]);

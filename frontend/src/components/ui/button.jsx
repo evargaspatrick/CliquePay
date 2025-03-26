@@ -1,10 +1,11 @@
 import * as React from "react"
+import * as Slot from "@radix-ui/react-slot" // Add this import
 import PropTypes from 'prop-types';
 import { cn } from "../../lib/utils"
 import { buttonVariants } from "./button-variants"
 
 const Button = React.forwardRef(({ className, variant = "default", size = "default", asChild = false, ...props }, ref) => {
-  const Comp = asChild ? React.Slot : "button"
+  const Comp = asChild ? Slot.Slot : "button" // Use Slot.Slot instead of React.Slot
   return <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />
 })
 
