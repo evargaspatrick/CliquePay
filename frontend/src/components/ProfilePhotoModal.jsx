@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { X, Upload, Trash2 } from 'lucide-react';
 import Cookies from 'js-cookie';
+
 const ProfilePhotoModal = ({ isOpen, onClose, currentPhoto, onPhotoUpdate }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -53,7 +54,7 @@ const ProfilePhotoModal = ({ isOpen, onClose, currentPhoto, onPhotoUpdate }) => 
       
       if (response.ok) {
         onPhotoUpdate(data.avatar_url);
-            handleClose();
+        handleClose();
       } else {
         setError(data.message || 'Failed to upload photo');
       }
@@ -97,13 +98,13 @@ const ProfilePhotoModal = ({ isOpen, onClose, currentPhoto, onPhotoUpdate }) => 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-bold">Update Profile Photo</h3>
+          <h3 className="text-xl font-bold text-white">Update Profile Photo</h3>
           <button 
             onClick={handleClose} 
-            className="text-gray-500 hover:text-gray-700"
+            className="text-zinc-400 hover:text-white"
           >
             <X size={24} />
           </button>
@@ -114,14 +115,14 @@ const ProfilePhotoModal = ({ isOpen, onClose, currentPhoto, onPhotoUpdate }) => 
             <img
               src={previewUrl || currentPhoto || "/placeholder.svg?height=150&width=150"}
               alt="Profile preview"
-              className="w-32 h-32 rounded-full object-cover border-4 border-green-600"
+              className="w-32 h-32 rounded-full object-cover border-4 border-purple-600"
             />
           </div>
 
           <div className="flex flex-col gap-4">
-            <label className="flex flex-col items-center p-4 border-2 border-dashed border-green-600 rounded-lg cursor-pointer hover:bg-green-50">
-              <Upload className="w-8 h-8 text-green-600 mb-2" />
-              <span className="text-sm text-gray-600">Click to upload new photo</span>
+            <label className="flex flex-col items-center p-4 border-2 border-dashed border-purple-600 rounded-lg cursor-pointer hover:bg-zinc-800 transition-colors">
+              <Upload className="w-8 h-8 text-purple-500 mb-2" />
+              <span className="text-sm text-zinc-300">Click to upload new photo</span>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -135,7 +136,7 @@ const ProfilePhotoModal = ({ isOpen, onClose, currentPhoto, onPhotoUpdate }) => 
               <button
                 onClick={resetPhoto}
                 disabled={isUploading}
-                className="flex items-center justify-center gap-2 py-2 px-4 border border-red-600 text-red-600 rounded-lg hover:bg-red-50"
+                className="flex items-center justify-center gap-2 py-2 px-4 border border-red-700 text-red-500 rounded-lg hover:bg-zinc-800 transition-colors disabled:opacity-50"
               >
                 <Trash2 size={20} />
                 Delete
@@ -145,23 +146,23 @@ const ProfilePhotoModal = ({ isOpen, onClose, currentPhoto, onPhotoUpdate }) => 
         </div>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-100 text-red-600 rounded-lg">
+          <div className="mb-4 p-3 bg-red-900/50 border border-red-700 text-red-300 rounded-lg">
             {error}
           </div>
         )}
 
         <div className="flex gap-4">
-        <button
+          <button
             onClick={handleClose}
-            className="flex-1 py-2 px-4 rounded-lg border border-zinc-700 bg-zinc-800 text-white hover:bg-zinc-700"
-          > 
+            className="flex-1 py-2 px-4 rounded-lg border border-zinc-700 bg-zinc-800 text-white hover:bg-zinc-700 transition-colors"
+          >
             Cancel
           </button>
           {selectedFile && (
             <button
               onClick={uploadPhoto}
               disabled={isUploading}
-              className="flex-1 py-2 px-4 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+              className="flex-1 py-2 px-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
             >
               {isUploading ? "Uploading..." : "Save"}
             </button>
