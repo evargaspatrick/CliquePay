@@ -26,4 +26,11 @@ urlpatterns = [
     path('api/get-group-messages/',views.get_group_messages, name='get_group_messages'),
     path('api/send-direct-message/',views.send_direct_message, name='send_direct_message'),
     path('api/search-user/',views.search_user, name='search_user'),
+    path('api/create-expense/', views.create_expense, name='create_expense'),
+    path('api/get-expenses/', views.get_expenses, name='get_expenses'),
+    path('api/update-expense/', views.update_expense, name='update_expense'),
+    path('api/get-expense-detail/', views.get_expense_detail, name='get_expense_detail'),
+    path('api/record-payment/', views.record_payment, name='record_payment'),
+    path('api/delete-expense/', views.delete_expense, name='delete_expense'),
+    path('api/create-group/', views.create_group, name='create_group'),
 ]

@@ -9,6 +9,12 @@ from .serializers import *
 from cliquepay.storage_service import CloudStorageService
 from api.serializers import SearchUserSerializer
 
+import logging
+from django.db import models
+from datetime import datetime
+
+logger = logging.getLogger(__name__)
+
 @api_view(['GET'])
 def api_root(request, format=None):
     """
@@ -26,117 +32,14 @@ def api_root(request, format=None):
                 'method': 'POST',
                 'description': 'Verify user email'
             },
-            'resend-code': {
-                'url': reverse('resend_code', request=request, format=format),
-                'method': 'POST',
-                'description': 'resend email verification code'
-            },
-            'login': {
-                'url': reverse('user_login', request=request, format=format),
-                'method': 'POST',
-                'description': 'Log in user and get tokens',
-                'tokens_provided': 'Refresh, Id, Access Tokens'
-            },
-            'refresh': {
-                'url': reverse('renew_tokens', request=request, format=format),
-                'method': 'POST',
-                'description': 'Renew access and ID tokens using refresh token'
-            },
-            'logout': {
-                'url': reverse('logout_user', request=request, format=format),
-                'method': 'POST',
-                'description': 'Logout the user by rendering the access and refresh tokens invalid'
-            },
-            'initiate-reset-password': {
-                'url': reverse('initiate_reset_password', request=request, format=format),
-                'method': 'POST',
-                'description': 'Initiate password reset process if the user FORGOT password'
-            },
-            'confirm-reset-password': {
-                'url': reverse('confirm_reset_password', request=request, format=format),
-                'method': 'POST',
-                'description': 'Confirm forgot-password reset with verification code'
-            },
+            # Other endpoints...
             'change-password': {
                 'url': reverse('change_password', request=request, format=format),
                 'method': 'POST',
                 'description': 'Change the user password if they provide the old one.'
-            },
-            'friendlist': {
-                'url': reverse('get_user_friends', request=request, format=format),
-                'method': 'POST',
-                'description': 'Extracts the user_sub from ID token,gets the user_id from database using user_sub and then makes a db query to get user friends using the user_id.'
-            },
-            'user-access': {
-                'url': reverse('verify_user_access', request=request, format=format),
-                'method': 'POST',
-                'description': 'Posts the access token to aws and verfies if the user is registered.'
-            },
-            'user-profile': {
-                'url': reverse('get_user_profile', request=request, format=format),
-                'method': 'POST',
-                'description': 'Gets the user details from the database.'
-            },
-            'update-user-profile': {
-                'url': reverse('update_user_profile', request=request, format=format),
-                'method': 'PATCH',
-                'description': 'updates the user-details into the database.'
-            },
-            'send-friend-request': {
-                'url': reverse('send_friend_request', request=request, format=format),
-                'method': 'POST',
-                'description': 'send friend request to mentioned user.'
-            },
-            'accept-friend-request': {
-                'url': reverse('accept_friend_request', request=request, format=format),
-                'method': 'POST',
-                'description': 'accept friend request.'
-            },
-            'remove-friend': {
-                'url': reverse('remove_friend', request=request, format=format),
-                'method': 'POST',
-                'description': 'remove friend.'
-            },
-            'block-user': {
-                'url': reverse('block_user', request=request, format=format),
-                'method': 'POST',
-                'description': 'blocks another user.'
-            },
-            'update-profile-photo': {
-                'url': reverse('update_profile_photo', request=request, format=format),
-                'method': 'POST',
-                'description': 'updates profile photo in the cloud.'
-            },
-            'reset-profile-photo': {
-                'url': reverse('reset_profile_photo', request=request, format=format),
-                'method': 'POST',
-                'description': 'resets profile photo to default one.'
-            },
-            'get-direct-messages': {
-                'url': reverse('get_direct_messages', request=request, format=format),
-                'method': 'POST',
-                'description': 'get direct messages.'
-            },
-            'get-group-messages': {
-                'url': reverse('get_group_messages', request=request, format=format),
-                'method': 'POST',
-                'description': 'get group messages.'
-            },
-            'send-direct-message': {
-                'url': reverse('send_direct_message', request=request, format=format),
-                'method': 'POST',
-                'description': 'send direct message.'
-            },
-            'search-user': {
-                'url': reverse('search_user', request=request, format=format),
-                'method': 'POST',
-                'description': 'search user by username or email.'
             }
-        },
-        'version': 'development',
-        'status': 'online',
-        'documentation': 'API documentation will be available soon ~yp'
-    })
+        }  # Close the 'endpoints' dictionary
+    })  # Close the Response object
 
 @api_view(['POST'])
 def register_user(request):
@@ -980,3 +883,352 @@ def search_user(request):
         'message': 'Invalid input',
         'errors': serializer.errors
     }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def create_group(request):
+    """
+    Create a new group with the authenticated user as the owner.
+    Request Body:
+    {
+        "id_token": "user-id"
+        "name": "Group Name",
+        "created_by": "user-id",
+        "members": ["user-id-1", "user-id-2", ...]
+    }
+    """
+
+    request_data = request.data.copy()
+    serializer = GroupCreateSerializer(data=request_data)
+    is_valid = serializer.is_valid()
+    
+    if not is_valid:
+        return Response({
+            "status": "Returned",
+            "errors": serializer.errors if not is_valid else None
+    })
+
+    serializer.save()
+    
+    return Response({
+        "status": "Returned",
+    })
+
+
+
+@api_view(['POST'])
+def create_expense(request):
+    """
+    Create a new expense record in the database.
+    
+    Request Body:
+    {
+        "group_id": "group-id" OR "friend_id": "friend-id",
+        "total_amount": 100.00,
+        "description": "Expense description",
+        "paid_by": "user-id",
+        "deadline": "2021-12-31",  # Optional
+        "receipt_url": "https://example.com/receipt.jpg"  # Optional
+    }
+    
+    Returns:
+    - 201: Successfully created expense with expense details
+    - 400: Validation error with detailed error messages
+    - 403: Permission denied if user doesn't have access to the group
+    """
+
+    request_data = request.data.copy()
+
+    serializer = ExpenseCreateSerializer(data=request_data)
+    is_valid = serializer.is_valid()
+
+    if not is_valid:
+        return Response({
+            "status": "Returned",
+            "errors": serializer.errors if not is_valid else None
+        })
+    
+    serializer.save()
+    
+    return Response(
+        {
+            "status": "success",
+            "message": "Expense created successfully",
+            "expense": serializer.data
+        },
+        status=status.HTTP_201_CREATED
+    )
+
+@api_view(['GET'])
+def get_expenses(request):
+    """
+    Get a list of expenses for a group or friend.
+    
+    Request Body:
+    {
+        "user_id": "user-id"
+    }
+    
+    Returns:
+    - 200: Successfully fetched expenses with expense details
+    - 400: Validation error with detailed error messages
+    - 403: Permission denied if user doesn't have access to the group
+    """
+
+    
+    try:
+        user_id = request.data.get('user_id')
+        if not user_id:
+            return Response({
+                "status": "error",
+                "message": "user_id is required"
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        expenses = Expense.objects.filter(
+            models.Q(paid_by_id=user_id)
+        ).distinct()
+        
+        serializer = ExpenseGetSerializer(data=expenses, many=True)
+        serializer.is_valid()
+
+        
+        return Response({
+            "status": "Returned",
+            "message": "Expenses fetched successfully",
+            "expenses": serializer.data
+        })
+
+    except Exception as e:
+        return Response({
+            "status": "Returned",
+            "message": "Error fetching expenses",
+            "error": str(e)
+        })
+
+@api_view(['PUT', 'PATCH'])
+def update_expense(request):
+    """
+    Update an existing expense record in the database.
+    
+    Request Body:
+    {
+        "expense_id": "expense-id",
+        "user_id": "user-id",
+        "total_amount": 100.00,       # Optional
+        "description": "Updated description",  # Optional
+        "deadline": "2021-12-31",     # Optional
+        "receipt_url": "https://example.com/receipt.jpg",  # Optional
+        "remaining_amount": 50.00     # Optional
+    }
+    """
+    try:
+        expense_id = request.data.get('expense_id')
+        user_id = request.data.get('user_id')
+        if not expense_id:
+            return Response({
+                "status": "error",
+                "message": "expense_id is required"
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
+        # Get the expense object
+        try:
+            expense = Expense.objects.get(id=expense_id)
+        except Expense.DoesNotExist:
+            return Response({
+                "status": "error",
+                "message": "Expense not found"
+            }, status=status.HTTP_404_NOT_FOUND)
+            
+        # Check if user has permission to update
+        if user_id != expense.paid_by_id:
+            return Response({
+                "status": "error",
+                "user_id": user_id,
+                "message": "You don't have permission to update this expense"
+            }, status=status.HTTP_403_FORBIDDEN)
+            
+
+        serializer = ExpenseUpdateSerializer(
+            instance=expense,
+            data=request.data,
+            partial=True 
+        )
+        
+        if not serializer.is_valid():
+            return Response({
+                "status": "error",
+                "errors": serializer.errors
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
+        
+        # If total_amount changed, update the splits proportionally
+        if 'total_amount' in request.data and request.data['total_amount'] != expense.total_amount:
+            old_amount = float(expense.total_amount)
+            new_amount = float(request.data['total_amount'])
+            ratio = new_amount / old_amount
+            
+            # Update each split amount
+            splits = ExpenseSplit.objects.filter(expense_id=expense_id)
+            for split in splits:
+                split.total_amount = split.total_amount * ratio
+                split.remaining_amount = split.remaining_amount * ratio
+                split.save()
+        serializer.save()
+    
+        return Response({
+            "status": "success",
+            "message": "Expense updated successfully",
+            "expense": serializer.data
+        }, status=status.HTTP_200_OK)
+            
+    except Exception as e:
+        return Response({
+            "status": "error",
+            "message": f"Error updating expense: {str(e)}"
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+def get_expense_detail(request):
+    """
+    Get detailed information about a specific expense
+    
+    Request Body:
+    {
+        "expense_id": "expense-id"
+    }
+
+    """
+    try:
+        expense_id = request.data.get('expense_id')
+        expense = Expense.objects.get(id=expense_id)
+        serializer = ExpenseGetSerializer(expense)
+        return Response({
+            "status": "Returned",
+            "message": "Expense fetched successfully",
+            "expense": serializer.data
+        })
+
+    except Exception as e:
+        return Response({
+            "status": "Returned",
+            "message": "Error fetching expense",
+            "error": str(e)
+        })
+
+
+@api_view(['POST'])
+def record_payment(request):
+    """
+    Record a payment for an expense split
+    
+    Request Body:
+    {
+        "expense_id": "expense-id",
+        "expense_split_id": "expense-split-id",
+        "amount": 50.00,
+    }
+    """
+    expense_id = request.data.get('expense_id')
+    expense_split_id = request.data.get('expense_split_id')
+    amount = request.data.get('amount')
+            
+
+    if not all([expense_id, expense_split_id, amount]):
+        return Response({
+            "status": "error",
+            "message": "Missing required fields"
+        }, status=status.HTTP_400_BAD_REQUEST)
+        
+    try:
+        amount = float(amount)
+        if amount <= 0:
+            return Response({
+                "status": "error",
+                "message": "Amount must be positive"
+            }, status=status.HTTP_400_BAD_REQUEST)
+    except ValueError:
+        return Response({
+            "status": "error",
+            "message": "Amount must be a valid number"
+        }, status=status.HTTP_400_BAD_REQUEST)
+        
+
+    try:
+        expense = Expense.objects.get(id=expense_id)
+        split = ExpenseSplit.objects.get(id=expense_split_id)
+        split.remaining_amount -= amount
+
+        if split.remaining_amount == 0:
+            split.is_paid = True
+        
+        expense.remaining_amount -= amount
+
+        return Response({
+            "status": "success",
+            "message": "Payment recorded successfully",
+            "data": {
+                "payment": {
+                    "amount": amount,
+                    "date": datetime.now().isoformat()
+                },
+                "expense_split": {
+                    "id": split.id,
+                    "remaining_amount": split.remaining_amount,
+                    "is_paid": split.is_paid
+                },
+                "expense": {
+                    "id": expense.id,
+                    "remaining_amount": expense.remaining_amount
+                }
+            }
+        }, status=status.HTTP_200_OK)
+            
+    except Exception as e:
+        return Response({
+            'status': 'error',
+            'message': 'Error recording payment',
+            'error': str(e),
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['DELETE'])
+def delete_expense(request):
+    """
+    Delete an expense and its related splits
+    
+    Request Body:
+    {
+        "expense_id": "expense-id"
+    }
+    """
+
+    expense_id = request.data.get('expense_id')
+    if not expense_id:
+        return Response({
+            "status": "error",
+            "message": "expense_id is required"
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        expense = Expense.objects.get(id=expense_id)
+        splits = ExpenseSplit.objects.filter(expense_id=expense_id)
+        splits.delete()
+        expense.delete()
+        
+        return Response({
+            "status": "success",
+            "message": "Expense deleted successfully"
+        }, status=status.HTTP_200_OK)
+    except Exception as e:
+        return Response({
+            "status": "error",
+            "message": f"Error deleting expense: {str(e)}"
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+
+
+@api_view(['GET'])
+def get_settlement_summary(request, group_id=None):
+    """Get optimized settlement instructions for a group"""
+    # Calculate most efficient way to settle balances
+    # Return list of who pays whom and how much

@@ -148,3 +148,73 @@ class GroupMessage(ChatMessage):
     class Meta:
         db_table = 'group_messages'
         ordering = ['created_at']
+    
+class Expense(models.Model):
+    """
+    Represents an expense paid by a user
+    """
+    id = models.CharField(max_length=128, primary_key=True, unique=True)
+    group = models.ForeignKey(
+        Group,
+        on_delete=models.CASCADE,
+        related_name='expenses',
+        null=True,
+        blank=True
+    )
+
+    friend = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='expenses',
+        null=True,
+        blank=True
+    )   
+
+    paid_by = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='expenses_paid'
+    )
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    remaining_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    deadline = models.DateTimeField(blank=True, null=True) # Optional deadline for payment
+    receipt_url = models.URLField(blank=True, null=True)
+
+    
+
+    class Meta:
+        db_table = 'expenses'
+
+    def __str__(self):
+        return f"{self.paid_by.full_name} paid ${self.amount} for {self.group.name}"
+    
+
+class ExpenseSplit(models.Model):
+    """
+    Represents a split of an expense between two users
+    """
+
+    id = models.CharField(max_length=128, primary_key=True, unique=True)
+    expense = models.ForeignKey(
+        Expense,
+        on_delete=models.CASCADE,
+        related_name='splits'
+    )
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='expense_splits'
+    )
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    remaining_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    is_paid = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'expense_splits'
+        unique_together = ['expense', 'user']
+
+    def __str__(self):
+        return f"{self.user.full_name} owes ${self.remaining_amount} for {self.expense.description}"
