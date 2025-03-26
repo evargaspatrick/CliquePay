@@ -53,4 +53,4 @@ node_modules
 *.swo
 
 .DS_Store
-Thumbs.db
+Thumbs.db**/__pycache__/
