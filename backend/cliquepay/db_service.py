@@ -92,7 +92,7 @@ class DatabaseService:
             friends_list = []
             for friendship in friendships:
                 friend = friendship.user2 if friendship.user1_id == user_id else friendship.user1
-                if(friendship.status is 'BLOCKED' or friendship.status is 'blocked'):
+                if(friendship.status == 'BLOCKED' or friendship.status == 'blocked'):
                     friends_list.append({
                         'friend_id': "null",
                         'friend_name': friend.full_name,
@@ -110,7 +110,9 @@ class DatabaseService:
                         'profile_photo': friend.avatar_url,
                         'status': friendship.status,
                         'initiator': friendship.action_user.id == user_id,
-                        'created_at': friendship.created_at
+                        'created_at': friendship.created_at,
+                        'friendship_id': friendship.id
+
                     })
 
             return {
@@ -275,7 +277,7 @@ class DatabaseService:
             }
 
     @staticmethod
-    def accept_friend_request(cognito_id, reqeust_id):
+    def accept_friend_request(cognito_id, request_id):
         """
         Accept friend request from the cognito account
         provided in args.
@@ -289,7 +291,7 @@ class DatabaseService:
 
         try:
             user = User.objects.get(cognito_id=cognito_id)
-            friendship = Friendship.objects.get(id=reqeust_id)
+            friendship = Friendship.objects.get(id=request_id)
 
             # Verify the user is the recipient of the friend request
             if friendship.user2 != user:
@@ -703,6 +705,58 @@ class DatabaseService:
             return {
                 'status': 'ERROR',
                 'message': 'User not found'
+            }
+        except Exception as e:
+            return {
+                'status': 'ERROR',
+                'message': str(e)
+            }
+        
+    @staticmethod
+    def reject_friend_request(cognito_id, request_id):
+        """
+        Reject friend request from the cognito account
+        provided in args.
+
+        Args:
+            cognito_id (str) : Cognito user ID
+            request_id (str) : Friendship model ID
+        Returns: 
+            dict: Status of friend request rejection 
+        """
+
+        try:
+            user = User.objects.get(cognito_id=cognito_id)
+            friendship = Friendship.objects.select_related('user1', 'user2').get(id= request_id)
+
+            if friendship.user2 != user:
+                return {
+                    'status': 'ERROR',
+                    'message': 'User not authorized to reject this friend request'
+                }
+
+            if friendship.status != 'PENDING':
+                return {
+                    'status': 'ERROR',
+                    'message': f'Friend request is not pending, current status: {friendship.status}'
+                }
+
+            friendship.delete()
+
+            return {
+                'status': 'SUCCESS',
+                'message': 'Friend request rejected successfully'
+            }
+
+        except User.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'User not found'
+            }
+        except Friendship.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'Friend request not found'
             }
         except Exception as e:
             return {

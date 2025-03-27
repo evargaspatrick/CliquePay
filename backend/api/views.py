@@ -137,7 +137,12 @@ def api_root(request, format=None):
                 'url': reverse('search_user', request=request, format=format),
                 'method': 'POST',
                 'description': 'search user by username or email.'
-            }
+            },
+            'reject-friend-request': {
+                'url': reverse('reject_friend_request', request=request, format=format),
+                'method': 'POST',
+                'description': 'reject friend request.'
+            },
         },
         'version': 'development',
         'status': 'online',
@@ -1327,11 +1332,37 @@ def delete_expense(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+# @api_view(['GET'])
+# def get_settlement_summary(request, group_id=None):
+#     """Get optimized settlement instructions for a group"""
+#     # Calculate most efficient way to settle balances
+#     # Return list of who pays whom and how much
 
-
-
-@api_view(['GET'])
-def get_settlement_summary(request, group_id=None):
-    """Get optimized settlement instructions for a group"""
-    # Calculate most efficient way to settle balances
-    # Return list of who pays whom and how much
+@api_view(['POST'])
+def reject_friend_request(request):
+    """
+    Reject a friend request on behalf of the authenticated user.
+    
+    Request Body Example:
+    {
+        "id_token": "user-id-token",
+        "request_id": "FriEndReqUestId" 
+    }
+    """
+    serializer = AcceptFriendRequestSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        id_req = cognito.get_user_id(id_token=serializer.validated_data['id_token'])
+        if id_req['status'] == 'SUCCESS':
+            cognito_id = id_req['user_sub']
+            db = DatabaseService()
+            result = db.reject_friend_request(cognito_id=cognito_id, request_id=serializer.validated_data['request_id'])
+            if result['status'] == 'SUCCESS':
+                return Response(result, status=status.HTTP_202_ACCEPTED)
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        return Response(id_req, status=status.HTTP_401_UNAUTHORIZED)
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)

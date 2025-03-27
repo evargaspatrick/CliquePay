@@ -233,20 +233,61 @@ const Content = () => {
         console.log(`Friend request sent to ${username}`);
     };
 
-    const handleRemoveFriend = (id) => {
-      setFriends(friends.filter(friend => friend.friend_id !== id));
+    const handleRemoveFriend = () => {
+      setFriends(friends.filter(friend => friend.id !== id));
     };
 
-    const handleAcceptRequest = (id) => {
-      const accepted = requests.find(req => req.friend_id === id);
-      if (accepted) {
-        setFriends([...friends, accepted]);
-        setRequests(requests.filter(req => req.friend_id !== id));
-      }
+    const handleAcceptRequest = async (friend) => {
+        try {
+            const token = await SecurityUtils.getCookie('idToken');
+            if (!token) {
+                setError('No authentication token found');
+                return;
+            }
+            const response = await fetch(`${API_URL}/accept-friend-request/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ id_token: token, request_id: friend.friendship_id })
+            });
+            const data = await response.json();
+            if (data.status === 'SUCCESS') {
+                setFriends([...friends, friend]);
+                setRequests(requests.filter(req => req.friendship_id !== friend.friendship_id));
+            } else {
+                setError(data.message || 'Failed to accept friend request');
+            }
+        } 
+        catch (error) {
+            console.error('Error accepting friend request:', error);
+        }
+        
     };
 
-    const handleDeclineRequest = (id) => {
-      setRequests(requests.filter(req => req.friend_id !== id));
+    const handleDeclineRequest = async (friend) => {
+        try{
+            const token = await SecurityUtils.getCookie('idToken');
+            if (!token) {
+                setError('No authentication token found');
+                return;
+            }
+            const response = await fetch(`${API_URL}/reject-friend-request/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ id_token: token, request_id: friend.friendship_id })
+            });
+            const data = await response.json();
+            if (data.status === 'SUCCESS') {
+                setRequests(requests.filter(req => req.friendship_id !== friend.friendship_id));
+            } else {
+                setError(data.message || 'Failed to decline friend request');
+            }
+        } catch(error){
+            console.error('Error declining friend request:', error);
+        }
     };
 
     const handleDashboardClick = () => {
@@ -377,23 +418,21 @@ const Content = () => {
                                     You have {requests.length} pending friend requests
                                 </CardDescription>
                             </CardHeader>
-                            <CardContent>
-                                <div className="space-y-4 max-h-[550px] overflow-y-auto pr-2 custom-scrollbar">
-                                    {requests.length === 0 ? (
-                                        <p className="text-center text-zinc-400 py-4">You don&apos;t have any pending friend requests.</p>
-                                    ) : (
-                                        requests.map(request => (
-                                            <RequestCard 
-                                                key={request.friend_id}
-                                                name={request.friend_name}
-                                                email={request.email}
-                                                imgSrc={request.profile_photo}
-                                                onAccept={() => handleAcceptRequest(request.friend_id)}
-                                                onDecline={() => handleDeclineRequest(request.friend_id)}
-                                            />
-                                        ))
-                                    )}
-                                </div>
+                            <CardContent className="space-y-4">
+                                {requests.length === 0 ? (
+                                    <p className="text-center text-zinc-400 py-4">You don't have any pending friend requests.</p>
+                                ) : (
+                                    requests.map(request => (
+                                        <RequestCard 
+                                            key={request.friendship_id}
+                                            name={request.friend_name}
+                                            email={request.email}
+                                            imgSrc={request.profile_photo}
+                                            onAccept={() => handleAcceptRequest(request)}
+                                            onDecline={() => handleDeclineRequest(request)}
+                                        />  
+                                    ))
+                                )}
                             </CardContent>
                         </Card>
                     </TabsContent>
