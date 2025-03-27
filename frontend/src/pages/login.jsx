@@ -169,7 +169,7 @@ export default function Login() {
                     >
                       Password
                     </label>
-                    <Link to="/" className="text-sm text-purple-400 hover:text-purple-300">
+                    <Link to="/forgot" className="text-sm text-purple-400 hover:text-purple-300">
                       Forgot password?
                     </Link>
                   </div>

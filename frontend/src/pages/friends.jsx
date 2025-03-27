@@ -9,7 +9,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 import { Button } from "../components/ui/button";
 import Loading from '../components/Loading';
 import { SecurityUtils } from '../utils/security';
-import { Users, UserPlus, Search, CreditCard, ArrowLeftFromLineIcon } from "lucide-react";
+import { Users, UserPlus, Search, CreditCard, ArrowLeftFromLineIcon     
+    
+ } from "lucide-react";
 
 // Simple Logo component
 const Logo = () => (
@@ -184,11 +186,11 @@ const Content = () => {
         const requests = [];
         const blocked = [];
         friendships.forEach(friendship => {
-            if (friendship.status === 'accepted' || friendship.status === 'Accepted'){
+            if (friendship.status === 'accepted' || friendship.status === 'ACCEPTED') {
                 friends.push(friendship);
-            } else if (friendship.status === 'pending' || friendship.status === 'Pending') {
+            } else if (friendship.status === 'pending' || friendship.status === 'PENDING') {
                 requests.push(friendship);
-            } else if (friendship.status === 'blocked' || friendship.status === 'Blocked') {
+            } else if (friendship.status === 'blocked' || friendship.status === 'BLOCKED') {
                 blocked.push(friendship);
             }
 
@@ -200,9 +202,10 @@ const Content = () => {
 
     useEffect(() => {
         fetchUserProfile();
-        sortFriendships(allUsers);
     }, []);
-
+    useEffect(() => {
+        sortFriendships(allUsers);
+    }, [allUsers]);
 
 
     const handleSearch = async (e) => {
@@ -266,8 +269,8 @@ const Content = () => {
             });
             const data = await response.json();
             if (data.status === 'SUCCESS') {
-                setRequests(prev => [...prev, data.friendship]);
-                // Already added to requested users above
+                // Don't add to requests array since this is an OUTGOING request
+                // Just keep it in requestedUsers for button state
             } else if (data.status === 'PENDING') {
                 // Request was already pending, keep in requested users
             } else {
