@@ -9,7 +9,7 @@ import UserProfile from "../pages/userprofile";
 import EditProfile from "../pages/editprofile"
 // import FriendsList from "../pages/friendslist"
 import Friends from "../pages/friends";
-
+import ForgotPassword from "../pages/forgot";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -21,10 +21,10 @@ const router = createBrowserRouter([
       { path: "login", element: <Login /> },
       { path: "dashboard", element: <Dashboard /> },
       { path: "profile", element: <UserProfile /> },
-      // { path: "friends-list", element: <FriendsList /> }
+      { path: "friends-list", element: <Friends /> },
       { path: "profile/edit", element: <EditProfile /> },
-      { path: "friends", element: <Friends /> }
-
+      { path: "friends", element: <Friends /> },
+      { path: "forgot", element: <ForgotPassword/>},
     ]
   }
 ]);

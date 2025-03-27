@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { faCircleUser } from '@fortawesome/free-regular-svg-icons';
-import { UserIcon } from 'lucide-react';
+import { UserCircle } from 'lucide-react'; // Changed to Lucide version for consistency
 import PropTypes from 'prop-types';
 import Cookies from 'js-cookie';
 
@@ -43,49 +42,70 @@ export const ProfileDropdown = ({ onLogout }) => {
     onLogout();
   };
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setIsOpen(false);
+    };
+    
+    if (isOpen) {
+      document.addEventListener('click', handleClickOutside);
+    }
+    
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [isOpen]);
+
   return (
-    <div className="relative">
-      {profileData?.profile_photo ? (
-        <img 
-          src={profileData.profile_photo}
-          alt="Profile" 
-          className="w-12 h-12 rounded-full cursor-pointer hover:opacity-90 transition object-cover"
-          onClick={() => setIsOpen(!isOpen)}
-        />
-      ) : (
-        <UserIcon 
-          icon={faCircleUser} 
-          className="text-green-600 cursor-pointer hover:text-green-700 transition"
-          size = '20'
-          onClick={() => setIsOpen(!isOpen)}
-        />
-      )}
+    <div className="relative z-50"> {/* Increased z-index to 50 */}
+      <div onClick={(e) => {
+        e.stopPropagation();
+        setIsOpen(!isOpen);
+      }}>
+        {profileData?.profile_photo ? (
+          <img 
+            src={profileData.profile_photo}
+            alt="Profile" 
+            className="w-10 h-10 rounded-full cursor-pointer hover:opacity-90 transition object-cover border-2 border-purple-600"
+          />
+        ) : (
+          <UserCircle 
+            className="w-10 h-10 text-purple-600 cursor-pointer hover:text-purple-500 transition"
+          />
+        )}
+      </div>
       
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-48 bg-white/95 backdrop-blur-sm rounded-lg shadow-xl py-2 z-10 divide-y divide-gray-200">
+        <div className="fixed inset-0 z-[150]" onClick={() => setIsOpen(false)}>
           <div 
-            className="px-4 py-2 hover:bg-green-50 cursor-pointer flex items-center text-gray-800 hover:text-green-600"
-            onClick={() => navigate('/profile')}
+            className="absolute right-0 top-16 mt-1 w-56 bg-zinc-900 border border-zinc-800 rounded-lg shadow-xl py-2 z-[200] divide-y divide-zinc-800"
+            onClick={e => e.stopPropagation()}
           >
-            Profile Settings
-          </div>
-          <div 
-            className="px-4 py-2 hover:bg-green-50 cursor-pointer flex items-center text-gray-800 hover:text-green-600"
-            onClick={() => navigate('/friends-list')}
-          >
-            Friends List              
-          </div>
-          <div 
-            className="px-4 py-2 hover:bg-green-50 cursor-pointer flex items-center text-gray-800 hover:text-green-600"
-            onClick={() => navigate('/account')}
-          >
-            Account Settings
-          </div>
-          <div 
-            className="px-4 py-2 hover:bg-red-50 cursor-pointer flex items-center text-gray-800 hover:text-red-600"
-            onClick={() => handleLogout()}
-          >
-            Logout
+            <div 
+              className="px-4 py-3 hover:bg-zinc-800 cursor-pointer flex items-center text-white"
+              onClick={() => navigate('/profile')}
+            >
+              Profile Settings
+            </div>
+            <div 
+              className="px-4 py-3 hover:bg-zinc-800 cursor-pointer flex items-center text-white"
+              onClick={() => navigate('/friends')}
+            >
+              Friends List              
+            </div>
+            <div 
+              className="px-4 py-3 hover:bg-zinc-800 cursor-pointer flex items-center text-white"
+              onClick={() => navigate('/account')}
+            >
+              Account Settings
+            </div>
+            <div 
+              className="px-4 py-3 hover:bg-red-900/40 cursor-pointer flex items-center text-red-400"
+              onClick={() => handleLogout()}
+            >
+              Logout
+            </div>
           </div>
         </div>
       )}

@@ -292,9 +292,9 @@ export default function Dashboard() {
       {showLogoutModal && <LogoutConfirmationModal />}
       
       {/* Header */}
-      <Header className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-sm py-4">
+      <Header className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-sm py-4 relative z-[100]">
         <Logo />
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 relative z-[100]">
           <Button variant="outline" className="border-zinc-700 bg-zinc-800 hover:bg-zinc-700 relative">
             <Bell className="h-4 w-4 mr-2" />
             <span className="hidden sm:inline">Notifications</span>
@@ -314,7 +314,7 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <Section className="py-8">
-        <Tabs defaultValue="dashboard" className="w-full">
+        <Tabs defaultValue="dashboard" className="w-full relative z-10">
           <TabsList className="grid grid-cols-4 mb-8 bg-zinc-800 border border-zinc-700">
             <TabsTrigger value="dashboard" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
               <Home className="h-4 w-4 mr-2" />

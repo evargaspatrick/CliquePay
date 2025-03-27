@@ -9,7 +9,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 import { Button } from "../components/ui/button";
 import Loading from '../components/Loading';
 import { SecurityUtils } from '../utils/security';
-import { Users, UserPlus, Search, CreditCard, ArrowLeftFromLineIcon } from "lucide-react";
+import { Users, UserPlus, Search, CreditCard, ArrowLeftFromLineIcon     
+    
+ } from "lucide-react";
 
 // Simple Logo component
 const Logo = () => (
@@ -49,34 +51,40 @@ function FriendCard({ name, imgSrc, email, onRemove }) {
   )
 }
 
-//Search Card Component
-function SearchCard({ name, imgSrc, username, onRequest}) {
-    // Add fallback values for name and username
-    const displayName = name || 'Unknown User';
-    
-    return (
-        <Card className="bg-zinc-800 border-zinc-700 overflow-hidden">
-            <CardContent className="p-4">
-                <div className="flex items-center gap-4">
-                    <Avatar className="h-16 w-16">
-                        <AvatarImage src={imgSrc} alt={displayName} />
-                        <AvatarFallback className="bg-purple-900/50 text-white">
-                            {displayName.split(" ").map((n) => n[0]).join("")}
-                        </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                        <h3 className="font-medium text-white">{displayName}</h3>
-                        <p className="text-sm text-zinc-400">{username || 'No username'}</p>
-                    </div>
-                    <Button onClick={onRequest} className="bg-purple-600 hover:bg-purple-700">
-                        <UserPlus className="h-4 w-4 mr-2" />
-                        Request
-                    </Button>
-                </div>
-            </CardContent>
-        </Card>
-    )
+//Search Card Component with updated button state handling
+function SearchCard({ name, imgSrc, username, onRequest, isRequested }) {
+  const displayName = name || 'Unknown User';
+  
+  return (
+    <Card className="bg-zinc-800 border-zinc-700 overflow-hidden">
+      <CardContent className="p-4">
+        <div className="flex items-center gap-4">
+          <Avatar className="h-16 w-16">
+            <AvatarImage src={imgSrc} alt={displayName} />
+            <AvatarFallback className="bg-purple-900/50 text-white">
+              {displayName.split(" ").map((n) => n[0]).join("")}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1">
+            <h3 className="font-medium text-white">{displayName}</h3>
+            <p className="text-sm text-zinc-400">{username || 'No username'}</p>
+          </div>
+          <Button 
+            onClick={onRequest} 
+            disabled={isRequested}
+            className={`${isRequested 
+              ? 'bg-zinc-700 text-zinc-300 cursor-not-allowed' 
+              : 'bg-purple-600 hover:bg-purple-700'}`}
+          >
+            <UserPlus className="h-4 w-4 mr-2" />
+            {isRequested ? 'Requested' : 'Request'}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
+
 // Request Card Component
 function RequestCard({ name, imgSrc, email, onAccept, onDecline }) {
   return (
@@ -120,6 +128,7 @@ const Content = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [hasSearched, setHasSearched] = useState(false);
+    const [requestedUsers, setRequestedUsers] = useState([]);
     const navigate = useNavigate();
 
     const fetchUserProfile = async () => {
@@ -177,11 +186,11 @@ const Content = () => {
         const requests = [];
         const blocked = [];
         friendships.forEach(friendship => {
-            if (friendship.status === 'accepted' || friendship.status === 'Accepted'){
+            if (friendship.status === 'accepted' || friendship.status === 'ACCEPTED') {
                 friends.push(friendship);
-            } else if (friendship.status === 'pending' || friendship.status === 'Pending') {
+            } else if (friendship.status === 'pending' || friendship.status === 'PENDING') {
                 requests.push(friendship);
-            } else if (friendship.status === 'blocked' || friendship.status === 'Blocked') {
+            } else if (friendship.status === 'blocked' || friendship.status === 'BLOCKED') {
                 blocked.push(friendship);
             }
 
@@ -193,9 +202,10 @@ const Content = () => {
 
     useEffect(() => {
         fetchUserProfile();
-        sortFriendships(allUsers);
     }, []);
-
+    useEffect(() => {
+        sortFriendships(allUsers);
+    }, [allUsers]);
 
 
     const handleSearch = async (e) => {
@@ -236,6 +246,43 @@ const Content = () => {
             console.error('Error fetching search results:', error);
             setSearchResults([]); // Clear previous results on error
             setError('Error searching for users');
+        }
+    };
+
+    const handleRequest = async (username) => {
+        try {
+            const token = await SecurityUtils.getCookie('idToken');
+            if (!token) {
+                setError('No authentication token found');
+                return;
+            }
+            
+            // Add to requested users immediately for UI feedback
+            setRequestedUsers(prev => [...prev, username]);
+            
+            const response = await fetch(`${API_URL}/send-friend-request/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ id_token: token, recieve_username: username })
+            });
+            const data = await response.json();
+            if (data.status === 'SUCCESS') {
+                // Don't add to requests array since this is an OUTGOING request
+                // Just keep it in requestedUsers for button state
+            } else if (data.status === 'PENDING') {
+                // Request was already pending, keep in requested users
+            } else {
+                // On error, remove from requested users
+                setRequestedUsers(prev => prev.filter(u => u !== username));
+                setError(data.message || 'Failed to send friend request');
+            }
+        } catch (error) {
+            // On exception, remove from requested users
+            setRequestedUsers(prev => prev.filter(u => u !== username));
+            console.error('Error sending friend request:', error);
+            setError('Error sending friend request');
         }
     };
 
@@ -430,7 +477,8 @@ const Content = () => {
                                                         name={result.full_name}
                                                         username={result.username}
                                                         imgSrc={result.profile_photo}
-                                                        //onRequest={() => handleRequest(result.id)}
+                                                        onRequest={() => handleRequest(result.username)}
+                                                        isRequested={requestedUsers.includes(result.username)}
                                                     />
                                                 ) : null
                                             ))

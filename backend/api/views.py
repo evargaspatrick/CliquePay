@@ -32,14 +32,117 @@ def api_root(request, format=None):
                 'method': 'POST',
                 'description': 'Verify user email'
             },
-            # Other endpoints...
+            'resend-code': {
+                'url': reverse('resend_code', request=request, format=format),
+                'method': 'POST',
+                'description': 'resend email verification code'
+            },
+            'login': {
+                'url': reverse('user_login', request=request, format=format),
+                'method': 'POST',
+                'description': 'Log in user and get tokens',
+                'tokens_provided': 'Refresh, Id, Access Tokens'
+            },
+            'refresh': {
+                'url': reverse('renew_tokens', request=request, format=format),
+                'method': 'POST',
+                'description': 'Renew access and ID tokens using refresh token'
+            },
+            'logout': {
+                'url': reverse('logout_user', request=request, format=format),
+                'method': 'POST',
+                'description': 'Logout the user by rendering the access and refresh tokens invalid'
+            },
+            'initiate-reset-password': {
+                'url': reverse('initiate_reset_password', request=request, format=format),
+                'method': 'POST',
+                'description': 'Initiate password reset process if the user FORGOT password'
+            },
+            'confirm-reset-password': {
+                'url': reverse('confirm_reset_password', request=request, format=format),
+                'method': 'POST',
+                'description': 'Confirm forgot-password reset with verification code'
+            },
             'change-password': {
                 'url': reverse('change_password', request=request, format=format),
                 'method': 'POST',
                 'description': 'Change the user password if they provide the old one.'
+            },
+            'friendlist': {
+                'url': reverse('get_user_friends', request=request, format=format),
+                'method': 'POST',
+                'description': 'Extracts the user_sub from ID token,gets the user_id from database using user_sub and then makes a db query to get user friends using the user_id.'
+            },
+            'user-access': {
+                'url': reverse('verify_user_access', request=request, format=format),
+                'method': 'POST',
+                'description': 'Posts the access token to aws and verfies if the user is registered.'
+            },
+            'user-profile': {
+                'url': reverse('get_user_profile', request=request, format=format),
+                'method': 'POST',
+                'description': 'Gets the user details from the database.'
+            },
+            'update-user-profile': {
+                'url': reverse('update_user_profile', request=request, format=format),
+                'method': 'PATCH',
+                'description': 'updates the user-details into the database.'
+            },
+            'send-friend-request': {
+                'url': reverse('send_friend_request', request=request, format=format),
+                'method': 'POST',
+                'description': 'send friend request to mentioned user.'
+            },
+            'accept-friend-request': {
+                'url': reverse('accept_friend_request', request=request, format=format),
+                'method': 'POST',
+                'description': 'accept friend request.'
+            },
+            'remove-friend': {
+                'url': reverse('remove_friend', request=request, format=format),
+                'method': 'POST',
+                'description': 'remove friend.'
+            },
+            'block-user': {
+                'url': reverse('block_user', request=request, format=format),
+                'method': 'POST',
+                'description': 'blocks another user.'
+            },
+            'update-profile-photo': {
+                'url': reverse('update_profile_photo', request=request, format=format),
+                'method': 'POST',
+                'description': 'updates profile photo in the cloud.'
+            },
+            'reset-profile-photo': {
+                'url': reverse('reset_profile_photo', request=request, format=format),
+                'method': 'POST',
+                'description': 'resets profile photo to default one.'
+            },
+            'get-direct-messages': {
+                'url': reverse('get_direct_messages', request=request, format=format),
+                'method': 'POST',
+                'description': 'get direct messages.'
+            },
+            'get-group-messages': {
+                'url': reverse('get_group_messages', request=request, format=format),
+                'method': 'POST',
+                'description': 'get group messages.'
+            },
+            'send-direct-message': {
+                'url': reverse('send_direct_message', request=request, format=format),
+                'method': 'POST',
+                'description': 'send direct message.'
+            },
+            'search-user': {
+                'url': reverse('search_user', request=request, format=format),
+                'method': 'POST',
+                'description': 'search user by username or email.'
             }
-        }  # Close the 'endpoints' dictionary
-    })  # Close the Response object
+        },
+        'version': 'development',
+        'status': 'online',
+        'documentation': 'API documentation will be available soon ~yp'
+    })
 
 @api_view(['POST'])
 def register_user(request):

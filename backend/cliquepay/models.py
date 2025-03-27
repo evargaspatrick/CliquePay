@@ -49,7 +49,7 @@ class Friendship(models.Model):
         ('blocked', 'Blocked'),
     ]
     
-    id = models.CharField(max_length=128, primary_key=True, unique=True)
+    id = models.CharField(max_length=128, primary_key=True, default=uuid.uuid4, unique=True)
     user1 = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user1_friendships')
     user2 = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user2_friendships')
     status = models.CharField(max_length=8, choices=STATUS_CHOICES, default='pending')
