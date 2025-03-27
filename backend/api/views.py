@@ -98,11 +98,6 @@ def api_root(request, format=None):
                 'method': 'POST',
                 'description': 'accept friend request.'
             },
-            'remove-friend': {
-                'url': reverse('remove_friend', request=request, format=format),
-                'method': 'POST',
-                'description': 'remove friend.'
-            },
             'block-user': {
                 'url': reverse('block_user', request=request, format=format),
                 'method': 'POST',
@@ -143,6 +138,11 @@ def api_root(request, format=None):
                 'method': 'POST',
                 'description': 'reject friend request.'
             },
+            'remove-friend' : {
+                'url': reverse('remove_friend', request=request, format=format),
+                'method': 'POST',
+                'description': 'remove friend.'
+            }
         },
         'version': 'development',
         'status': 'online',
@@ -632,41 +632,6 @@ def accept_friend_request(request):
                 return Response(result, status=status.HTTP_202_ACCEPTED)
             return Response(result, status=status.HTTP_400_BAD_REQUEST)
         return Response(id_req, status=status.HTTP_401_UNAUTHORIZED)
-    return Response({
-        'status': 'error',
-        'message': 'Invalid input',
-        'errors': serializer.errors
-    }, status=status.HTTP_400_BAD_REQUEST)
-
-@api_view(['POST'])
-def remove_friend(request):
-    """
-    Remove a friend connection between two users.
-    
-    Request Body Example:
-    {
-        "id_token": "user-id-token",
-        "friend_id": "friend-database-id"
-    }
-    """
-    serializer = RemoveFriendSerializer(data=request.data)
-    if serializer.is_valid():
-        cognito = CognitoService()
-        id_result = cognito.get_user_id(serializer.validated_data['id_token'])
-        
-        if id_result['status'] == 'SUCCESS':
-            db = DatabaseService()
-            result = db.remove_friend(
-                cognito_id=id_result['user_sub'],
-                friend_id=serializer.validated_data['friend_id']
-            )
-            
-            if result['status'] == 'SUCCESS':
-                return Response(result, status=status.HTTP_200_OK)
-            return Response(result, status=status.HTTP_400_BAD_REQUEST)
-            
-        return Response(id_result, status=status.HTTP_401_UNAUTHORIZED)
-        
     return Response({
         'status': 'error',
         'message': 'Invalid input',
@@ -1361,6 +1326,43 @@ def reject_friend_request(request):
                 return Response(result, status=status.HTTP_202_ACCEPTED)
             return Response(result, status=status.HTTP_400_BAD_REQUEST)
         return Response(id_req, status=status.HTTP_401_UNAUTHORIZED)
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def remove_friend(request):
+    """
+    Remove a friend connection between two users.
+    Also provide the option to block them.
+    
+    Request Body Example:
+    {
+        "id_token": "user-id-token",
+        "friendship_id": "friendship-id",
+        "block": false
+    }
+    """
+    serializer = RemoveFriendSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        id_result = cognito.get_user_id(serializer.validated_data['id_token'])
+        
+        if id_result['status'] == 'SUCCESS':
+            db = DatabaseService()
+            result = db.remove_friend(
+                cognito_id=id_result['user_sub'],
+                friendship_id=serializer.validated_data['friendship_id'],
+                block=serializer.validated_data.get('block', False)
+            )
+            
+            if result['status'] == 'SUCCESS':
+                return Response(result, status=status.HTTP_200_OK)
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+            
+        return Response(id_result, status=status.HTTP_401_UNAUTHORIZED)
     return Response({
         'status': 'error',
         'message': 'Invalid input',

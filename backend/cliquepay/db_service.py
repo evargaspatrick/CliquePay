@@ -62,6 +62,7 @@ class DatabaseService:
             return {
                 'status': 'SUCCESS',
                 'user_data': {
+                    'id': user.id,
                     'username': user.name,
                     'full_name': user.full_name,
                     'email': user.email,
@@ -91,7 +92,7 @@ class DatabaseService:
 
             friends_list = []
             for friendship in friendships:
-                friend = friendship.user2 if friendship.user1_id == user_id else friendship.user1
+                friend = friendship.user2 if friendship.user1.id == user.id else friendship.user1
                 if(friendship.status == 'BLOCKED' or friendship.status == 'blocked'):
                     friends_list.append({
                         'friend_id': "null",
@@ -109,10 +110,9 @@ class DatabaseService:
                         'email': friend.email,
                         'profile_photo': friend.avatar_url,
                         'status': friendship.status,
-                        'initiator': friendship.action_user.id == user_id,
+                        'initiator': friendship.action_user.id,
                         'created_at': friendship.created_at,
                         'friendship_id': friendship.id
-
                     })
 
             return {
@@ -294,7 +294,7 @@ class DatabaseService:
             friendship = Friendship.objects.get(id=request_id)
 
             # Verify the user is the recipient of the friend request
-            if friendship.user2 != user:
+            if friendship.action_user is user:
                 return {
                     'status': 'ERROR',
                     'message': 'User not authorized to accept this friend request'
@@ -354,62 +354,6 @@ class DatabaseService:
             return {
                 'status': 'ERROR',
                 'message': 'User not found'
-            }
-
-    @staticmethod
-    def remove_friend(cognito_id, friend_id):
-        """
-        Remove a friend connection between two users.
-        
-        Args:
-            cognito_id (str): Cognito ID of the user initiating the removal
-            friend_id (str): Database ID of the friend to remove
-            
-        Returns:
-            dict: Status of the friend removal operation
-        """
-        try:
-            # Get the user initiating the removal
-            user = User.objects.get(cognito_id=cognito_id)
-            
-            # Get the friend to remove
-            friend = User.objects.get(id=friend_id)
-            
-            # Find and delete the friendship
-            friendship = Friendship.objects.filter(
-                (models.Q(user1=user) & models.Q(user2=friend)) |
-                (models.Q(user1=friend) & models.Q(user2=user))
-            ).first()
-            
-            if not friendship:
-                return {
-                    'status': 'ERROR',
-                    'message': 'Friendship not found'
-                }
-                
-            if friendship.status != 'ACCEPTED':
-                return {
-                    'status': 'ERROR',
-                    'message': f'Cannot remove friend - current status is {friendship.status}'
-                }
-            
-            # Delete the friendship
-            friendship.delete()
-            
-            return {
-                'status': 'SUCCESS',
-                'message': 'Friend removed successfully'
-            }
-            
-        except User.DoesNotExist:
-            return {
-                'status': 'ERROR',
-                'message': 'User not found'
-            }
-        except Exception as e:
-            return {
-                'status': 'ERROR',
-                'message': str(e)
             }
 
     @staticmethod
@@ -729,7 +673,7 @@ class DatabaseService:
             user = User.objects.get(cognito_id=cognito_id)
             friendship = Friendship.objects.select_related('user1', 'user2').get(id= request_id)
 
-            if friendship.user2 != user:
+            if friendship.user1 != user and friendship.user2 != user:
                 return {
                     'status': 'ERROR',
                     'message': 'User not authorized to reject this friend request'
@@ -757,6 +701,52 @@ class DatabaseService:
             return {
                 'status': 'ERROR',
                 'message': 'Friend request not found'
+            }
+        except Exception as e:
+            return {
+                'status': 'ERROR',
+                'message': str(e)
+            }
+
+    @staticmethod
+    def remove_friend(cognito_id, friendship_id, block=False):
+        """
+        Remove a friend connection between two users.
+        and block them if block is True
+        Args:
+            cognito_id (str): Cognito ID of the user initiating the removal
+            friendship_id (str): Friendship model ID
+            block (bool): Block the user after removal
+        Returns:
+            dict: Status of the friend removal operation
+        """
+        try:
+            user = User.objects.get(cognito_id=cognito_id)
+            friendship = Friendship.objects.filter(id=friendship_id).select_related('user1', 'user2').first()
+            if friendship:
+                if friendship.user1 == user or friendship.user2 == user:
+                    if block:
+                        friendship.status = 'BLOCKED'
+                    else:
+                        friendship.delete()
+                    return {
+                        'status': 'SUCCESS',
+                        'message': 'Friend removed successfully'
+                    }
+                else:
+                    return {
+                        'status': 'ERROR',
+                        'message': 'User not authorized to remove this friend'
+                    }
+            else:
+                return {
+                    'status': 'ERROR',
+                    'message': 'Friendship not found'
+                }
+        except User.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'User not found'
             }
         except Exception as e:
             return {
