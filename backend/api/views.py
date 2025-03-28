@@ -7,7 +7,7 @@ from cliquepay.aws_cognito import CognitoService
 from cliquepay.db_service import DatabaseService
 from .serializers import *
 from cliquepay.storage_service import CloudStorageService
-from api.serializers import SearchUserSerializer
+from api.serializers import SearchUserSerializer, GetDirectMessagesSerializer
 
 import logging
 from django.db import models
@@ -645,7 +645,7 @@ def block_user(request):
 
     Request Body Example:
     {
-        "idToken": "user-ID-TOKEN",
+        "id_token": "user-ID-TOKEN",
         "blocked_id": "blocker-user-id"
     }
     """
@@ -839,7 +839,7 @@ def get_direct_messages(request):
         id_token: "your-id-token",
     }
     """
-    serializer = serializers.GetDirectMessagesSerializer(data=request.data)
+    serializer = GetDirectMessagesSerializer(data=request.data)
     if serializer.is_valid():
         cognito = CognitoService()
         decoded = cognito.get_user_id(serializer.validated_data['id_token'])
@@ -865,8 +865,8 @@ def get_group_messages(request):
     Request Body:
 
     {
-        id_token: "your-id-token",
-        group_id: "your-group-id"
+        "id_token": "your-id-token",
+        "group_id": "your-group-id"
     }
     """
     serializer = serializers.GetGroupMessagesSerializer(data=request.data)
@@ -893,11 +893,11 @@ def send_direct_message(request):
     
     Request Body:
     {
-        id_token: "your-id-token",
-        recipient_id: "recipient-user-id"
-        content: "Hello there!",
-        message_type: "TEXT",
-        file_url (optional): "https://example.com/file.jpg"
+        "id_token": "your-id-token",
+        "recipient_id": "recipient-user-id"
+        "content": "Hello there!",
+        "message_type": "TEXT",
+        "file_url" (optional): "https://example.com/file.jpg"
     }
 
     NOTE: message_type can only be one of:
@@ -905,7 +905,7 @@ def send_direct_message(request):
         - FILE  or File
         - IMAGE or Image
     """
-    serializer = serializers.SendDirectMessageSerializer(data=request.data)
+    serializer = SendDirectMessageSerializer(data=request.data)
     if serializer.is_valid():
         cognito = CognitoService()
         decoded = cognito.get_user_id(serializer.validated_data['id_token'])

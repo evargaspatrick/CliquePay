@@ -126,7 +126,7 @@ class DatabaseService:
             }
 
     @staticmethod
-    def update_user_details(cognito_id, **kwargs):
+    def update_user_details(cognito_id, full_name=None, phone_number=None, avatar_url=None, currency=None):
         """
         Update user fields (full_name, phone_number, avatar_url, currency, etc.)
         based on kwargs only if they exist.
@@ -135,14 +135,14 @@ class DatabaseService:
             user = User.objects.get(cognito_id=cognito_id)
 
             # Update only the fields provided:
-            if 'full_name' in kwargs:
-                user.full_name = kwargs['full_name']
-            if 'phone_number' in kwargs:
-                user.phone_number = kwargs['phone_number']
-            if 'avatar_url' in kwargs:
-                user.avatar_url = kwargs['avatar_url']
-            if 'currency' in kwargs:
-                user.currency = kwargs['currency']
+            if full_name:
+                user.full_name = full_name
+            if phone_number:
+                user.phone_number = phone_number
+            if avatar_url:
+                user.avatar_url = avatar_url
+            if currency:
+                user.currency = currency
 
             user.save()
             return {
@@ -294,7 +294,7 @@ class DatabaseService:
             friendship = Friendship.objects.get(id=request_id)
 
             # Verify the user is the recipient of the friend request
-            if friendship.action_user is user:
+            if friendship.action_user.id == user.id:
                 return {
                     'status': 'ERROR',
                     'message': 'User not authorized to accept this friend request'
@@ -309,7 +309,6 @@ class DatabaseService:
 
             # Accept the friend request
             friendship.status = 'ACCEPTED'
-            friendship.action_user = user
             friendship.save()
 
             return {
@@ -372,6 +371,12 @@ class DatabaseService:
             # Get both users
             user = User.objects.get(cognito_id=cognito_id)
             blocked_user = User.objects.get(id=blocked_id)
+
+            if(user.id == blocked_user.id):
+                return {
+                    'status': 'ERROR',
+                    'message': 'Cannot block yourself'
+                }
 
             # Check if a friendship record already exists (either pending, accepted, or previously blocked)
             friendship = Friendship.objects.filter(
@@ -569,13 +574,18 @@ class DatabaseService:
             dict: Status of the send operation
         '''
         try:
-                sender = User.objects.get(id=sender_id)
+                sender = User.objects.get(cognito_id=sender_id)
                 recipient = User.objects.get(id=recipient_id)
+                if(sender.id == recipient.id):
+                    return {
+                        'status': 'ERROR',
+                        'message': 'Cannot send message to yourself'
+                    }
                 relation = Friendship.objects.filter(   
-                    ((models.Q(user1=sender) & models.Q(user2=recipient)) |
-                    (models.Q(user1=recipient) & models.Q(user2=sender))) &
-                    models.Q(status='Accepted'|'accepted')
-                ).first()
+                    ((models.Q(user1=sender) & models.Q(user2=recipient)) or
+                    (models.Q(user1=recipient) & models.Q(user2=sender))) and
+                    models.Q(status='Accepted' or 'accepted')
+                )
 
                 if(relation):
                     message = DirectMessage.objects.create(
