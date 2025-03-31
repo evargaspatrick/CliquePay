@@ -390,7 +390,7 @@ class CognitoService:
             
             # Get the username from the first user
             username = response['Users'][0]['Username']
-
+            print(username)
             confirm_params = {
                 'ClientId': self.client_id,
                 'Username': username,

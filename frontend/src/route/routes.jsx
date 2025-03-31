@@ -8,8 +8,7 @@ import Dashboard from "../pages/dashboard";
 import UserProfile from "../pages/userprofile";
 import EditProfile from "../pages/editprofile"
 import Friends from "../pages/friends";
-import NotFound from "../pages/not-found"; // Add this import
-
+import ForgotPassword from "../pages/forgot";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -21,9 +20,10 @@ const router = createBrowserRouter([
       { path: "login", element: <Login /> },
       { path: "dashboard", element: <Dashboard /> },
       { path: "profile", element: <UserProfile /> },
+      { path: "friends-list", element: <Friends /> },
       { path: "profile/edit", element: <EditProfile /> },
       { path: "friends", element: <Friends /> },
-      { path: "*", element: <NotFound /> } // Add this line
+      { path: "forgot", element: <ForgotPassword/>},
     ]
   }
 ]);

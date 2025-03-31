@@ -2,9 +2,8 @@
 /frontend/.env
 /backend/.env
 balmy-renderer-451718-u7-3b6459d4e0fc.json
-/backend/node_modules
 node_modules
-
+/backend/backend/settings.py
 # dependencies
 /frontend/node_modules
 /frontend/.pnp

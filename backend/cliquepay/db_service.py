@@ -92,15 +92,26 @@ class DatabaseService:
             friends_list = []
             for friendship in friendships:
                 friend = friendship.user2 if friendship.user1_id == user_id else friendship.user1
-                friends_list.append({
-                    'friend_id': friend.id,
-                    'friend_name': friend.full_name,
-                    'email': friend.email,
-                    'profile_photo': friend.avatar_url,
-                    'status': friendship.status,
-                    'initiator': friendship.action_user.id == user_id,
-                    'created_at': friendship.created_at
-                })
+                if(friendship.status is 'BLOCKED' or friendship.status is 'blocked'):
+                    friends_list.append({
+                        'friend_id': "null",
+                        'friend_name': friend.full_name,
+                        'email': "null",
+                        'profile_photo': friend.avatar_url,
+                        'status': friendship.status,
+                        'initiator': friendship.action_user.id == user_id,
+                        'created_at': friendship.created_at
+                    })
+                else:
+                    friends_list.append({   
+                        'friend_id': friend.id,
+                        'friend_name': friend.full_name,
+                        'email': friend.email,
+                        'profile_photo': friend.avatar_url,
+                        'status': friendship.status,
+                        'initiator': friendship.action_user.id == user_id,
+                        'created_at': friendship.created_at
+                    })
 
             return {
                 'status': 'SUCCESS',
@@ -161,7 +172,6 @@ class DatabaseService:
         """
         try:
             user = User.objects.get(id=user_id)
-
             # Add at the start of the function
             if ('recieve_username' in kwargs and kwargs['recieve_username'] == user.name) or \
                ('recieve_useremail' in kwargs and kwargs['recieve_useremail'] == user.email):
@@ -197,19 +207,37 @@ class DatabaseService:
                         'status': 'PENDING',
                         'message': 'Friend request is pending'
                     }
+            sender = user  # Original user sending request
+            recipient = user2  # Original user receiving request
+
+            # Create ordered user variables for DB constraint
+            if sender.id < recipient.id:
+                user1, user2 = sender, recipient
+            else:
+                user1, user2 = recipient, sender
 
             # Create new friendship request
             friendship = Friendship.objects.create(
-                user1=user,
+                user1=user1,
                 user2=user2,
-                action_user=user,
+                action_user=sender,
                 status='PENDING'
             )
+
+            friend = recipient
 
             return {
                 'status': 'SUCCESS',
                 'message': 'Friend request sent successfully',
-                'friendship_id': friendship.id
+                    'friendship': {
+                        'id': friendship.id,
+                        'friend_name': friend.full_name,
+                        'username': friend.name,
+                        'profile_photo': friend.avatar_url,
+                        'status': friendship.status,
+                        'created_at': friendship.created_at
+                    }
+
             }
 
         except User.DoesNotExist:

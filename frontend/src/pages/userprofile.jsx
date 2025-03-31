@@ -6,7 +6,7 @@ import Cookies from "js-cookie"
 import PropTypes from "prop-types"
 import { Mail, Phone, Calendar, DollarSign, Clock, ArrowLeft, Camera, Edit, Trash2, AlertTriangle, CreditCard } from "lucide-react"
 import { PageLayout, Header, Section, Footer } from "../components/layout/PageLayout"
-
+import ProfilePhotoModal from "../components/ProfilePhotoModal"
 // Info Item Component with updated styling
 const InfoItem = ({ icon, text, label }) => (
   <div className="flex items-center justify-between p-3 rounded-lg transition-colors hover:bg-zinc-800 group">
@@ -306,96 +306,6 @@ const UserProfile = () => {
       />
     </PageLayout>
   )
-}
-
-// Profile Photo Modal Component
-function ProfilePhotoModal({ isOpen, onClose, currentPhoto, onPhotoUpdate }) {
-  const [photoUrl, setPhotoUrl] = useState(currentPhoto || "")
-  const [isUploading, setIsUploading] = useState(false)
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setIsUploading(true)
-
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    onPhotoUpdate(photoUrl)
-    setIsUploading(false)
-    onClose()
-  }
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-zinc-900 border-zinc-800 rounded-lg p-6 max-w-md w-full mx-4 text-white">
-        <div className="mb-4">
-          <h2 className="text-xl font-bold">Update Profile Photo</h2>
-          <p className="text-gray-400">
-            Enter a URL for your profile photo or upload an image.
-          </p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="flex justify-center">
-            <div className="h-24 w-24 rounded-full overflow-hidden border-2 border-purple-600">
-              <img
-                src={photoUrl || "/placeholder.svg?height=150&width=150"}
-                alt="Profile"
-                className="w-full h-full object-cover"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-300">Photo URL</label>
-            <input
-              type="text"
-              value={photoUrl}
-              onChange={(e) => setPhotoUrl(e.target.value)}
-              className="w-full p-2 rounded-md bg-zinc-800 border border-zinc-700 text-white focus:outline-none focus:ring-2 focus:ring-purple-600"
-              placeholder="https://example.com/photo.jpg"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-300">Or upload a file</label>
-            <input
-              type="file"
-              className="w-full p-2 rounded-md bg-zinc-800 border border-zinc-700 text-white focus:outline-none focus:ring-2 focus:ring-purple-600"
-              accept="image/*"
-              disabled={isUploading}
-            />
-          </div>
-
-          <div className="flex gap-3 justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              className="border border-zinc-700 bg-zinc-800 hover:bg-zinc-700 text-white py-2 px-4 rounded-md"
-            >
-              Cancel
-            </button>
-            <button 
-              type="submit" 
-              disabled={isUploading} 
-              className="bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-md disabled:opacity-50"
-            >
-              {isUploading ? "Uploading..." : "Save Photo"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  )
-}
-
-ProfilePhotoModal.propTypes = {
-  isOpen: PropTypes.bool.isRequired,
-  onClose: PropTypes.func.isRequired,
-  currentPhoto: PropTypes.string,
-  onPhotoUpdate: PropTypes.func.isRequired
 }
 
 export default UserProfile
