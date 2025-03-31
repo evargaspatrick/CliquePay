@@ -7,7 +7,6 @@ import Login from "../pages/login";
 import Dashboard from "../pages/dashboard";
 import UserProfile from "../pages/userprofile";
 import EditProfile from "../pages/editprofile"
-// import FriendsList from "../pages/friendslist"
 import Friends from "../pages/friends";
 import ForgotPassword from "../pages/forgot";
 const router = createBrowserRouter([
