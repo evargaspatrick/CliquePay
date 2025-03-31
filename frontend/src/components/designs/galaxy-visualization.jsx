@@ -1,8 +1,12 @@
 "use client"
 
 import { useEffect, useRef } from "react"
+import PropTypes from "prop-types"
 
-export default function GalaxyVisualization() {
+export default function GalaxyVisualization({ 
+  className = "fixed top-0 left-0 w-full h-full -z-10 opacity-70",
+  style = {}
+}) {
   const canvasRef = useRef(null)
 
   useEffect(() => {
@@ -13,8 +17,8 @@ export default function GalaxyVisualization() {
 
     // Set canvas to full screen
     const handleResize = () => {
-      canvas.width = window.innerWidth
-      canvas.height = window.innerHeight
+      canvas.width = canvas.clientWidth
+      canvas.height = canvas.clientHeight
 
       // For high-resolution displays
       const dpr = window.devicePixelRatio || 1
@@ -208,6 +212,15 @@ export default function GalaxyVisualization() {
     }
   }, [])
 
-  return <canvas ref={canvasRef} className="fixed top-0 left-0 w-full h-full -z-10 opacity-70" />
+  return <canvas 
+    ref={canvasRef} 
+    className={className}
+    style={style} 
+  />
+}
+
+GalaxyVisualization.propTypes = {
+  className: PropTypes.string,
+  style: PropTypes.object
 }
 
