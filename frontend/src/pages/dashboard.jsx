@@ -1,5 +1,5 @@
 "use client"
-import { AlertTriangle, Bell, CreditCard, DollarSign, Home, Users, BarChart3, MessagesSquare, MessageSquareDot } from "lucide-react";
+import { AlertTriangle, Bell, CreditCard, DollarSign, Home, Users, BarChart3, MessagesSquare, MessageSquareDot, UsersRound } from "lucide-react";
 import { useState, useEffect } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import PropTypes from "prop-types"
@@ -290,29 +290,33 @@ export default function Dashboard() {
   return (
     <PageLayout>
       {showLogoutModal && <LogoutConfirmationModal />}
-      
-      {/* Header */}
-      <Header className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-sm py-4 relative z-[100]">
-        <Logo />
-        <div className="flex items-center gap-4 relative z-[100]">
-          <Button variant="outline" className="border-zinc-700 bg-zinc-800 hover:bg-zinc-700 relative">
-            <Bell className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">Notifications</span>
-            {getTotalUnreadCount(groupChats, directChats) > 0 && (
-              <span className="absolute -top-1 -right-1 bg-purple-600 text-white text-xs rounded-full h-5 min-w-5 flex items-center justify-center">
-                {getTotalUnreadCount(groupChats, directChats)}
-              </span>
-            )}
-          </Button>
-          <Button className="bg-purple-600 hover:bg-purple-700">
-            <DollarSign className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">New Payment</span>
-          </Button>
-          <ProfileDropdown onLogout={() => setShowLogoutModal(true)} />
-        </div>
-      </Header>
+        <Header className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-sm py-4 relative z-[100]">
+          <Logo />
+          <div className="flex items-center gap-4 relative z-[100]">
+            <Button 
+          variant="outline" 
+          className="border-zinc-700 bg-zinc-800 hover:bg-zinc-700 relative group"
+          title="Friend List"
+          onClick={() => navigate('/friends')}
+            >
+          <UsersRound className="h-4 w-4" />
+          {getTotalUnreadCount(groupChats, directChats) > 0 && (
+            <span 
+              className="absolute -top-1 -right-1 bg-purple-600 text-white text-xs rounded-full h-5 min-w-5 flex items-center justify-center"
+            >
+              {getTotalUnreadCount(groupChats, directChats)}
+            </span>
+          )}
+            </Button>
+            <Button className="bg-purple-600 hover:bg-purple-700">
+          <DollarSign className="h-4 w-4 mr-2" />
+          <span className="hidden sm:inline">New Payment</span>
+            </Button>
+            <ProfileDropdown onLogout={() => setShowLogoutModal(true)} />
+          </div>
+        </Header>
 
-      {/* Main Content */}
+        {/* Main Content */}
       <Section className="py-8">
         <Tabs defaultValue="dashboard" className="w-full relative z-10">
           <TabsList className="grid grid-cols-4 mb-8 bg-zinc-800 border border-zinc-700">
