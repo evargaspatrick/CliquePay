@@ -1,5 +1,5 @@
 "use client"
-import { AlertTriangle, Bell, CreditCard, DollarSign, Home, Users, BarChart3, MessagesSquare, MessageSquareDot, UsersRound } from "lucide-react";
+import { AlertTriangle, Bell, CreditCard, CircleDollarSign, Home, Users, BarChart3, MessagesSquare, MessageSquareDot, UsersRound } from "lucide-react";
 import { useState, useEffect } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import PropTypes from "prop-types"
@@ -294,12 +294,12 @@ export default function Dashboard() {
           <Logo />
           <div className="flex items-center gap-4 relative z-[100]">
             <Button 
-          variant="outline" 
-          className="border-zinc-700 bg-zinc-800 hover:bg-zinc-700 relative group"
+          variant="ghost" 
+          className="hover:bg-zinc-800 relative group"
           title="Friend List"
           onClick={() => navigate('/friends')}
             >
-          <UsersRound className="h-4 w-4" />
+          <UsersRound className="h-auto w-auto text-white" />
           {getTotalUnreadCount(groupChats, directChats) > 0 && (
             <span 
               className="absolute -top-1 -right-1 bg-purple-600 text-white text-xs rounded-full h-5 min-w-5 flex items-center justify-center"
@@ -308,9 +308,22 @@ export default function Dashboard() {
             </span>
           )}
             </Button>
-            <Button className="bg-purple-600 hover:bg-purple-700">
-          <DollarSign className="h-4 w-4 mr-2" />
-          <span className="hidden sm:inline">New Payment</span>
+            <Button 
+              variant="ghost" 
+              className="hover:bg-zinc-800 relative group"
+              title="New Payment"
+            >
+              <CircleDollarSign className="h-auto w-auto text-white" />
+            </Button>
+            <Button
+              variant="ghost"
+              className="hover:bg-zinc-800 relative group"
+              title="notifications"
+            >
+              <Bell className="h-auto w-auto text-white" />
+              <span className="absolute -top-0 right-3.5 bg-purple-600 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                {getTotalUnreadCount(groupChats, directChats)}
+              </span>
             </Button>
             <ProfileDropdown onLogout={() => setShowLogoutModal(true)} />
           </div>

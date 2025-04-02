@@ -1,5 +1,6 @@
 import './App.css'
 import { RouterProvider } from 'react-router-dom';
+import ErrorBoundary from './components/errorHandling/ErrorBoundary.jsx';
 import router from "./route/routes.jsx";
 import { SecurityUtils } from './utils/security';
 import { useEffect } from 'react';
@@ -11,9 +12,9 @@ function App() {
   }, []);
 
   return (
-    <>
+    <ErrorBoundary>
       <RouterProvider router={router} />
-    </>
+    </ErrorBoundary>
   );
 }
 
