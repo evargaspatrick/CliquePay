@@ -10,31 +10,50 @@ import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 import { Button } from "../components/ui/button";
 import Loading from '../components/Loading';
 // import { SecurityUtils } from '../utils/security'; // Comment out SecurityUtils
-import { Users, UserPlus, Search, CreditCard, ArrowLeft, ArrowRight, Brush, DoorClosed, LucideDoorClosed, LogOut } from "lucide-react"; // Fix the ArrowLeftFromLine import
+import { Users, UserPlus, Search, CreditCard, ArrowLeft, LogOut } from "lucide-react";
+import FriendCard from '../components/ui/friends/FriendCard';
+import RequestCard from '../components/ui/friends/RequestCard';
+import SearchCard from '../components/ui/friends/SearchCard';
+import SearchBar from '../components/ui/SearchBar';
 
-// Update the scrollbar styles to be more specific and visible
+// Enhanced scrollbar styles for better visibility
 const scrollbarStyles = `
+  /* Always show scrollbar */
+  .custom-scrollbar {
+    overflow-y: scroll !important;
+    scrollbar-width: thin; /* Firefox */
+  }
+  
+  /* Main scrollbar styling */
   .custom-scrollbar::-webkit-scrollbar {
-    width: 10px !important; /* Slightly wider */
+    width: 8px !important;
     display: block !important;
   }
+  
+  /* Track styling - darker background */
   .custom-scrollbar::-webkit-scrollbar-track {
-    background: #27272a !important;
+    background: rgba(39, 39, 42, 0.8) !important;
     border-radius: 4px !important;
-    margin: 4px !important;
+    margin: 2px !important;
   }
+  
+  /* Thumb styling - brand purple to match buttons */
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #9333ea !important;
+    background: #9333EA !important; /* purple-600 to match buttons */
     border-radius: 4px !important;
-    border: 2px solid #27272a !important; /* Border gives it more definition */
+    border: 1px solid #27272a !important;
+    box-shadow: 0 0 3px rgba(147, 51, 234, 0.5) !important;
   }
+  
+  /* Hover effect - match button hover state */
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: #7e22ce !important;
+    background: #7E22CE !important; /* purple-700 to match button hover */
   }
-  /* Force scrollbar to show */
+  
+  /* Height constraint to force scrolling */
   .limit-height {
-    max-height: 400px !important; /* Lower height to ensure scrolling with less content */
-    min-height: 400px !important; /* Set min-height to maintain consistency */
+    max-height: 440px !important; 
+    min-height: 440px !important;
   }
 `;
 
@@ -164,122 +183,6 @@ const Logo = () => (
 
 Logo.propTypes = {
   // No props to validate
-};
-
-// Friend Card Component
-function FriendCard({ name, imgSrc, email, onRemove }) {
-  return (
-    <Card className="bg-zinc-800 border-zinc-700 overflow-hidden">
-      <CardContent className="p-4">
-        <div className="flex items-center gap-4">
-          <Avatar className="h-16 w-16">
-            <AvatarImage src={imgSrc} alt={name} />
-            <AvatarFallback className="bg-purple-900/50 text-white">
-              {name.split(" ").map((n) => n[0]).join("")}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1">
-            <h3 className="font-medium text-white">{name}</h3>
-            <p className="text-sm text-zinc-400">{email}</p>
-          </div>
-          <Button variant="outline" size="sm" className="border-zinc-700 bg-zinc-800 hover:bg-zinc-700">
-            Message
-          </Button>
-          <Button variant="outline" size="sm" onClick={onRemove} className="border-red-700 text-red-400 hover:bg-red-900/20">
-            Remove
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-FriendCard.propTypes = {
-  name: PropTypes.string.isRequired,
-  imgSrc: PropTypes.string,
-  email: PropTypes.string.isRequired,
-  onRemove: PropTypes.func.isRequired
-};
-
-//Search Card Component with updated button state handling
-function SearchCard({ name, imgSrc, username, onRequest, isRequested }) {
-  const displayName = name || 'Unknown User';
-  
-  return (
-    <Card className="bg-zinc-800 border-zinc-700 overflow-hidden">
-      <CardContent className="p-4">
-        <div className="flex items-center gap-4">
-          <Avatar className="h-16 w-16">
-            <AvatarImage src={imgSrc} alt={displayName} />
-            <AvatarFallback className="bg-purple-900/50 text-white">
-              {displayName.split(" ").map((n) => n[0]).join("")}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1">
-            <h3 className="font-medium text-white">{displayName}</h3>
-            <p className="text-sm text-zinc-400">{username || 'No username'}</p>
-          </div>
-          <Button 
-            onClick={onRequest} 
-            disabled={isRequested}
-            className={`${isRequested 
-              ? 'bg-zinc-700 text-zinc-300 cursor-not-allowed' 
-              : 'bg-purple-600 hover:bg-purple-700'}`}
-          >
-            <UserPlus className="h-4 w-4 mr-2" />
-            {isRequested ? 'Requested' : 'Request'}
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-// SearchCard PropTypes validation
-SearchCard.propTypes = {
-  name: PropTypes.string,
-  imgSrc: PropTypes.string,
-  username: PropTypes.string,
-  onRequest: PropTypes.func.isRequired,
-  isRequested: PropTypes.bool
-};
-
-// Request Card Component
-function RequestCard({ name, imgSrc, email, onAccept, onDecline }) {
-  return (
-    <Card className="bg-zinc-800 border-zinc-700 overflow-hidden">
-      <CardContent className="p-4">
-        <div className="flex items-center gap-4">
-          <Avatar className="h-16 w-16">
-            <AvatarImage src={imgSrc} alt={name} />
-            <AvatarFallback className="bg-purple-900/50 text-white">
-              {name.split(" ").map((n) => n[0]).join("")}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1">
-            <h3 className="font-medium text-white">{name}</h3>
-            <p className="text-sm text-zinc-400">{email}</p>
-          </div>
-          <div className="flex flex-col gap-2">
-            <Button size="sm" onClick={onAccept} className="bg-purple-600 hover:bg-purple-700">
-              Accept
-            </Button>
-            <Button variant="outline" size="sm" onClick={onDecline} className="border-zinc-700 bg-zinc-800 hover:bg-zinc-700">
-              Decline
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-RequestCard.propTypes = {
-  name: PropTypes.string.isRequired,
-  imgSrc: PropTypes.string,
-  email: PropTypes.string.isRequired,
-  onAccept: PropTypes.func.isRequired,
-  onDecline: PropTypes.func.isRequired
 };
 
 const Content = () => {
@@ -431,7 +334,7 @@ const Content = () => {
                             <Search className="h-4 w-4 mr-2" />
                             <span>Search</span>
                         </TabsTrigger>
-                    </TabsList>
+                        </TabsList>
 
                     {/* Friends Tab Content */}
                     <TabsContent value="friends" className="space-y-4">
@@ -446,7 +349,7 @@ const Content = () => {
                                 {/* Add style tag for custom scrollbar */}
                                 <style>{scrollbarStyles}</style>
                                 
-                                <div className="space-y-4 limit-height overflow-y-auto pr-2 custom-scrollbar">
+                                <div className="space-y-4 limit-height custom-scrollbar pr-2">
                                     {friends.length === 0 ? (
                                         <p className="text-center text-zinc-400 py-4">You don&apos;t have any friends yet. Add some friends to get started!</p>
                                     ) : (
@@ -505,19 +408,13 @@ const Content = () => {
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <form onSubmit={handleSearch} className="flex gap-2 mb-6">
-                                    <input
-                                        type="text"
-                                        value={searchTerm}
-                                        onChange={handleSearchTermChange} 
-                                        placeholder="Search for friends..."
-                                        className="flex-1 bg-zinc-800 border border-zinc-700 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
-                                    />
-                                    <Button type="submit" className="bg-purple-600 hover:bg-purple-700">
-                                        <Search className="h-4 w-4 mr-2" />
-                                        Search
-                                    </Button>
-                                </form>
+                                <SearchBar
+                                  value={searchTerm}
+                                  onChange={handleSearchTermChange}
+                                  onSubmit={handleSearch}
+                                  placeholder="Search for friends..."
+                                  className="mb-6"
+                                />
                                 
                                 <div className="space-y-4">
                                     {/* Only show results or messages if hasSearched is true */}
