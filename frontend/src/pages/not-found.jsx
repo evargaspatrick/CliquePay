@@ -4,20 +4,20 @@ import { Link, useNavigate } from "react-router-dom"
 import { motion } from "framer-motion"
 import { ArrowLeft, Home, Search, CreditCard } from "lucide-react"
 import { Button } from "../components/ui/button";
-// Method 1: Remove this line and use inline logo
-// import { Logo } from "../components/ui/logo"
 import GalaxyVisualization from "../components/designs/galaxy-visualization"
 
 export default function NotFound() {
   const navigate = useNavigate();
   
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col relative">
-      {/* Galaxy Background */}
-      <GalaxyVisualization />
+    <div className="min-h-screen bg-black text-white flex flex-col relative overflow-hidden">
+      {/* Position the Galaxy Visualization absolutely */}
+      <div className="absolute inset-0 z-0 overflow-hidden">
+        <GalaxyVisualization />
+      </div>
       
-      {/* Content should be positioned above the galaxy visualization */}
-      <div className="relative z-10v ">
+      {/* Content above visualization */}
+      <div className="relative z-20 flex flex-col min-h-screen">
         {/* Header */}
         <header className="container mx-auto py-6 px-4">
           {/* Method 1: Use inline logo like homepage.jsx */}
@@ -98,21 +98,20 @@ export default function NotFound() {
               transition={{ delay: 0.9, duration: 0.5 }}
               className="flex flex-col sm:flex-row gap-4 justify-center"
             >
-              <Button asChild className="bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-2">
-                <Link to="/">
-                  <Home className="w-4 h-4" />
-                  Back to Home
-                </Link>
+              <Button 
+                className="bg-purple-600 hover:bg-purple-700 flex items-center gap-2"
+                onClick={() => navigate('/')}
+              >
+                <Home className="w-4 h-4 mr-2" />
+                Back to Home
               </Button>
               <Button
-                asChild
                 variant="outline"
                 className="border-zinc-700 bg-zinc-800 hover:bg-zinc-700 text-white flex items-center gap-2"
+                onClick={() => navigate('/login')}
               >
-                <Link to="/login">
-                  <ArrowLeft className="w-4 h-4" />
-                  Go to Login
-                </Link>
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Go to Login
               </Button>
             </motion.div>
           </div>

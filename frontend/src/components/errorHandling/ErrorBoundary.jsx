@@ -151,8 +151,8 @@ export function ErrorDisplay({ error }) {
               transition={{ delay: 0.9, duration: 0.5 }}
               className="flex flex-col sm:flex-row gap-4 justify-center"
             >
-              <Button asChild className="bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-2">
-                <Link to="/">
+              <Button asChild className="bg-purple-600 hover:bg-purple-700 flex items-center gap-2">
+                <Link to="/" className="text-white no-underline flex items-center gap-2">
                   <Home className="w-4 h-4" />
                   Back to Home
                 </Link>
