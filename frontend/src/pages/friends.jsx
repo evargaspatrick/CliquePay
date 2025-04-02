@@ -282,7 +282,7 @@ const Content = () => {
                         <span>Dashboard</span>
                     
                     </Button>
-                    <Button className="bg-purple-600 hover:bg-purple-700" onClick={() => navigate('/settings')}>
+                    <Button className="bg-purple-600 hover:bg-purple-700" onClick={() => navigate('/login')}>
                         <LogOut className="h-4 w-4 mr-2" />
                         <span>Logout</span>
                     </Button>
@@ -357,7 +357,7 @@ const Content = () => {
                                             <FriendCard 
                                                 key={friend.friend_id}
                                                 name={friend.friend_name}
-                                                email={friend.email}
+                                                // email={friend.email}
                                                 imgSrc={friend.profile_photo}
                                                 onRemove={() => handleRemoveFriend(friend.friend_id)}
                                             />
