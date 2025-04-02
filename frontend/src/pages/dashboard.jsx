@@ -5,7 +5,7 @@ import { Link, useNavigate } from "react-router-dom"
 import PropTypes from "prop-types"
 import { renewTokens } from '../utils/RenewTokens';
 import Cookies from 'js-cookie';
-import { ProfileDropdown } from "../components/ProfileDropdown"
+import { ProfileDropdown } from "../components/profile/ProfileDropdown"
 // Import UI components
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
