@@ -90,12 +90,6 @@ export const ProfileDropdown = ({ onLogout }) => {
             </div>
             <div 
               className="px-4 py-3 hover:bg-zinc-800 cursor-pointer flex items-center text-white"
-              onClick={() => navigate('/friends')}
-            >
-              Friends List              
-            </div>
-            <div 
-              className="px-4 py-3 hover:bg-zinc-800 cursor-pointer flex items-center text-white"
               onClick={() => navigate('/account')}
             >
               Account Settings

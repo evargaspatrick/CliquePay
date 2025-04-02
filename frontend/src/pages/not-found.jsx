@@ -17,7 +17,7 @@ export default function NotFound() {
       <GalaxyVisualization />
       
       {/* Content should be positioned above the galaxy visualization */}
-      <div className="relative z-10">
+      <div className="relative z-10v ">
         {/* Header */}
         <header className="container mx-auto py-6 px-4">
           {/* Method 1: Use inline logo like homepage.jsx */}

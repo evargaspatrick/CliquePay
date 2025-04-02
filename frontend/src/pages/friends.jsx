@@ -9,8 +9,167 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 import { Button } from "../components/ui/button";
 import Loading from '../components/Loading';
-import { SecurityUtils } from '../utils/security';
-import { Users, UserPlus, Search, CreditCard, ArrowLeftFromLine } from "lucide-react"; // Fix the ArrowLeftFromLine import
+// import { SecurityUtils } from '../utils/security'; // Comment out SecurityUtils
+import { Users, UserPlus, Search, CreditCard, ArrowLeft, LogOut } from "lucide-react";
+import FriendCard from '../components/ui/friends/FriendCard';
+import RequestCard from '../components/ui/friends/RequestCard';
+import SearchCard from '../components/ui/friends/SearchCard';
+import SearchBar from '../components/ui/SearchBar';
+
+// Enhanced scrollbar styles for better visibility
+const scrollbarStyles = `
+  /* Always show scrollbar */
+  .custom-scrollbar {
+    overflow-y: scroll !important;
+    scrollbar-width: thin; /* Firefox */
+  }
+  
+  /* Main scrollbar styling */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px !important;
+    display: block !important;
+  }
+  
+  /* Track styling - darker background */
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(39, 39, 42, 0.8) !important;
+    border-radius: 4px !important;
+    margin: 2px !important;
+  }
+  
+  /* Thumb styling - brand purple to match buttons */
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #9333EA !important; /* purple-600 to match buttons */
+    border-radius: 4px !important;
+    border: 1px solid #27272a !important;
+    box-shadow: 0 0 3px rgba(147, 51, 234, 0.5) !important;
+  }
+  
+  /* Hover effect - match button hover state */
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #7E22CE !important; /* purple-700 to match button hover */
+  }
+  
+  /* Height constraint to force scrolling */
+  .limit-height {
+    max-height: 440px !important; 
+    min-height: 440px !important;
+  }
+`;
+
+// DUMMY DATA
+const MOCK_PROFILE = {
+  username: "johndoe",
+  email: "john.doe@example.com",
+  profile_photo: "https://randomuser.me/api/portraits/men/1.jpg"
+};
+
+const MOCK_FRIENDS = [
+    {
+        friend_id: "1",
+        friend_name: "Alice Johnson",
+        email: "alice.johnson@example.com",
+        profile_photo: "https://randomuser.me/api/portraits/women/1.jpg"
+    },
+    {
+        friend_id: "2",
+        friend_name: "Bob Smith",
+        email: "bob.smith@example.com",
+        profile_photo: "https://randomuser.me/api/portraits/men/2.jpg"
+    },
+    {
+        friend_id: "3",
+        friend_name: "Carol Williams",
+        email: "carol.williams@example.com", 
+        profile_photo: "https://randomuser.me/api/portraits/women/2.jpg"
+    },
+    {
+        friend_id: "4",
+        friend_name: "David Brown",
+        email: "david.brown@example.com",
+        profile_photo: "https://randomuser.me/api/portraits/men/3.jpg"
+    },
+    {
+        friend_id: "5",
+        friend_name: "Emma Davis",
+        email: "emma.davis@example.com",
+        profile_photo: "https://randomuser.me/api/portraits/women/3.jpg"
+    },
+    {
+        friend_id: "6", 
+        friend_name: "Frank Miller",
+        email: "frank.miller@example.com",
+        profile_photo: "https://randomuser.me/api/portraits/men/4.jpg"
+    },
+    {
+        friend_id: "7",
+        friend_name: "Grace Wilson",
+        email: "grace.wilson@example.com",
+        profile_photo: "https://randomuser.me/api/portraits/women/4.jpg"
+    },
+    {
+        friend_id: "8",
+        friend_name: "Henry Taylor",
+        email: "henry.taylor@example.com",
+        profile_photo: "https://randomuser.me/api/portraits/men/5.jpg"
+    },
+    {
+        friend_id: "9",
+        friend_name: "Isabella Martin",
+        email: "isabella.martin@example.com",
+        profile_photo: "https://randomuser.me/api/portraits/women/5.jpg"
+    },
+    {
+        friend_id: "10",
+        friend_name: "James Anderson",
+        email: "james.anderson@example.com",
+        profile_photo: "https://randomuser.me/api/portraits/men/6.jpg"
+    },
+    {
+        friend_id: "11",
+        friend_name: "Katherine Moore",
+        email: "katherine.moore@example.com",
+        profile_photo: "https://randomuser.me/api/portraits/women/6.jpg"
+    },
+    {
+        friend_id: "12",
+        friend_name: "Liam Thompson",
+        email: "liam.thompson@example.com",
+        profile_photo: "https://randomuser.me/api/portraits/men/7.jpg"
+    }
+];
+
+const MOCK_REQUESTS = [
+  {
+    friend_id: "5",
+    friend_name: "Emma Davis",
+    email: "emma.davis@example.com",
+    profile_photo: "https://randomuser.me/api/portraits/women/3.jpg"
+  },
+  {
+    friend_id: "6",
+    friend_name: "Frank Miller",
+    email: "frank.miller@example.com",
+    profile_photo: "https://randomuser.me/api/portraits/men/4.jpg"
+  }
+];
+
+const MOCK_SEARCH_RESULTS = [
+  {
+    id: "7",
+    full_name: "Grace Wilson",
+    username: "gracew",
+    profile_photo: "https://randomuser.me/api/portraits/women/4.jpg",
+    is_friend: false
+  },
+  {
+    id: "8",
+    full_name: "Henry Taylor",
+    username: "henryt",
+    profile_photo: "https://randomuser.me/api/portraits/men/5.jpg", 
+    is_friend: false
+  }
+];
 
 // Simple Logo component
 const Logo = () => (
@@ -26,307 +185,68 @@ Logo.propTypes = {
   // No props to validate
 };
 
-// Friend Card Component
-function FriendCard({ name, imgSrc, email, onRemove }) {
-  return (
-    <Card className="bg-zinc-800 border-zinc-700 overflow-hidden">
-      <CardContent className="p-4">
-        <div className="flex items-center gap-4">
-          <Avatar className="h-16 w-16">
-            <AvatarImage src={imgSrc} alt={name} />
-            <AvatarFallback className="bg-purple-900/50 text-white">
-              {name.split(" ").map((n) => n[0]).join("")}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1">
-            <h3 className="font-medium text-white">{name}</h3>
-            <p className="text-sm text-zinc-400">{email}</p>
-          </div>
-          <Button variant="outline" size="sm" className="border-zinc-700 bg-zinc-800 hover:bg-zinc-700">
-            Message
-          </Button>
-          <Button variant="outline" size="sm" onClick={onRemove} className="border-red-700 text-red-400 hover:bg-red-900/20">
-            Remove
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-FriendCard.propTypes = {
-  name: PropTypes.string.isRequired,
-  imgSrc: PropTypes.string,
-  email: PropTypes.string.isRequired,
-  onRemove: PropTypes.func.isRequired
-};
-
-//Search Card Component with updated button state handling
-function SearchCard({ name, imgSrc, username, onRequest, isRequested }) {
-  const displayName = name || 'Unknown User';
-  
-  return (
-    <Card className="bg-zinc-800 border-zinc-700 overflow-hidden">
-      <CardContent className="p-4">
-        <div className="flex items-center gap-4">
-          <Avatar className="h-16 w-16">
-            <AvatarImage src={imgSrc} alt={displayName} />
-            <AvatarFallback className="bg-purple-900/50 text-white">
-              {displayName.split(" ").map((n) => n[0]).join("")}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1">
-            <h3 className="font-medium text-white">{displayName}</h3>
-            <p className="text-sm text-zinc-400">{username || 'No username'}</p>
-          </div>
-          <Button 
-            onClick={onRequest} 
-            disabled={isRequested}
-            className={`${isRequested 
-              ? 'bg-zinc-700 text-zinc-300 cursor-not-allowed' 
-              : 'bg-purple-600 hover:bg-purple-700'}`}
-          >
-            <UserPlus className="h-4 w-4 mr-2" />
-            {isRequested ? 'Requested' : 'Request'}
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-// SearchCard PropTypes validation
-SearchCard.propTypes = {
-  name: PropTypes.string,
-  imgSrc: PropTypes.string,
-  username: PropTypes.string,
-  onRequest: PropTypes.func.isRequired,
-  isRequested: PropTypes.bool
-};
-
-// Request Card Component
-function RequestCard({ name, imgSrc, email, onAccept, onDecline }) {
-  return (
-    <Card className="bg-zinc-800 border-zinc-700 overflow-hidden">
-      <CardContent className="p-4">
-        <div className="flex items-center gap-4">
-          <Avatar className="h-16 w-16">
-            <AvatarImage src={imgSrc} alt={name} />
-            <AvatarFallback className="bg-purple-900/50 text-white">
-              {name.split(" ").map((n) => n[0]).join("")}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1">
-            <h3 className="font-medium text-white">{name}</h3>
-            <p className="text-sm text-zinc-400">{email}</p>
-          </div>
-          <div className="flex flex-col gap-2">
-            <Button size="sm" onClick={onAccept} className="bg-purple-600 hover:bg-purple-700">
-              Accept
-            </Button>
-            <Button variant="outline" size="sm" onClick={onDecline} className="border-zinc-700 bg-zinc-800 hover:bg-zinc-700">
-              Decline
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-RequestCard.propTypes = {
-  name: PropTypes.string.isRequired,
-  imgSrc: PropTypes.string,
-  email: PropTypes.string.isRequired,
-  onAccept: PropTypes.func.isRequired,
-  onDecline: PropTypes.func.isRequired
-};
-
 const Content = () => {
-    const user = useUser()
-    const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api'
-    const [profileData, setProfileData] = useState(null);
-    const [loading, setIsLoading] = useState(true);
+    // const user = useUser() // Comment out if causing issues
+    const navigate = useNavigate();
+    
+    // Replace state initialization with dummy data
+    const [profileData, setProfileData] = useState(MOCK_PROFILE);
+    const [loading, setIsLoading] = useState(false); // Set to false to skip loading
     const [error, setError] = useState(null);
-    const [allUsers, setAllUsers] =  useState([]);
-    const [friends, setFriends] = useState([]);
-    const [requests, setRequests] = useState([]);
+    const [friends, setFriends] = useState(MOCK_FRIENDS);
+    const [requests, setRequests] = useState(MOCK_REQUESTS);
     const [blocked, setBlocked] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [hasSearched, setHasSearched] = useState(false);
     const [requestedUsers, setRequestedUsers] = useState([]);
-    const navigate = useNavigate();
 
-    const fetchUserProfile = async () => {
-        try {
-            setIsLoading(true);
-            const token = await SecurityUtils.getCookie('idToken');
-            if (!token) {
-                setError('No authentication token found');
-                return;
-            }
-            
-            const response = await fetch(`${API_URL}/user-profile/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ id_token: token })
-            });
-
-            const data = await response.json();
-            
-            if (data.status === 'SUCCESS') {
-                setProfileData(data.user_data);
-
-                try{
-                    const friendsResponse = await fetch(`${API_URL}/friendlist/`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({ id_token: token })
-                    });
-                    const friendsData = await friendsResponse.json();
-                    if (friendsData.status === 'SUCCESS') {
-                        setAllUsers(friendsData.friends);
-                    } else {
-                        setError(friendsData.message || 'Failed to fetch friends data');
-                    }
-                }catch{
-                    setError('Failed to fetch friends data');
-                }
-            } else {
-                setError(data.message || 'Failed to fetch profile data');
-            }
-        } catch (error) {
-            console.error('Error fetching user profile:', error);
-            setError('Error fetching profile data');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const sortFriendships = (friendships) => {
-        const friends = [];
-        const requests = [];
-        const blocked = [];
-        friendships.forEach(friendship => {
-            if (friendship.status === 'accepted' || friendship.status === 'ACCEPTED') {
-                friends.push(friendship);
-            } else if (friendship.status === 'pending' || friendship.status === 'PENDING') {
-                requests.push(friendship);
-            } else if (friendship.status === 'blocked' || friendship.status === 'BLOCKED') {
-                blocked.push(friendship);
-            }
-
-        });
-        setFriends(friends);    
-        setRequests(requests);
-        setBlocked(blocked);
-    };
-
+    // Comment out fetchUserProfile call and related useEffects
+    /*
     useEffect(() => {
         fetchUserProfile();
     }, []);
+    
     useEffect(() => {
         sortFriendships(allUsers);
     }, [allUsers]);
+    */
 
-
-    const handleSearch = async (e) => {
+    // Simplified mock search handler
+    const handleSearch = (e) => {
         e.preventDefault();
-        if (!searchTerm) {
-            return;
-        }
+        if (!searchTerm) return;
         
-        setHasSearched(true); // Always set this to true to show "no results" message
+        setHasSearched(true);
         
-        try {
-            const token = await SecurityUtils.getCookie('idToken');
-            if (!token) {
-                setError('No authentication token found');
-                return;
-            }
-            
-            const response = await fetch(`${API_URL}/search-user/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ id_token: token, query: searchTerm })
-            }); 
-    
-            const data = await response.json();
-            console.log("Search results:", data); // Add this line for debugging
-            
-            if (data.status === 'SUCCESS') {
-                // Check for different possible result structures
-                const results = data.users || data.results || [];
-                setSearchResults(results);
-            } else {
-                setError(data.message || 'Failed to fetch search results');
-                setSearchResults([]); // Clear previous results
-            }
-        } catch(error) {
-            console.error('Error fetching search results:', error);
-            setSearchResults([]); // Clear previous results on error
-            setError('Error searching for users');
-        }
+        // Filter mock data based on search term
+        const filteredResults = MOCK_SEARCH_RESULTS.filter(user => 
+            user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            user.username.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+        setSearchResults(filteredResults);
     };
 
-    const handleRequest = async (username) => {
-        try {
-            const token = await SecurityUtils.getCookie('idToken');
-            if (!token) {
-                setError('No authentication token found');
-                return;
-            }
-            
-            // Add to requested users immediately for UI feedback
-            setRequestedUsers(prev => [...prev, username]);
-            
-            const response = await fetch(`${API_URL}/send-friend-request/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ id_token: token, recieve_username: username })
-            });
-            const data = await response.json();
-            if (data.status === 'SUCCESS') {
-                // Don't add to requests array since this is an OUTGOING request
-                // Just keep it in requestedUsers for button state
-            } else if (data.status === 'PENDING') {
-                // Request was already pending, keep in requested users
-            } else {
-                // On error, remove from requested users
-                setRequestedUsers(prev => prev.filter(u => u !== username));
-                setError(data.message || 'Failed to send friend request');
-            }
-        } catch (error) {
-            // On exception, remove from requested users
-            setRequestedUsers(prev => prev.filter(u => u !== username));
-            console.error('Error sending friend request:', error);
-            setError('Error sending friend request');
-        }
+    // Simplified mock handlers
+    const handleRequest = (username) => {
+        setRequestedUsers(prev => [...prev, username]);
+        console.log(`Friend request sent to ${username}`);
     };
 
     const handleRemoveFriend = (id) => {
-      setFriends(friends.filter(friend => friend.id !== id));
+      setFriends(friends.filter(friend => friend.friend_id !== id));
     };
 
     const handleAcceptRequest = (id) => {
-      const accepted = requests.find(req => req.id === id);
+      const accepted = requests.find(req => req.friend_id === id);
       if (accepted) {
         setFriends([...friends, accepted]);
-        setRequests(requests.filter(req => req.id !== id));
+        setRequests(requests.filter(req => req.friend_id !== id));
       }
     };
 
     const handleDeclineRequest = (id) => {
-      setRequests(requests.filter(req => req.id !== id));
+      setRequests(requests.filter(req => req.friend_id !== id));
     };
 
     const handleDashboardClick = () => {
@@ -335,8 +255,6 @@ const Content = () => {
 
     const handleSearchTermChange = (e) => {
         setSearchTerm(e.target.value);
-        // Uncomment the line below if you want to hide results as soon as typing starts
-        // setHasSearched(false);
     };
 
     if (error) {
@@ -360,9 +278,13 @@ const Content = () => {
                 <Logo />
                 <div className="flex items-center gap-4">
                     <Button className="bg-purple-600 hover:bg-purple-700" onClick={handleDashboardClick}>
-                        <ArrowLeftFromLine className="h-4 w-4 mr-2" />
+                        <ArrowLeft className="h-4 w-4 mr-2" />
                         <span>Dashboard</span>
                     
+                    </Button>
+                    <Button className="bg-purple-600 hover:bg-purple-700" onClick={() => navigate('/settings')}>
+                        <LogOut className="h-4 w-4 mr-2" />
+                        <span>Logout</span>
                     </Button>
                 </div>
             </Header>
@@ -399,7 +321,7 @@ const Content = () => {
 
                 {/* Tabs for Friends, Requests, Search */}
                 <Tabs defaultValue="friends" className="w-full">
-                    <TabsList className="grid grid-cols-3 mb-8 bg-zinc-800 border border-zinc-700">
+                    <TabsList className="grid grid-cols-3 mb-8 bg-zinc-800 border-zinc-700">
                         <TabsTrigger value="friends" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white">
                             <Users className="h-4 w-4 mr-2" />
                             <span>Friends</span>
@@ -412,7 +334,7 @@ const Content = () => {
                             <Search className="h-4 w-4 mr-2" />
                             <span>Search</span>
                         </TabsTrigger>
-                    </TabsList>
+                        </TabsList>
 
                     {/* Friends Tab Content */}
                     <TabsContent value="friends" className="space-y-4">
@@ -423,20 +345,25 @@ const Content = () => {
                                     You have {friends.length} friends
                                 </CardDescription>
                             </CardHeader>
-                            <CardContent className="space-y-4">
-                                {friends.length === 0 ? (
-                                    <p className="text-center text-zinc-400 py-4">You don&apos;t have any friends yet. Add some friends to get started!</p>
-                                ) : (
-                                    friends.map(friend => (
-                                        <FriendCard 
-                                            key={friend.friend_id}
-                                            name={friend.friend_name}
-                                            email={friend.email}
-                                            imgSrc={friend.profile_photo}
-                                            onRemove={() => handleRemoveFriend(friend.id)}
-                                        />
-                                    ))
-                                )}
+                            <CardContent>
+                                {/* Add style tag for custom scrollbar */}
+                                <style>{scrollbarStyles}</style>
+                                
+                                <div className="space-y-4 limit-height custom-scrollbar pr-2">
+                                    {friends.length === 0 ? (
+                                        <p className="text-center text-zinc-400 py-4">You don&apos;t have any friends yet. Add some friends to get started!</p>
+                                    ) : (
+                                        friends.map(friend => (
+                                            <FriendCard 
+                                                key={friend.friend_id}
+                                                name={friend.friend_name}
+                                                email={friend.email}
+                                                imgSrc={friend.profile_photo}
+                                                onRemove={() => handleRemoveFriend(friend.friend_id)}
+                                            />
+                                        ))
+                                    )}
+                                </div>
                             </CardContent>
                         </Card>
                     </TabsContent>
@@ -450,21 +377,23 @@ const Content = () => {
                                     You have {requests.length} pending friend requests
                                 </CardDescription>
                             </CardHeader>
-                            <CardContent className="space-y-4">
-                                {requests.length === 0 ? (
-                                    <p className="text-center text-zinc-400 py-4">You don&apos;t have any pending friend requests.</p>
-                                ) : (
-                                    requests.map(request => (
-                                        <RequestCard 
-                                            key={request.friend_id}
-                                            name={request.friend_name}
-                                            email={request.email}
-                                            imgSrc={request.profile_photo}
-                                            onAccept={() => handleAcceptRequest(request.id)}
-                                            onDecline={() => handleDeclineRequest(request.id)}
-                                        />
-                                    ))
-                                )}
+                            <CardContent>
+                                <div className="space-y-4 max-h-[550px] overflow-y-auto pr-2 custom-scrollbar">
+                                    {requests.length === 0 ? (
+                                        <p className="text-center text-zinc-400 py-4">You don&apos;t have any pending friend requests.</p>
+                                    ) : (
+                                        requests.map(request => (
+                                            <RequestCard 
+                                                key={request.friend_id}
+                                                name={request.friend_name}
+                                                email={request.email}
+                                                imgSrc={request.profile_photo}
+                                                onAccept={() => handleAcceptRequest(request.friend_id)}
+                                                onDecline={() => handleDeclineRequest(request.friend_id)}
+                                            />
+                                        ))
+                                    )}
+                                </div>
                             </CardContent>
                         </Card>
                     </TabsContent>
@@ -479,19 +408,13 @@ const Content = () => {
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <form onSubmit={handleSearch} className="flex gap-2 mb-6">
-                                    <input
-                                        type="text"
-                                        value={searchTerm}
-                                        onChange={handleSearchTermChange} 
-                                        placeholder="Search for friends..."
-                                        className="flex-1 bg-zinc-800 border border-zinc-700 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
-                                    />
-                                    <Button type="submit" className="bg-purple-600 hover:bg-purple-700">
-                                        <Search className="h-4 w-4 mr-2" />
-                                        Search
-                                    </Button>
-                                </form>
+                                <SearchBar
+                                  value={searchTerm}
+                                  onChange={handleSearchTermChange}
+                                  onSubmit={handleSearch}
+                                  placeholder="Search for friends..."
+                                  className="mb-6"
+                                />
                                 
                                 <div className="space-y-4">
                                     {/* Only show results or messages if hasSearched is true */}
