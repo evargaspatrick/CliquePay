@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom';
-import PropTypes from 'prop-types'; // Add PropTypes import at the top
 import { useUser } from '../utils/UserContext'
-// import AuthenticateUser from '../utils/AuthenticateUser';
+import AuthenticateUser from '../utils/AuthenticateUser';
 import { PageLayout, Section, Header } from '../components/layout/PageLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
@@ -23,20 +22,107 @@ const Logo = () => (
   </div>
 )
 
-Logo.propTypes = {
-  // No props to validate
-};
+// Friend Card Component
+function FriendCard({ name, imgSrc, email, onRemove }) {
+  return (
+    <Card className="bg-zinc-800 border-zinc-700 overflow-hidden">
+      <CardContent className="p-4">
+        <div className="flex items-center gap-4">
+          <Avatar className="h-16 w-16">
+            <AvatarImage src={imgSrc} alt={name} />
+            <AvatarFallback className="bg-purple-900/50 text-white">
+              {name.split(" ").map((n) => n[0]).join("")}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1">
+            <h3 className="font-medium text-white">{name}</h3>
+            <p className="text-sm text-zinc-400">{email}</p>
+          </div>
+          <Button variant="outline" size="sm" className="border-zinc-700 bg-zinc-800 hover:bg-zinc-700">
+            Message
+          </Button>
+          <Button variant="outline" size="sm" onClick={onRemove} className="border-red-700 text-red-400 hover:bg-red-900/20">
+            Remove
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+//Search Card Component with updated button state handling
+function SearchCard({ name, imgSrc, username, onRequest, isRequested }) {
+  const displayName = name || 'Unknown User';
+  
+  return (
+    <Card className="bg-zinc-800 border-zinc-700 overflow-hidden">
+      <CardContent className="p-4">
+        <div className="flex items-center gap-4">
+          <Avatar className="h-16 w-16">
+            <AvatarImage src={imgSrc} alt={displayName} />
+            <AvatarFallback className="bg-purple-900/50 text-white">
+              {displayName.split(" ").map((n) => n[0]).join("")}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1">
+            <h3 className="font-medium text-white">{displayName}</h3>
+            <p className="text-sm text-zinc-400">{username || 'No username'}</p>
+          </div>
+          <Button 
+            onClick={onRequest} 
+            disabled={isRequested}
+            className={`${isRequested 
+              ? 'bg-zinc-700 text-zinc-300 cursor-not-allowed' 
+              : 'bg-purple-600 hover:bg-purple-700'}`}
+          >
+            <UserPlus className="h-4 w-4 mr-2" />
+            {isRequested ? 'Requested' : 'Request'}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// Request Card Component
+function RequestCard({ name, imgSrc, email, onAccept, onDecline }) {
+  return (
+    <Card className="bg-zinc-800 border-zinc-700 overflow-hidden">
+      <CardContent className="p-4">
+        <div className="flex items-center gap-4">
+          <Avatar className="h-16 w-16">
+            <AvatarImage src={imgSrc} alt={name} />
+            <AvatarFallback className="bg-purple-900/50 text-white">
+              {name.split(" ").map((n) => n[0]).join("")}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1">
+            <h3 className="font-medium text-white">{name}</h3>
+            <p className="text-sm text-zinc-400">{email}</p>
+          </div>
+          <div className="flex flex-col gap-2">
+            <Button size="sm" onClick={onAccept} className="bg-purple-600 hover:bg-purple-700">
+              Accept
+            </Button>
+            <Button variant="outline" size="sm" onClick={onDecline} className="border-zinc-700 bg-zinc-800 hover:bg-zinc-700">
+              Decline
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
 
 const Content = () => {
-    // const user = useUser() // Comment out if causing issues
-    const navigate = useNavigate();
-    
-    // Replace state initialization with dummy data
-    const [profileData, setProfileData] = useState(MOCK_PROFILE);
-    const [loading, setIsLoading] = useState(false); // Set to false to skip loading
+    const user = useUser()
+    const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api'
+    const [profileData, setProfileData] = useState(null);
+    const [loading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [friends, setFriends] = useState(MOCK_FRIENDS);
-    const [requests, setRequests] = useState(MOCK_REQUESTS);
+    const [allUsers, setAllUsers] =  useState([]);
+    const [friends, setFriends] = useState([]);
+    const [requests, setRequests] = useState([]);
     const [blocked, setBlocked] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [searchResults, setSearchResults] = useState([]);
@@ -133,16 +219,16 @@ const Content = () => {
     useEffect(() => {
         fetchUserProfile();
     }, []);
-    
     useEffect(() => {
         sortFriendships(allUsers);
     }, [allUsers]);
-    */
 
-    // Simplified mock search handler
-    const handleSearch = (e) => {
+
+    const handleSearch = async (e) => {
         e.preventDefault();
-        if (!searchTerm) return;
+        if (!searchTerm) {
+            return;
+        }
         
         setHasSearched(true); // Always set this to true to show "no results" message
         
@@ -398,13 +484,9 @@ const Content = () => {
                 <Logo />
                 <div className="flex items-center gap-4">
                     <Button className="bg-purple-600 hover:bg-purple-700" onClick={handleDashboardClick}>
-                        <ArrowLeft className="h-4 w-4 mr-2" />
+                        <ArrowLeftFromLineIcon className="h-4 w-4 mr-2" />
                         <span>Dashboard</span>
                     
-                    </Button>
-                    <Button className="bg-purple-600 hover:bg-purple-700" onClick={() => navigate('/settings')}>
-                        <LogOut className="h-4 w-4 mr-2" />
-                        <span>Logout</span>
                     </Button>
                 </div>
             </Header>
@@ -476,7 +558,7 @@ const Content = () => {
                         >
                             Search
                         </TabsTrigger>
-                        </TabsList>
+                    </TabsList>
 
                     {/* Friends Tab Content */}
                     <TabsContent value="friends" className="space-y-4">
@@ -543,13 +625,19 @@ const Content = () => {
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <SearchBar
-                                  value={searchTerm}
-                                  onChange={handleSearchTermChange}
-                                  onSubmit={handleSearch}
-                                  placeholder="Search for friends..."
-                                  className="mb-6"
-                                />
+                                <form onSubmit={handleSearch} className="flex gap-2 mb-6">
+                                    <input
+                                        type="text"
+                                        value={searchTerm}
+                                        onChange={handleSearchTermChange} 
+                                        placeholder="Search for friends..."
+                                        className="flex-1 bg-zinc-800 border border-zinc-700 text-white px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
+                                    />
+                                    <Button type="submit" className="bg-purple-600 hover:bg-purple-700">
+                                        <Search className="h-4 w-4 mr-2" />
+                                        Search
+                                    </Button>
+                                </form>
                                 
                                 <div className="space-y-4">
                                         {searchResults.length > 0 ? 
@@ -567,7 +655,7 @@ const Content = () => {
                                             ))
                                         : hasSearched && (
                                             <p className="text-center text-zinc-400 py-4">
-                                                No results found for &quot;{searchTerm}&quot;
+                                                No results found for "{searchTerm}"
                                             </p>
                                         )}
                                          
@@ -674,9 +762,9 @@ const Content = () => {
 
 const Friends = () => {
     return (
-        // <AuthenticateUser>
+        <AuthenticateUser>
             <Content />
-        // </AuthenticateUser>
+        </AuthenticateUser> 
     );
 };
 
