@@ -351,3 +351,32 @@ class RemoveFriendSerializer(serializers.Serializer):
     id_token = serializers.CharField(required=True)
     friendship_id = serializers.CharField(required=True)
     block = serializers.BooleanField(required=False, default=False)
+
+class GetGroupInfoSerializer(serializers.Serializer):
+    id_token = serializers.CharField(required=True)
+    group_id = serializers.CharField(required=True)
+
+class CreateGroupSerializer(serializers.Serializer):
+    id_token = serializers.CharField(required=True)
+    group_name = serializers.CharField(required=True, max_length=255)
+    group_description = serializers.CharField(required=False, max_length=2000)
+
+class InvitePersonSerializer(serializers.Serializer):
+    id_token = serializers.CharField(required=True)
+    invited_id = serializers.CharField(required=True)
+    group_id = serializers.CharField(required=True)
+
+class LeaveGroupSerializer(serializers.Serializer):
+    id_token = serializers.CharField(required=True)
+    group_id = serializers.CharField(required=True)
+
+class GetUserGroupsSerializer(serializers.Serializer):
+    id_token = serializers.CharField(required=True)
+
+#same one used for cancel, accept and reject
+class AcceptGroupInviteSerializer(serializers.Serializer):
+    id_token = serializers.CharField(required=True)
+    invite_id = serializers.CharField(required=True)
+
+class GetUserInvitesSerializer(serializers.Serializer):
+    id_token = serializers.CharField(required=True)

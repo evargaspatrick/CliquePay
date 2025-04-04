@@ -70,7 +70,7 @@ class Friendship(models.Model):
         ]
 
 class Group(models.Model):
-    id = models.CharField(max_length=128, primary_key=True, unique=True)
+    id = models.CharField(max_length=128, primary_key=True, default=uuid.uuid4, unique=True)
     name = models.CharField(max_length=255)
     created_by = models.ForeignKey(
         User,
@@ -79,7 +79,8 @@ class Group(models.Model):
         related_name='created_groups'
     )
     created_at = models.DateTimeField(auto_now_add=True)
-
+    photo_url = models.URLField()
+    description = models.TextField(blank=True)
     class Meta:
         db_table = 'groups'
 
@@ -99,8 +100,12 @@ class GroupMember(models.Model):
         on_delete=models.CASCADE,
         related_name='group_memberships'
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-
+    joined_at = models.DateTimeField(auto_now_add=True)
+    ROLE_CHOICES = [
+        ('admin', 'Admin'),
+        ('member', 'Member')
+    ]
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='member')
     class Meta:
         db_table = 'group_members'
         constraints = [
@@ -111,6 +116,29 @@ class GroupMember(models.Model):
 
     def __str__(self):
         return f"{self.user.full_name} in {self.group.name}"
+
+class GroupInvitation(models.Model):
+    id = models.CharField(max_length=128, primary_key=True, default=uuid.uuid4, unique=True)
+    group = models.ForeignKey(
+        Group,
+        on_delete=models.CASCADE,
+        related_name='invitations'
+    )
+    invited_user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='group_invitations'
+    )
+    invited_by = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='sent_group_invitations'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    accepted_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'group_invitations'
 
 class ChatMessage(models.Model):
     MESSAGE_TYPES = [

@@ -764,3 +764,440 @@ class DatabaseService:
                 'status': 'ERROR',
                 'message': str(e)
             }
+        
+    @staticmethod
+    def get_group_info(user_sub, group_id):
+        """
+        Get the group info along with members.
+        requires user passed in to be a member of the group.
+        Args:
+            user_sub(str): Cognito ID of the user requesting info.
+            group_id(str): ID of requested group.
+        Returns: 
+            dict: operation status and info if successful. 
+        """
+        try:
+            # First, get the user
+            user = User.objects.get(cognito_id=user_sub)
+            # Check if the user has access to group
+            if not GroupMember.objects.filter(user=user, group_id=group_id).exists():
+                return {
+                    'status': 'ERROR',
+                    'message': 'User is not a member of this group'
+                }
+
+            group = Group.objects.get(id=group_id)
+            members = group.members.all().select_related('user')
+            group_members = []
+            
+            for member in members:
+                data_payload = {
+                    'user_id' : member.user.id,
+                    'username': member.user.name,
+                    'full_name': member.user.full_name,
+                    'profile_photo': member.user.avatar_url,
+                    'phone_number': member.user.phone_number,
+                    'role' : member.role,
+                    'joined_at': member.joined_at
+                }
+                group_members.append(data_payload)
+            
+            group_data = {
+                'group_name' : group.name,
+                'group_id': group.id,
+                'created_at': group.created_at,
+                'photo_url': group.photo_url,
+                'group_size': len(members),
+                'created_by': group.created_by
+            }
+
+            return {
+                'status' : 'SUCCESS',
+                'group_info': group_data,
+                'group_members' : group_members,
+            }
+        except User.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'User not found'
+            }
+        except Group.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'Group not found'
+            }
+        except Exception as e:
+            return {
+                'status': 'ERROR',
+                'message': str(e)
+            }
+    
+    @staticmethod
+    def create_group(user_sub, group_name, group_description=None):
+        """
+        Create a new group and add the user who created it as an adnub.
+        Args:
+            user_sub (str): Cognito ID of the user creating the group
+            group_name (str): Name of the new group
+        Returns:
+            dict: Status of the group creation operation
+        """
+        try:
+            user = User.objects.get(cognito_id=user_sub)
+            group = Group.objects.create(
+                name=group_name,
+                created_by=user,
+                description = group_description
+            )
+            GroupMember.objects.create(
+                user=user,
+                group=group,
+                role='admin'
+            )
+            return {
+                'status': 'SUCCESS',
+                'message': 'Group created successfully',
+                'group_id': group.id
+            }
+        except User.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'User not found'
+            }
+        except Exception as e:
+            return {
+                'status': 'ERROR',
+                'message': str(e)
+            }
+
+    # REMINDER: COMPLETE BELOW COMMENTED METHOD AFTER GROUP_EXPENSES ARE DONE.
+    # @staticmethod
+    # def delete_group(user_sub, group_id):
+
+    @staticmethod
+    def invite_to_group(user_sub, invited_id, group_id):
+        """
+        (Only admins can invite)
+        Invite a user to your group using their id.
+        Args:
+            user_sub (str): Cognito ID of the user inviting
+            invited_id (str): ID of the user being invited
+            group_id (str): ID of the group
+        Returns:
+            dict: status of invite operation.
+        """
+        try:
+            user = User.objects.get(cognito_id=user_sub)
+            invited_user = User.objects.get(id=invited_id)
+            group = Group.objects.get(id=group_id)
+
+            # Check if the user is an admin of the group
+            if not GroupMember.objects.filter(user=user, group=group, role='admin').exists():
+                return {
+                    'status': 'ERROR',
+                    'message': 'User is not an admin of this group'
+                }
+
+            # Check if the invited user is already a member of the group
+            if GroupMember.objects.filter(user=invited_user, group=group).exists():
+                return {
+                    'status': 'ERROR',
+                    'message': 'User is already a member of this group'
+                }
+
+            # Create a new invitation
+            invitation = GroupInvitation.objects.create(
+                group=group,
+                invited_user=invited_user,
+                invited_by=user
+            )
+
+            return {
+                'status': 'SUCCESS',
+                'message': 'User invited to the group successfully',
+                'invitation_id': invitation.id
+            }
+        except User.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'User not found'
+            }
+        except Group.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'Group not found'
+            }
+        except Exception as e:
+            return {
+                'status': 'ERROR',
+                'message': str(e)
+            }
+
+    @staticmethod    
+    def leave_group(user_sub, group_id):
+        """
+        Leave a group using the group ID.
+        Args:
+            user_sub (str): Cognito ID of the user leaving the group
+            group_id (str): ID of the group
+        Returns:
+            dict: status of leave operation.
+        """
+        try:
+            user = User.objects.get(cognito_id=user_sub)
+            group = Group.objects.get(id=group_id)
+
+            # Check if the user is a member of the group
+            if not GroupMember.objects.filter(user=user, group=group).exists():
+                return {
+                    'status': 'ERROR',
+                    'message': 'User is not a member of this group'
+                }
+
+            # Remove the user from the group
+            GroupMember.objects.filter(user=user, group=group).delete()
+
+            return {
+                'status': 'SUCCESS',
+                'message': 'User left the group successfully'
+            }
+        except User.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'User not found'
+            }
+        except Group.DoesNotExist:
+            return{
+                'status': 'ERROR',
+                'message': 'Group not found'
+            }
+        except Exception as e:
+            return {
+                'status' : 'ERROR',
+                'message' : str(e)
+            }
+        
+    @staticmethod
+    def get_user_groups(user_sub):
+        """
+        Get the user Groups using the cognito ID.
+
+        Args:
+            user_sub(str): cognito ID of the user.
+        Returns:
+            dict: groups dict and status of the operation.
+        """
+        try:
+            user = User.objects.get(cognito_id=user_sub)
+            groups = user.group_memberships.all().select_related('group')
+            groups_list = []
+
+            for group in groups:
+                groups_list.append({
+                    'group_id': group.group.id,
+                    'group_name': group.group.name,
+                    'created_at': group.group.created_at,
+                    'photo_url': group.group.photo_url,
+                    'description': group.group.description,
+                    'role': group.role
+                })
+            
+            return{
+                'status':'SUCCESS',
+                'groups': groups_list
+            }
+        except User.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'User not found'
+            }
+        except Exception as e:
+            return {
+                'status': 'ERROR',
+                'message': str(e)
+            }
+        
+    @staticmethod
+    def accept_group_invite(user_sub, invite_id):
+        """
+        Accept a group invite using the invite ID.
+        Args:
+            user_sub (str): Cognito ID of the user accepting the invite
+            invite_id (str): ID of the group invitation
+        Returns:
+            dict: status of accept operation.
+        """
+        try:
+            user = User.objects.get(cognito_id=user_sub)
+            invitation = GroupInvitation.objects.get(id=invite_id)
+
+            # Check if the invited user is the one accepting the invite
+            if invitation.invited_user != user:
+                return {
+                    'status': 'ERROR',
+                    'message': 'User not authorized to accept this invitation'
+                }
+
+            # Check if the group already has the user as a member
+            if GroupMember.objects.filter(user=user, group=invitation.group).exists():
+                return {
+                    'status': 'ERROR',
+                    'message': 'User is already a member of this group'
+                }
+
+            # Add the user to the group
+            GroupMember.objects.create(
+                user=user,
+                group=invitation.group,
+                role='member'
+            )
+
+            # Delete the invitation after acceptance
+            invitation.delete()
+
+            return {
+                'status': 'SUCCESS',
+                'message': 'Group invitation accepted successfully'
+            }
+        except User.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'User not found'
+            }
+        except GroupInvitation.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'Group invitation not found'
+            }
+        except Exception as e:
+            return {
+                'status': 'ERROR',
+                'message': str(e)
+            }
+    
+    @staticmethod
+    def reject_group_invite(user_sub, invite_id):
+        """
+        Reject group invite by group ID.
+
+        Args:
+            user_sub (str): Cognito ID of the user rejecting the invite
+            invite_id (str): ID of the invitation
+        Returns:
+            dict: status of reject operation.
+        """
+        try:
+            user = User.objects.get(cognito_id=user_sub)
+            invitation = GroupInvitation.objects.get(id=invite_id)
+
+            # Check if the invited user is the one rejecting the invite
+            if invitation.invited_user != user:
+                return {
+                    'status': 'ERROR',
+                    'message': 'User not authorized to reject this invitation'
+                }
+
+            # Delete the invitation
+            invitation.delete()
+
+            return{
+                'status': 'SUCCESS',
+                'message': 'Group invitation rejected successfully'
+            }
+        except GroupInvitation.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'Group invitation not found'
+            }
+        except User.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'User not found'
+            }
+        except Exception as e:
+            return {
+                'status': 'ERROR',
+                'message': str(e)
+            }
+        
+    @staticmethod
+    def get_user_invites(user_sub):
+        """
+        Get the group invites for a user using the cognito ID.
+
+        Args:
+            user_sub(str): cognito ID of the user.
+        Returns:
+            dict: invites dict and status of the operation.
+        """
+        try:
+            user = User.objects.get(cognito_id=user_sub)
+            invitations = GroupInvitation.objects.filter(invited_user=user).select_related('group')
+            invites_list = []
+
+            for invite in invitations:
+                invites_list.append({
+                    'invite_id': invite.id,
+                    'group_id': invite.group.id,
+                    'group_name': invite.group.name,
+                    'created_at': invite.created_at,
+                    'photo_url': invite.group.photo_url,
+                    'description': invite.group.description
+                })
+            
+            return{
+                'status':'SUCCESS',
+                'invites': invites_list
+            }
+        except User.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'User not found'
+            }
+        except Exception as e:
+            return {
+                'status': 'ERROR',
+                'message': str(e)
+            }
+    
+    @staticmethod
+    def cancel_group_invite(user_sub, invite_id):
+        """
+        Cancel invite before the invitee takes any aciton.
+
+        Args:
+            user_sub(str): cognito id of the user who sent the invite.
+            invite_id(str): invititation id.
+        """
+        try:
+            user = User.objects.get(cognito_id=user_sub)
+            invitation = GroupInvitation.objects.get(id=invite_id)
+            # Check if the user is the one who sent the invitation
+            if invitation.invited_by != user:
+                return {
+                    'status': 'ERROR',
+                    'message': 'User not authorized to cancel this invitation'
+                }
+            
+            # Delete the invitation
+            invitation.delete()
+            return{
+                'status' : 'SUCCESS',
+                'message' : 'Group invitation cancelled successfully'
+            }
+        except User.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'User not found'
+            }
+        except GroupInvitation.DoesNotExist:
+            return{
+                'status': 'ERROR',
+                'message': 'Group invitation not found'
+            }
+        except Exception as e:
+            return {
+                'status': 'ERROR',
+                'message': str(e)
+            }
+        
