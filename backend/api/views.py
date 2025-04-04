@@ -142,6 +142,11 @@ def api_root(request, format=None):
                 'url': reverse('remove_friend', request=request, format=format),
                 'method': 'POST',
                 'description': 'remove friend.'
+            },
+            'get-group-info':{
+                'url':reverse('get_group_info', request=request, format=format),
+                'method':'POST',
+                'description':'get group information.'
             }
         },
         'version': 'development',
@@ -1363,6 +1368,35 @@ def remove_friend(request):
             return Response(result, status=status.HTTP_400_BAD_REQUEST)
             
         return Response(id_result, status=status.HTTP_401_UNAUTHORIZED)
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def get_group_info(request):
+    """
+    Get the group information along with members.
+    requires user passed int to be a member of the group.
+
+    Request Body:
+    {
+        "id-token" : "user-id-token",
+        "group-id" : "group-id",
+    }
+    """
+    serializer = GetGroupInfoSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        decoded = cognito.get_user_id(serializer.validated_data['id_token'])
+        if decoded['status'] == 'SUCCESS':
+            db = DatabaseService()
+            result = db.get_group_info(decoded['user_sub'], serializer.validated_data['group_id'])
+            if result['status'] == 'SUCCESS':
+                return Response(result, status=status.HTTP_200_OK)
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        return Response(decoded, status=status.HTTP_401_UNAUTHORIZED)
     return Response({
         'status': 'error',
         'message': 'Invalid input',

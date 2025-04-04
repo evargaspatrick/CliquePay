@@ -79,7 +79,7 @@ class Group(models.Model):
         related_name='created_groups'
     )
     created_at = models.DateTimeField(auto_now_add=True)
-
+    photo_url = models.URLField()
     class Meta:
         db_table = 'groups'
 
@@ -99,8 +99,12 @@ class GroupMember(models.Model):
         on_delete=models.CASCADE,
         related_name='group_memberships'
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-
+    joined_at = models.DateTimeField(auto_now_add=True)
+    choices = [
+        ('admin'),
+        ('member')
+    ]
+    role = models.CharField(max_length=10, choices = choices, default='member')
     class Meta:
         db_table = 'group_members'
         constraints = [

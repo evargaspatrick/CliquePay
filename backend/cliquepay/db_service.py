@@ -764,3 +764,70 @@ class DatabaseService:
                 'status': 'ERROR',
                 'message': str(e)
             }
+        
+    @staticmethod
+    def get_group_info(user_sub, group_id):
+        """
+        Get the group info along with members.
+        requires user passed in to be a member of the group.
+        Args:
+            user_sub(str): Cognito ID of the user requesting info.
+            group_id(str): ID of requested group.
+        Returns: 
+            dict: operation status and info if successful. 
+        """
+        try:
+            # First, get the user
+            user = User.objects.get(cognito_id=user_sub)
+            # Check if the user has access to group
+            if not GroupMember.objects.filter(user=user, group_id=group_id).exists():
+                return {
+                    'status': 'ERROR',
+                    'message': 'User is not a member of this group'
+                }
+
+            group = Group.objects.get(id=group_id)
+            members = group.members.all().select_related('user')
+            group_members = []
+            
+            for member in members:
+                data_payload = {
+                    'user_id' : member.user.id,
+                    'username': member.user.name,
+                    'full_name': member.user.full_name,
+                    'profile_photo': member.user.avatar_url,
+                    'phone_number': member.user.phone_number,
+                    'role' : member.role,
+                    'joined_at': member.joined_at
+                }
+                group_members.append(data_payload)
+            
+            group_data = {
+                'group_name' : group.name,
+                'group_id': group.id,
+                'created_at': group.created_at,
+                'photo_url': group.photo_url,
+                'group_size': len(members),
+                'created_by': group.created_by
+            }
+
+            return {
+                'status' : 'SUCCESS',
+                'group_info': group_data,
+                'group_members' : group_members,
+            }
+        except User.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'User not found'
+            }
+        except Group.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'Group not found'
+            }
+        except Exception as e:
+            return {
+                'status': 'ERROR',
+                'message': str(e)
+            }

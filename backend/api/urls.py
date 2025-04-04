@@ -35,4 +35,5 @@ urlpatterns = [
     path('api/create-group/', views.create_group, name='create_group'),
     path('api/reject-friend-request/', views.reject_friend_request, name='reject_friend_request'),
     path('api/remove-friend', views.remove_friend, name='remove_friend'),
+    path('api/group-info/', views.get_group_info, name='get_group_info'),
 ]

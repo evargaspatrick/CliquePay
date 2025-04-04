@@ -351,3 +351,7 @@ class RemoveFriendSerializer(serializers.Serializer):
     id_token = serializers.CharField(required=True)
     friendship_id = serializers.CharField(required=True)
     block = serializers.BooleanField(required=False, default=False)
+
+class GetGroupInfoSerializer(serializers.Serializer):
+    id_token = serializers.CharField(required=True)
+    group_id = serializers.CharField(required=True)
