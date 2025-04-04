@@ -26,7 +26,7 @@ const router = createBrowserRouter([
       { path: "profile", element: <UserProfile /> },
       { path: "friends-list", element: <Friends /> },
       { path: "profile/edit", element: <EditProfile /> },
-      { path: "friends", element: <Friends />, errorElement: <ErrorDisplay /> },
+      { path: "friends", element: <Friends /> },
       { path: "forgot", element: <ForgotPassword/>},
     ]
   },

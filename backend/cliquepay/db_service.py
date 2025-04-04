@@ -62,6 +62,7 @@ class DatabaseService:
             return {
                 'status': 'SUCCESS',
                 'user_data': {
+                    'id': user.id,
                     'username': user.name,
                     'full_name': user.full_name,
                     'email': user.email,
@@ -91,8 +92,8 @@ class DatabaseService:
 
             friends_list = []
             for friendship in friendships:
-                friend = friendship.user2 if friendship.user1_id == user_id else friendship.user1
-                if(friendship.status is 'BLOCKED' or friendship.status is 'blocked'):
+                friend = friendship.user2 if friendship.user1.id == user.id else friendship.user1
+                if(friendship.status == 'BLOCKED' or friendship.status == 'blocked'):
                     friends_list.append({
                         'friend_id': "null",
                         'friend_name': friend.full_name,
@@ -109,8 +110,9 @@ class DatabaseService:
                         'email': friend.email,
                         'profile_photo': friend.avatar_url,
                         'status': friendship.status,
-                        'initiator': friendship.action_user.id == user_id,
-                        'created_at': friendship.created_at
+                        'initiator': friendship.action_user.id,
+                        'created_at': friendship.created_at,
+                        'friendship_id': friendship.id
                     })
 
             return {
@@ -124,7 +126,7 @@ class DatabaseService:
             }
 
     @staticmethod
-    def update_user_details(cognito_id, **kwargs):
+    def update_user_details(cognito_id, full_name=None, phone_number=None, avatar_url=None, currency=None):
         """
         Update user fields (full_name, phone_number, avatar_url, currency, etc.)
         based on kwargs only if they exist.
@@ -133,14 +135,14 @@ class DatabaseService:
             user = User.objects.get(cognito_id=cognito_id)
 
             # Update only the fields provided:
-            if 'full_name' in kwargs:
-                user.full_name = kwargs['full_name']
-            if 'phone_number' in kwargs:
-                user.phone_number = kwargs['phone_number']
-            if 'avatar_url' in kwargs:
-                user.avatar_url = kwargs['avatar_url']
-            if 'currency' in kwargs:
-                user.currency = kwargs['currency']
+            if full_name:
+                user.full_name = full_name
+            if phone_number:
+                user.phone_number = phone_number
+            if avatar_url:
+                user.avatar_url = avatar_url
+            if currency:
+                user.currency = currency
 
             user.save()
             return {
@@ -275,7 +277,7 @@ class DatabaseService:
             }
 
     @staticmethod
-    def accept_friend_request(cognito_id, reqeust_id):
+    def accept_friend_request(cognito_id, request_id):
         """
         Accept friend request from the cognito account
         provided in args.
@@ -289,10 +291,10 @@ class DatabaseService:
 
         try:
             user = User.objects.get(cognito_id=cognito_id)
-            friendship = Friendship.objects.get(id=reqeust_id)
+            friendship = Friendship.objects.get(id=request_id)
 
             # Verify the user is the recipient of the friend request
-            if friendship.user2 != user:
+            if friendship.action_user.id == user.id:
                 return {
                     'status': 'ERROR',
                     'message': 'User not authorized to accept this friend request'
@@ -307,7 +309,6 @@ class DatabaseService:
 
             # Accept the friend request
             friendship.status = 'ACCEPTED'
-            friendship.action_user = user
             friendship.save()
 
             return {
@@ -355,62 +356,6 @@ class DatabaseService:
             }
 
     @staticmethod
-    def remove_friend(cognito_id, friend_id):
-        """
-        Remove a friend connection between two users.
-        
-        Args:
-            cognito_id (str): Cognito ID of the user initiating the removal
-            friend_id (str): Database ID of the friend to remove
-            
-        Returns:
-            dict: Status of the friend removal operation
-        """
-        try:
-            # Get the user initiating the removal
-            user = User.objects.get(cognito_id=cognito_id)
-            
-            # Get the friend to remove
-            friend = User.objects.get(id=friend_id)
-            
-            # Find and delete the friendship
-            friendship = Friendship.objects.filter(
-                (models.Q(user1=user) & models.Q(user2=friend)) |
-                (models.Q(user1=friend) & models.Q(user2=user))
-            ).first()
-            
-            if not friendship:
-                return {
-                    'status': 'ERROR',
-                    'message': 'Friendship not found'
-                }
-                
-            if friendship.status != 'ACCEPTED':
-                return {
-                    'status': 'ERROR',
-                    'message': f'Cannot remove friend - current status is {friendship.status}'
-                }
-            
-            # Delete the friendship
-            friendship.delete()
-            
-            return {
-                'status': 'SUCCESS',
-                'message': 'Friend removed successfully'
-            }
-            
-        except User.DoesNotExist:
-            return {
-                'status': 'ERROR',
-                'message': 'User not found'
-            }
-        except Exception as e:
-            return {
-                'status': 'ERROR',
-                'message': str(e)
-            }
-
-    @staticmethod
     def block_user(cognito_id, blocked_id):
         """
         Block another user from the provided account
@@ -426,6 +371,12 @@ class DatabaseService:
             # Get both users
             user = User.objects.get(cognito_id=cognito_id)
             blocked_user = User.objects.get(id=blocked_id)
+
+            if(user.id == blocked_user.id):
+                return {
+                    'status': 'ERROR',
+                    'message': 'Cannot block yourself'
+                }
 
             # Check if a friendship record already exists (either pending, accepted, or previously blocked)
             friendship = Friendship.objects.filter(
@@ -623,13 +574,18 @@ class DatabaseService:
             dict: Status of the send operation
         '''
         try:
-                sender = User.objects.get(id=sender_id)
+                sender = User.objects.get(cognito_id=sender_id)
                 recipient = User.objects.get(id=recipient_id)
+                if(sender.id == recipient.id):
+                    return {
+                        'status': 'ERROR',
+                        'message': 'Cannot send message to yourself'
+                    }
                 relation = Friendship.objects.filter(   
-                    ((models.Q(user1=sender) & models.Q(user2=recipient)) |
-                    (models.Q(user1=recipient) & models.Q(user2=sender))) &
-                    models.Q(status='Accepted'|'accepted')
-                ).first()
+                    ((models.Q(user1=sender) & models.Q(user2=recipient)) or
+                    (models.Q(user1=recipient) & models.Q(user2=sender))) and
+                    models.Q(status='Accepted' or 'accepted')
+                )
 
                 if(relation):
                     message = DirectMessage.objects.create(
@@ -699,6 +655,105 @@ class DatabaseService:
                 'status': 'SUCCESS',
                 'users': users_list
             }
+        except User.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'User not found'
+            }
+        except Exception as e:
+            return {
+                'status': 'ERROR',
+                'message': str(e)
+            }
+        
+    @staticmethod
+    def reject_friend_request(cognito_id, request_id):
+        """
+        Reject friend request from the cognito account
+        provided in args.
+
+        Args:
+            cognito_id (str) : Cognito user ID
+            request_id (str) : Friendship model ID
+        Returns: 
+            dict: Status of friend request rejection 
+        """
+
+        try:
+            user = User.objects.get(cognito_id=cognito_id)
+            friendship = Friendship.objects.select_related('user1', 'user2').get(id= request_id)
+
+            if friendship.user1 != user and friendship.user2 != user:
+                return {
+                    'status': 'ERROR',
+                    'message': 'User not authorized to reject this friend request'
+                }
+
+            if friendship.status != 'PENDING':
+                return {
+                    'status': 'ERROR',
+                    'message': f'Friend request is not pending, current status: {friendship.status}'
+                }
+
+            friendship.delete()
+
+            return {
+                'status': 'SUCCESS',
+                'message': 'Friend request rejected successfully'
+            }
+
+        except User.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'User not found'
+            }
+        except Friendship.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'Friend request not found'
+            }
+        except Exception as e:
+            return {
+                'status': 'ERROR',
+                'message': str(e)
+            }
+
+    @staticmethod
+    def remove_friend(cognito_id, friendship_id, block):
+        """
+        Remove a friend connection between two users.
+        and block them if block is True
+        Args:
+            cognito_id (str): Cognito ID of the user initiating the removal
+            friendship_id (str): Friendship model ID
+            block (bool): Block the user after removal
+        Returns:
+            dict: Status of the friend removal operation
+        """
+        try:
+            user = User.objects.get(cognito_id=cognito_id)
+            friendship = Friendship.objects.filter(id=friendship_id).select_related('user1', 'user2').first()
+            if friendship:
+                if friendship.user1 == user or friendship.user2 == user:
+                    if block:
+                        friendship.status = 'BLOCKED'
+                        friendship.save()
+                    else:
+                        friendship.delete()
+                    return {
+                        'status': 'SUCCESS',
+                        'message': 'Friend removed successfully'
+                    }
+                else:
+                    return {
+                        'status': 'ERROR',
+                        'message': 'User not authorized to remove this friend'
+                    }
+            else:
+                return {
+                    'status': 'ERROR',
+                    'message': 'Friendship not found'
+                }
         except User.DoesNotExist:
             return {
                 'status': 'ERROR',

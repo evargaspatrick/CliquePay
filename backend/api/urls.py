@@ -33,4 +33,6 @@ urlpatterns = [
     path('api/record-payment/', views.record_payment, name='record_payment'),
     path('api/delete-expense/', views.delete_expense, name='delete_expense'),
     path('api/create-group/', views.create_group, name='create_group'),
+    path('api/reject-friend-request/', views.reject_friend_request, name='reject_friend_request'),
+    path('api/remove-friend', views.remove_friend, name='remove_friend'),
 ]

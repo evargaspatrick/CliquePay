@@ -95,10 +95,6 @@ class AcceptFriendRequestSerializer(serializers.Serializer):
     id_token = serializers.CharField(required=True)
     request_id = serializers.CharField(max_length=255, required=True)
 
-class RemoveFriendSerializer(serializers.Serializer):
-    id_token = serializers.CharField(required=True)
-    friend_id = serializers.CharField(required=True)
-
 class BlockUserSerializer(serializers.Serializer):
     id_token = serializers.CharField(required=True)
     blocked_id = serializers.CharField(required=True)
@@ -350,3 +346,8 @@ class ExpensePaymentSerializer(serializers.Serializer):
         if value <= 0:
             raise serializers.ValidationError('Amount must be greater than zero')
         return value
+    
+class RemoveFriendSerializer(serializers.Serializer):
+    id_token = serializers.CharField(required=True)
+    friendship_id = serializers.CharField(required=True)
+    block = serializers.BooleanField(required=False, default=False)
