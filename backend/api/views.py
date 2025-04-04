@@ -1355,7 +1355,7 @@ def remove_friend(request):
             result = db.remove_friend(
                 cognito_id=id_result['user_sub'],
                 friendship_id=serializer.validated_data['friendship_id'],
-                block=serializer.validated_data.get('block', False)
+                block=serializer.validated_data.get('block')
             )
             
             if result['status'] == 'SUCCESS':

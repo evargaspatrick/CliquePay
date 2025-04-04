@@ -276,6 +276,20 @@ const Content = () => {
             // Add to requested users immediately for UI feedback
             setRequestedUsers(prev => [...prev, username]);
             
+            // Create a temporary request object with proper field names
+            const tempRequest = {
+                friend_name: friend.full_name,
+                email: friend.email,
+                profile_photo: friend.profile_photo,
+                // Add a temporary ID we'll replace when the API responds
+                friendship_id: `temp-${Date.now()}`,
+                // is api resoponse pending
+                isPending: true
+            };
+            
+            // Add to sent requests immediately with temp data
+            setSentRequests(prev => [...prev, tempRequest]);
+            
             const response = await fetch(`${API_URL}/send-friend-request/`, {
                 method: 'POST',
                 headers: {
@@ -284,16 +298,24 @@ const Content = () => {
                 body: JSON.stringify({ id_token: token, recieve_username: username })
             });
             const data = await response.json();
+            
             if (data.status === 'SUCCESS') {
-                setSentRequests(prev => [...prev, friend]);
+                // If successful, replace temp request with actual data
+                if (data.friendship.id) {
+                    setSentRequests(prev => prev.map(req => 
+                        req.friendship_id === tempRequest.friendship_id 
+                            ? {...tempRequest, friendship_id: data.friendship.id, isPending: false} 
+                            : req
+                    ));
+                }
             } else {
-                // On error, remove from requested users
-                setSentRequests(prev => prev.filter(u => u !== friend));
+                // On error, remove the temporary request
+                setSentRequests(prev => prev.filter(req => req.friendship_id !== tempRequest.friendship_id));
                 setError(data.message || 'Failed to send friend request');
             }
         } catch (error) {
-            // On exception, remove from requested users
-            setSentRequests(prev => prev.filter(u => u !== friend));
+            // On exception, remove the temporary request
+            setSentRequests(prev => prev.filter(req => req.friendship_id !== tempRequest.friendship_id));
             console.error('Error sending friend request:', error);
             setError('Error sending friend request');
         }
@@ -357,7 +379,7 @@ const Content = () => {
             body: JSON.stringify({ 
               id_token: token, 
               friendship_id: friendToRemove.friendship_id,
-              block: true 
+              block: true     
             })
           });
           
@@ -433,22 +455,36 @@ const Content = () => {
 
     const handleCancelRequest = async (request) => {
         try {
-            const token = await SecurityUtils.getCookie('idToken');
-            if (!token) {
-                setError('No authentication token found');
-                return;
-            }
-            const response = await fetch(`${API_URL}/reject-friend-request/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ id_token: token, request_id: request.friendship_id })
-            });
+          const token = await SecurityUtils.getCookie('idToken');
+          if (!token) {
+            setError('No authentication token found');
+            return;
+          }
+          
+          const response = await fetch(`${API_URL}/reject-friend-request/`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ id_token: token, request_id: request.friendship_id })
+          });
           
           const data = await response.json();
           if (data.status === 'SUCCESS') {
-            setSentRequests(sentRequests.filter(req => req.friendship_id !== request.friendship_id));
+            // Remove from sent requests by friendship_id
+            setSentRequests(prev => 
+              prev.filter(req => req.friendship_id !== request.friendship_id)
+            );
+            
+            // If we're storing usernames in requestedUsers, remove the friend's name
+            const friendUsername = request.username || 
+                                  (request.friend_name && extractUsername(request.friend_name));
+            
+            if (friendUsername) {
+              setRequestedUsers(prev => 
+                prev.filter(username => username !== friendUsername)
+              );
+            }
           } else {
             setError(data.message || 'Failed to cancel friend request');
           }
@@ -456,6 +492,12 @@ const Content = () => {
           console.error('Error canceling friend request:', error);
           setError('Error canceling friend request');
         }
+      };
+      
+      // Helper function to extract username if needed
+      const extractUsername = (fullName) => {
+        // This is a fallback in case you store username in a different format
+        return fullName.toLowerCase().replace(/\s+/g, '');
       };
 
     const handleSearchTermChange = (e) => {
@@ -504,8 +546,8 @@ const Content = () => {
                                 />
                             </div>
                             <div className="flex flex-col">
-                                <h2 className="text-2xl font-semibold text-white mb-1">@{profileData.username}</h2>
-                                <p className="text-zinc-400 mb-3">{profileData.email}</p>
+                                <h2 className="text-2xl font-semibold text-white mb-1">{profileData.full_name}</h2>
+                                <p className="text-zinc-400 mb-3">@{profileData.username}</p>
                             </div>
                         </div>
                         <div className="flex justify-evenly gap-4">
@@ -649,7 +691,10 @@ const Content = () => {
                                                         username={result.username}
                                                         imgSrc={result.profile_photo}
                                                         onRequest={() => handleRequest(result, result.username)}
-                                                        isRequested={requestedUsers.includes(result.username)}
+                                                        isRequested={
+                                                          requestedUsers.includes(result.username) || 
+                                                          sentRequests.some(req => req.friend_name === result.full_name)
+                                                        }
                                                     />
                                                 ) : null
                                             ))

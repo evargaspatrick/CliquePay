@@ -719,7 +719,7 @@ class DatabaseService:
             }
 
     @staticmethod
-    def remove_friend(cognito_id, friendship_id, block=False):
+    def remove_friend(cognito_id, friendship_id, block):
         """
         Remove a friend connection between two users.
         and block them if block is True
@@ -737,6 +737,7 @@ class DatabaseService:
                 if friendship.user1 == user or friendship.user2 == user:
                     if block:
                         friendship.status = 'BLOCKED'
+                        friendship.save()
                     else:
                         friendship.delete()
                     return {
