@@ -147,7 +147,47 @@ def api_root(request, format=None):
                 'url':reverse('get_group_info', request=request, format=format),
                 'method':'POST',
                 'description':'get group information.'
-            }
+            },
+            'create-group':{
+                'url':reverse('create_group', request=request, format=format),
+                'method':'POST',
+                'description':'create group.'
+            },
+            'group-invite':{
+                'url':reverse('group_invite', request=request, format=format),
+                'method':'POST',
+                'description':'invite user to group.'
+            },
+            'leave-group':{
+                'url':reverse('leave_group', request=request, format=format),
+                'method':'POST',
+                'description':'leave group.'
+            },
+            'get-user-groups':{
+                'url':reverse('get_user_groups', request=request, format=format),
+                'method':'POST',
+                'description':'get user groups.'
+            },
+            'accept-group-invite':{
+                'url':reverse('accept_group_invite', request=request, format=format),
+                'method':'POST',
+                'description':'accept group invite.'
+            },
+            'reject-group-invite':{
+                'url':reverse('reject_group_invite', request=request, format=format),
+                'method':'POST',
+                'description':'reject group invite.'
+            },
+            'get-user-invites':{
+                'url':reverse('get_user_invites', request=request, format=format),
+                'method':'POST',
+                'description':'get user invites.'
+            },
+            'cancel-group-invite':{
+                'url':reverse('cancel_group_invite', request=request, format=format),
+                'method':'POST',
+                'description':'cancel group invite.'
+            },
         },
         'version': 'development',
         'status': 'online',
@@ -962,36 +1002,6 @@ def search_user(request):
         'errors': serializer.errors
     }, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(['POST'])
-def create_group(request):
-    """
-    Create a new group with the authenticated user as the owner.
-    Request Body:
-    {
-        "id_token": "user-id"
-        "name": "Group Name",
-        "created_by": "user-id",
-        "members": ["user-id-1", "user-id-2", ...]
-    }
-    """
-
-    request_data = request.data.copy()
-    serializer = GroupCreateSerializer(data=request_data)
-    is_valid = serializer.is_valid()
-    
-    if not is_valid:
-        return Response({
-            "status": "Returned",
-            "errors": serializer.errors if not is_valid else None
-    })
-
-    serializer.save()
-    
-    return Response({
-        "status": "Returned",
-    })
-
-
 
 @api_view(['POST'])
 def create_expense(request):
@@ -1393,6 +1403,250 @@ def get_group_info(request):
         if decoded['status'] == 'SUCCESS':
             db = DatabaseService()
             result = db.get_group_info(decoded['user_sub'], serializer.validated_data['group_id'])
+            if result['status'] == 'SUCCESS':
+                return Response(result, status=status.HTTP_200_OK)
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        return Response(decoded, status=status.HTTP_401_UNAUTHORIZED)
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def create_group(request):
+    """
+    Creates a group and assigns the user admin role.
+
+    Request Body:
+    {
+        "id_token": "your-id-token",
+        "group_name": "desired-name",
+        "group_decription" (optional): "maxlength-2000 chars"
+    }
+    """
+    serializer = CreateGroupSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        decoded = cognito.get_user_id(serializer.validated_data['id_token'])
+        if decoded['status'] == 'SUCCESS':
+            db = DatabaseService()
+            result = db.create_group(
+                user_id=decoded['user_sub'],
+                group_name=serializer.validated_data['group_name'],
+                group_description=serializer.validated_data.get('group_description')
+            )
+            if result['status'] == 'SUCCESS':
+                return Response(result, status=status.HTTP_200_OK)
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        return Response(decoded, status=status.HTTP_401_UNAUTHORIZED)
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def invite_to_group(request):
+    """
+    Invite a user to group.
+
+    Request Body:
+    {
+        "id_token": "your-id-token",
+        "invited_id": "id-of-invited-person",
+        "group_id": "group-id"
+    }
+    """
+    serializer = InvitePersonSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        decoded = cognito.get_user_id(serializer.validated_data['id_token'])
+        if decoded['status'] == 'SUCCESS':
+            db = DatabaseService()
+            result = db.invite_to_group(
+                user_id=decoded['user_sub'],
+                invited_id=serializer.validated_data['invited_id'],
+                group_id=serializer.validated_data['group_id']
+            )
+            if result['status'] == 'SUCCESS':
+                return Response(result, status=status.HTTP_200_OK)
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        return Response(decoded, status=status.HTTP_401_UNAUTHORIZED)
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def leave_group(request):
+    """
+    Leave a group.
+    
+    Request Body:
+    {
+        "id_token": "your-id-token",
+        "group_id": "group-id"
+    }
+    """
+    serializer = LeaveGroupSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        decoded = cognito.get_user_id(serializer.validated_data['id_token'])
+        if decoded['status'] == 'SUCCESS':
+            db = DatabaseService()
+            result = db.leave_group(
+                user_id=decoded['user_sub'],
+                group_id=serializer.validated_data['group_id']
+            )
+            if result['status'] == 'SUCCESS':
+                return Response(result, status=status.HTTP_200_OK)
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        return Response(decoded, status=status.HTTP_401_UNAUTHORIZED)
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def get_user_groups(request):
+    """
+    Get all the groups belonging to the user.
+
+    Request Body:
+    {
+        "id_token": "your-id-token"
+    }
+    """
+    serializer = GetUserGroupsSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        decoded = cognito.get_user_id(serializer.validated_data['id_token'])
+        if decoded['status'] == 'SUCCESS':
+            db = DatabaseService()
+            result = db.get_user_groups(decoded['user_sub'])
+            if result['status'] == 'SUCCESS':
+                return Response(result, status=status.HTTP_200_OK)
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        return Response(decoded, status=status.HTTP_401_UNAUTHORIZED)
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def accept_group_invite(request):
+    """
+    Accept an invitation to join a group.
+
+    Request Body:
+    {
+        "id_token": "your-id-token",
+        "invite_id": "group-id"
+    }
+    """
+    serializer = AcceptGroupInviteSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        decoded = cognito.get_user_id(serializer.validated_data['id_token'])
+        if decoded['status'] == 'SUCCESS':
+            db = DatabaseService()
+            result = db.accept_group_invite(
+                user_id=decoded['user_sub'],
+                invite_id=serializer.validated_data['invite_id']
+            )
+            if result['status'] == 'SUCCESS':
+                return Response(result, status=status.HTTP_200_OK)
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        return Response(decoded, status=status.HTTP_401_UNAUTHORIZED)
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def reject_group_invite(request):
+    """
+    reject a group invitation.
+
+    Request Body:
+    {
+        "id_token": "your-id-token",
+        "invite_id": "group-id"
+    }
+    """
+    serializer = AcceptGroupInviteSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        decoded = cognito.get_user_id(serializer.validated_data['id_token'])
+        if decoded['status'] == 'SUCCESS':
+            db = DatabaseService()
+            result = db.reject_group_invite(
+                user_id=decoded['user_sub'],
+                invite_id=serializer.validated_data['invite_id']
+            )
+            if result['status'] == 'SUCCESS':
+                return Response(result, status=status.HTTP_200_OK)
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        return Response(decoded, status=status.HTTP_401_UNAUTHORIZED)
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def get_user_invites(request):
+    """
+    Get all the group invitations for a user.
+
+    Request Body:
+    {
+        "id_token": "your-id-token"
+    }
+    """
+    serializer = GetUserInvitesSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        decoded = cognito.get_user_id(serializer.validated_data['id_token'])
+        if decoded['status'] == 'SUCCESS':
+            db = DatabaseService()
+            result = db.get_user_invites(decoded['user_sub'])
+            if result['status'] == 'SUCCESS':
+                return Response(result, status=status.HTTP_200_OK)
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        return Response(decoded, status=status.HTTP_401_UNAUTHORIZED)
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def cancel_group_invite(request):
+    """
+    Take back the invite sent to a user.
+
+    Request Body:
+    {
+        "id_token": "your-id-token",
+        "invite_id": "group-id"
+    }
+    """
+    serializer = AcceptGroupInviteSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        decoded = cognito.get_user_id(serializer.validated_data['id_token'])
+        if decoded['status'] == 'SUCCESS':
+            db = DatabaseService()
+            result = db.cancel_group_invite(
+                user_id=decoded['user_sub'],
+                invite_id=serializer.validated_data['invite_id']
+            )
             if result['status'] == 'SUCCESS':
                 return Response(result, status=status.HTTP_200_OK)
             return Response(result, status=status.HTTP_400_BAD_REQUEST)
