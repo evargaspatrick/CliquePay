@@ -1424,7 +1424,7 @@ def create_group(request):
     {
         "id_token": "your-id-token",
         "group_name": "desired-name",
-        "group_decription" (optional): "maxlength-2000 chars"
+        "group_description" (optional): "maxlength-2000 chars"
     }
     """
     serializer = CreateGroupSerializer(data=request.data)
@@ -1434,7 +1434,7 @@ def create_group(request):
         if decoded['status'] == 'SUCCESS':
             db = DatabaseService()
             result = db.create_group(
-                user_id=decoded['user_sub'],
+                user_sub=decoded['user_sub'],
                 group_name=serializer.validated_data['group_name'],
                 group_description=serializer.validated_data.get('group_description')
             )
@@ -1467,7 +1467,7 @@ def invite_to_group(request):
         if decoded['status'] == 'SUCCESS':
             db = DatabaseService()
             result = db.invite_to_group(
-                user_id=decoded['user_sub'],
+                user_sub=decoded['user_sub'],
                 invited_id=serializer.validated_data['invited_id'],
                 group_id=serializer.validated_data['group_id']
             )

@@ -79,7 +79,7 @@ class Group(models.Model):
         related_name='created_groups'
     )
     created_at = models.DateTimeField(auto_now_add=True)
-    photo_url = models.URLField()
+    photo_url = models.URLField(blank=True, null=True)
     description = models.TextField(blank=True)
     class Meta:
         db_table = 'groups'

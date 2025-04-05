@@ -17,6 +17,8 @@ import { PageLayout, Section, Header, Footer } from "../components/layout/PageLa
 import ChatsContainer from "../components/chats/ChatsContainer";
 import { getTotalUnreadCount } from "../components/chats/ChatNotifications";
 
+
+
 // Create a simple Logo component if it doesn't exist
 const Logo = () => (
   <div className="flex items-center gap-2">

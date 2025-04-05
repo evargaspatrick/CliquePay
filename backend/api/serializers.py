@@ -398,6 +398,5 @@ class SendGroupMessageSerializer(serializers.Serializer):
     message_type = serializers.ChoiceField(
         choices=MESSAGE_TYPES,
         default='TEXT',
-        required=True
     )
     file_url = serializers.URLField(required=False)
