@@ -2,15 +2,37 @@ import { Button } from "../ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { PlusCircle, UserPlus, MessageSquareDot } from "lucide-react";
 import PropTypes from "prop-types";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { SecurityUtils } from "../../utils/security";
+import { cn } from "../../lib/utils";
+const Loading = ({ className, size = "md" }) => {
+  const sizeClasses = {
+    sm: "w-4 h-4",
+    md: "w-8 h-8",
+    lg: "w-12 h-12"
+  };
+
+  return (
+    <div className="flex justify-center items-center w-full h-full">
+      <div 
+        className={cn(
+          "animate-spin rounded-full border-4 border-zinc-700 border-t-purple-600", 
+          sizeClasses[size],
+          className
+        )}
+      />
+    </div>
+  );
+};
+
+
 // Separate Component for Chat Item
-const GroupChatItem = ({ chat, onOpenChat }) => {
+const GroupChatItem = ({ chat }) => {
   return (
     <Button 
       variant="ghost" 
       className="w-full p-0 h-auto bg-zinc-800 hover:bg-zinc-700 rounded-lg overflow-hidden"
-      onClick={() => onOpenChat(chat.id)}
+      // onClick={() => onOpenChat(chat.id)}
     >
       <div className="w-full py-3 px-4 flex items-center">
         {/* LEFT: Avatar and participant count */}
@@ -76,7 +98,7 @@ const NewGroupModal = ({ onClose }) => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ id_token: token, group_name: groupName, group_description: (description!=""? description : null) }),
+        body: JSON.stringify({ id_token: token, group_name: groupName, ...(description.trim() !== "" && { group_description: description }) }),
       });
 
       const data = await response.json();
@@ -91,7 +113,6 @@ const NewGroupModal = ({ onClose }) => {
       return;
     } 
   };
-
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-zinc-800 rounded-lg p-6 max-w-md w-full mx-4">
@@ -148,68 +169,82 @@ const NewGroupModal = ({ onClose }) => {
     </div>
   )
 }
-export default function GroupChatsList({ groupChats, onOpenChat }) {
+export default function GroupChatsList() {
   const [showNewGroupModal, setShowNewGroupModal] = useState(false);
+  const [userGroups, setUserGroups] = useState([]);
+  const [finalGroups, setFinalGroups] = useState([]);
+  const [error, setError] = useState("");
+  const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api'
+  const [isLoading, setLoading] = useState(true);
 
+  useEffect(() => {
+    const fetchGroups = async () => {
+      try {
+        const token = await SecurityUtils.getCookie("idToken")
+        if (!token) return;
+        
+        const response = await fetch(`${API_URL}/get-user-groups/`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ id_token: token }),
+        });
+        
+        const data = await response.json();
+        if (data.status === "SUCCESS") {
+          setUserGroups(data.groups);
+          // Move this inside the fetchGroups function to ensure it runs after data is received
+          setFinalGroups(sortGroups(data.groups)); 
+        } else {
+          console.error("Failed to fetch user groups:", data.message);
+        }
+      } catch (error) {
+        console.error("Error fetching user groups:", error);
+      }
+    };
+    
+    const sortGroups = (groups) => {
+      if (!groups || !Array.isArray(groups)) return [];
+      
+      return groups.map((group) => ({
+        id: group.group_id,
+        name: group.group_name,
+        avatarSrc: group.photo_url || "/placeholder.svg?height=40&width=40",
+        lastMessage: group.last_message || "No messages yet",
+        lastMessageTime: group.last_message_time || "",
+        unreadCount: group.unread_count || 0,
+        participants: group.members_count || 0
+      }));
+    };
+    
+    fetchGroups();
+    setLoading(false);
+  }, []); // No dependency on userGroups to avoid re-renders
   // Mock data for visual display purposes
-  const demoGroups = [
-    {
-      id: 1,
-      name: "Weekend Trip",
-      avatarSrc: "/placeholder.svg?height=40&width=40",
-      lastMessage: "I'll bring the snacks!",
-      lastMessageTime: "10:23 AM",
-      unreadCount: 3,
-      participants: 5
-    },
-    {
-      id: 2,
-      name: "Apartment Expenses",
-      avatarSrc: "/placeholder.svg?height=40&width=40",
-      lastMessage: "Rent is due next Monday",
-      lastMessageTime: "Yesterday",
-      unreadCount: 0,
-      participants: 3
-    },
-    {
-      id: 3,
-      name: "Movie Night",
-      avatarSrc: "/placeholder.svg?height=40&width=40",
-      lastMessage: "What about Friday?",
-      lastMessageTime: "Yesterday",
-      unreadCount: 5,
-      participants: 7
-    },
-    {
-      id: 4,
-      name: "Road Trip Planning",
-      avatarSrc: "/placeholder.svg?height=40&width=40",
-      lastMessage: "I found a great route!",
-      lastMessageTime: "Mar 22",
-      unreadCount: 0,
-      participants: 4
-    },
-    {
-      id: 5,
-      name: "Birthday Party",
-      avatarSrc: "/placeholder.svg?height=40&width=40",
-      lastMessage: "It's a surprise!",
-      lastMessageTime: "Mar 20",
-      unreadCount: 0,
-      participants: 9
-    },
-  ];
-
-  // Use the actual props in a real implementation
-  const displayGroups = groupChats.length > 0 ? groupChats : demoGroups;
+  /* data format
+    'group_id'
+    'group_name'
+    'created_at'
+    'photo_url'
+    'description'
+    'role'
+    'last_message'
+    'last_message_time'
+    'unread_count'
+    'members_count'
+  */
 
   // Add this line to handle modal opening/closing
   const handleToggleModal = () => setShowNewGroupModal(!showNewGroupModal);
-
+  
   return (
+    
     <div>
-      {showNewGroupModal && <NewGroupModal onClose={() => setShowNewGroupModal(false)}/>}
-      <div className="flex justify-between items-center mb-3">
+      {isLoading ? (<Loading />) : (
+        <>
+          {showNewGroupModal && <NewGroupModal onClose={() => setShowNewGroupModal(false)}/>}
+          <div className="flex justify-between items-center mb-3">
         <h3 className="text-lg font-semibold">Group Chats</h3>
         <Button 
           variant="outline" 
@@ -223,11 +258,11 @@ export default function GroupChatsList({ groupChats, onOpenChat }) {
       </div>
       
       <div className="max-h-[300px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-zinc-800">
-        {displayGroups.length > 0 ? (
+        {finalGroups.length > 0 ? (
           <ul className="space-y-2">
-            {displayGroups.map((chat) => (
+            {finalGroups.map((chat) => (
               <li key={chat.id}>
-                <GroupChatItem chat={chat} onOpenChat={onOpenChat} />
+                <GroupChatItem chat={chat} />
               </li>
             ))}
           </ul>
@@ -244,34 +279,9 @@ export default function GroupChatsList({ groupChats, onOpenChat }) {
           </div>
         )}
       </div>
+        </>
+      )}
     </div>
   );
 }
 
-GroupChatItem.propTypes = {
-  chat: PropTypes.shape({
-    id: PropTypes.number.isRequired,
-    name: PropTypes.string.isRequired,
-    avatarSrc: PropTypes.string,
-    lastMessage: PropTypes.string,
-    lastMessageTime: PropTypes.string,
-    unreadCount: PropTypes.number,
-    participants: PropTypes.number
-  }).isRequired,
-  onOpenChat: PropTypes.func.isRequired
-};
-
-GroupChatsList.propTypes = {
-  groupChats: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.number.isRequired,
-      name: PropTypes.string.isRequired,
-      avatarSrc: PropTypes.string,
-      lastMessage: PropTypes.string,
-      lastMessageTime: PropTypes.string,
-      unreadCount: PropTypes.number,
-      participants: PropTypes.number
-    })
-  ).isRequired,
-  onOpenChat: PropTypes.func.isRequired
-};

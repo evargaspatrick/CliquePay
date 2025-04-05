@@ -1,6 +1,6 @@
 import uuid
 from .models import *
-from django.db.models import Exists, OuterRef 
+from django.db.models import Exists, OuterRef, Subquery, Count, F 
 
 
 class DatabaseService:
@@ -1052,43 +1052,83 @@ class DatabaseService:
     @staticmethod
     def get_user_groups(user_sub):
         """
-        Get the user Groups using the cognito ID.
-
+        Returns the groups in which the user is a member in.
         Args:
-            user_sub(str): cognito ID of the user.
+            user_sub (str): Cognito ID of the user.
         Returns:
-            dict: groups dict and status of the operation.
+            dict: dict of grps.
         """
         try:
             user = User.objects.get(cognito_id=user_sub)
-            groups = user.group_memberships.all().select_related('group')
+            
+            # Get the user's groups and prefetch member counts in one query
+            user_groups = Group.objects.filter(members__user=user).annotate(
+                members_count=Count('members', distinct=True),
+                user_role=F('members__role')  # Get the user's role in each group
+            ).distinct()
+            
+            # Get groups with latest message info
+            group_ids = list(user_groups.values_list('id', flat=True))
+            
+            # Get latest message for each group in a single query
+            latest_messages = {}
+            if group_ids:
+                messages_query = GroupMessage.objects.filter(group_id__in=group_ids)
+                
+                # Find the most recent message for each group
+                for group_id in group_ids:
+                    group_messages = messages_query.filter(group_id=group_id).order_by('-created_at')[:1]
+                    if group_messages:
+                        latest_messages[group_id] = {
+                            'content': group_messages[0].content,
+                            'created_at': group_messages[0].created_at
+                        }
+            
+            # Get unread counts in bulk
+            unread_counts = {}
+            if group_ids:
+                # Optional: Get read receipts in bulk
+                read_receipts = {
+                    receipt.group_id: receipt.last_read_message.created_at
+                    for receipt in GroupReadReceipt.objects.filter(
+                        user=user, group_id__in=group_ids
+                    ).select_related('last_read_message')
+                }
+                
+                # Calculate unread counts per group
+                for group_id in group_ids:
+                    read_time = read_receipts.get(group_id)
+                    query = GroupMessage.objects.filter(group_id=group_id).exclude(sender=user)
+                    if read_time:
+                        query = query.filter(created_at__gt=read_time)
+                    unread_counts[group_id] = query.count()
+            
+            # Build the result list
             groups_list = []
-
-            for group in groups:
+            for group in user_groups:
+                group_id = group.id
                 groups_list.append({
-                    'group_id': group.group.id,
-                    'group_name': group.group.name,
-                    'created_at': group.group.created_at,
-                    'photo_url': group.group.photo_url,
-                    'description': group.group.description,
-                    'role': group.role
+                    'group_id': group_id,
+                    'group_name': group.name,
+                    'created_at': group.created_at,
+                    'photo_url': group.photo_url,
+                    'description': group.description,
+                    'role': group.user_role,
+                    'last_message': latest_messages.get(group_id, {}).get('content'),
+                    'last_message_time': latest_messages.get(group_id, {}).get('created_at'),
+                    'unread_count': unread_counts.get(group_id, 0),
+                    'members_count': group.members_count
                 })
             
-            return{
-                'status':'SUCCESS',
+            return {
+                'status': 'SUCCESS',
                 'groups': groups_list
             }
         except User.DoesNotExist:
-            return {
-                'status': 'ERROR',
-                'message': 'User not found'
-            }
+            return {'status': 'ERROR', 'message': 'User not found'}
         except Exception as e:
-            return {
-                'status': 'ERROR',
-                'message': str(e)
-            }
-        
+            return {'status': 'ERROR', 'message': str(e)}
+
     @staticmethod
     def accept_group_invite(user_sub, invite_id):
         """

@@ -36,8 +36,6 @@ export default function ChatsContainer({
           <TabsContent value="all" className="space-y-6">
             {/* Group Chats Section */}
             <GroupChatsList 
-              groupChats={groupChats} 
-              onOpenChat={onOpenGroupChat}
             />
           {/* Direct Messages Section */}
             <DirectMessagesList 
@@ -48,8 +46,6 @@ export default function ChatsContainer({
           
           <TabsContent value="groups">
             <GroupChatsList 
-              groupChats={groupChats} 
-              onOpenChat={onOpenGroupChat}
             />
           </TabsContent>
           
