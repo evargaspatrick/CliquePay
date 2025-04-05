@@ -171,12 +171,22 @@ class DirectMessage(ChatMessage):
 class GroupMessage(ChatMessage):
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_group_messages')
     group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='messages')
-    read_by = models.ManyToManyField(User, related_name='read_group_messages', blank=True)
+    # read_by = models.ManyToManyField(User, related_name='read_group_messages', blank=True)
     
     class Meta:
         db_table = 'group_messages'
         ordering = ['created_at']
-    
+
+class GroupReadReceipt(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='read_receipts')
+    last_read_message = models.ForeignKey(GroupMessage, on_delete=models.CASCADE, related_name='read_receipts')
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='read_receipts')
+
+    class Meta:
+        db_table = 'group_read_receipts'
+        unique_together = ('user', 'group')
+        ordering = ['-last_read_message__created_at']
+
 class Expense(models.Model):
     """
     Represents an expense paid by a user

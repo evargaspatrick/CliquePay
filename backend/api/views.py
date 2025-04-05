@@ -890,7 +890,7 @@ def get_direct_messages(request):
         decoded = cognito.get_user_id(serializer.validated_data['id_token'])
         if decoded['status'] == 'SUCCESS':
             db = DatabaseService()
-            result = db.get_direct_messages(decoded['user_sub'])
+            result = db.get_direct_messages(decoded['user_sub'], serializer.validated_data.get('page'), serializer.validated_data.get('page_size')) 
             if result['status'] == 'SUCCESS':
                 return JsonResponse(result, status=status.HTTP_200_OK)
             return JsonResponse(result, status=status.HTTP_400_BAD_REQUEST)
@@ -911,7 +911,9 @@ def get_group_messages(request):
 
     {
         "id_token": "your-id-token",
-        "group_id": "your-group-id"
+        "group_id": "your-group-id",
+        "page"(optional): "default-1",
+        "page_size "(optional): "default-50" 
     }
     """
     serializer = serializers.GetGroupMessagesSerializer(data=request.data)
@@ -920,7 +922,7 @@ def get_group_messages(request):
         decoded = cognito.get_user_id(serializer.validated_data['id_token'])
         if decoded['status'] == 'SUCCESS':
             db = DatabaseService()
-            result = db.get_group_messages(decoded['user_sub'], serializer.validated_data['group_id'])
+            result = db.get_group_messages(decoded['user_sub'], serializer.validated_data['group_id'], serializer.validated_data.get('page'), serializer.validated_data.get('page_size'))
             if result['status'] == 'SUCCESS':
                 return JsonResponse(result, status=status.HTTP_200_OK)
             return JsonResponse(result, status=status.HTTP_400_BAD_REQUEST)
@@ -1646,6 +1648,43 @@ def cancel_group_invite(request):
             result = db.cancel_group_invite(
                 user_id=decoded['user_sub'],
                 invite_id=serializer.validated_data['invite_id']
+            )
+            if result['status'] == 'SUCCESS':
+                return Response(result, status=status.HTTP_200_OK)
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        return Response(decoded, status=status.HTTP_401_UNAUTHORIZED)
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def send_group_message(request):
+    """
+    Send a message to a group.
+
+    Request Body:
+    {
+        "id_token": "your-id-token",
+        "group_id": "group-id",
+        "content": "Hello everyone!",
+        "message_type": "TEXT",
+        "file_url" (optional): "https://example.com/file.jpg"
+    }
+    """
+    serializer = SendGroupMessageSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        decoded = cognito.get_user_id(serializer.validated_data['id_token'])
+        if decoded['status'] == 'SUCCESS':
+            db = DatabaseService()
+            result = db.send_group_message(
+                sender_id=decoded['user_sub'],
+                group_id=serializer.validated_data['group_id'],
+                content=serializer.validated_data['content'],
+                message_type=serializer.validated_data['message_type'],
+                file_url=serializer.validated_data.get('file_url')
             )
             if result['status'] == 'SUCCESS':
                 return Response(result, status=status.HTTP_200_OK)

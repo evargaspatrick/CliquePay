@@ -459,19 +459,34 @@ class DatabaseService:
             }
     
     @staticmethod
-    def get_direct_messages(cognito_id):
+    def get_direct_messages(cognito_id, page=1, page_size=50):
         '''
-        Get user DMs, new and old.
+        Get user DMs, new and old, with pagination.
+        
         Args:
             cognito_id (str): Cognito user ID
+            page (int): Page number for pagination (default 1)
+            page_size (int): Number of messages per page (default 50)
         Returns:
-            dict: Status of the get operation
+            dict: Status of the get operation with paginated messages
         '''
         try:
             user = User.objects.get(cognito_id=cognito_id)
+            
+            # Get total messages for pagination
+            total_messages = DirectMessage.objects.filter(
+                models.Q(sender=user) | models.Q(recipient=user)
+            ).count()
+            
+            total_pages = (total_messages + page_size - 1) // page_size
+            
+            # Apply proper pagination with ordering
+            start_idx = (page - 1) * page_size
+            
+            # Order messages by newest first (most chat interfaces show newest messages first)
             messages = DirectMessage.objects.filter(
                 models.Q(sender=user) | models.Q(recipient=user)
-            ).select_related('sender', 'recipient')
+            ).select_related('sender', 'recipient').order_by('-created_at')[start_idx:start_idx+page_size]
 
             messages_list = []
 
@@ -489,10 +504,20 @@ class DatabaseService:
                     'is_read': message.is_read,
                     'read_at': message.read_at
                 })
+                
+            pagination = {
+                'current_page': page,
+                'total_pages': total_pages,
+                'page_size': page_size,
+                'total_messages': total_messages,
+                'has_next': page < total_pages,
+                'has_previous': page > 1
+            }
 
             return {
                 'status': 'SUCCESS',
-                'messages': messages_list
+                'messages': messages_list,
+                'pagination': pagination
             }
         except User.DoesNotExist:
             return {
@@ -506,44 +531,91 @@ class DatabaseService:
             }
 
     @staticmethod
-    def get_group_messages(cognito_id, group_id):
+    def get_group_messages(cognito_id, group_id, page=1, page_size=50):
         '''
-        Get group messages, new and old.
+        Get group messages with pagination
+
         Args:
             cognito_id (str): Cognito user ID
-            group_id (str): Group ID
-        Returns:
-            dict: Status of the get operation
+            group_id(str): Group Id
+            page (int): Page number for pagination
+            page_size (int): Number of messages per page
         '''
         try:
             user = User.objects.get(cognito_id=cognito_id)
             group = Group.objects.get(id=group_id)
+            
+            # Check if user is a member
             is_member = GroupMember.objects.filter(user=user, group=group).exists()
-            if(is_member):
-                messages = GroupMessage.objects.filter(group=group).select_related('sender', 'group')
-                message_list = []
-                for message in messages:
-                    message_list.append({
-                        'message_id': message.id,
-                        'sender_id': message.sender.id,
-                        'sender_name': message.sender.full_name,
-                        'group_id': message.group.id,
-                        'group_name': message.group.name,
-                        'content': message.content,
-                        'message_type': message.message_type,
-                        'file_url': message.file_url,
-                        'created_at': message.created_at,
-                        'is_deleted': message.is_deleted
-                    })
-                return {
-                    'status': 'SUCCESS',
-                    'messages': message_list
-                }
-            else:
+            if not is_member:
                 return {
                     'status': 'ERROR',
                     'message': 'User is not a member of the group'
                 }
+                
+            # Get total messages for pagination
+            total_messages = GroupMessage.objects.filter(group=group).count()
+            total_pages = (total_messages + page_size - 1) // page_size
+            
+            # Apply proper pagination with ordering
+            start_idx = (page - 1) * page_size
+            
+            # Order messages by newest first (more typical for chat interfaces)
+            messages = GroupMessage.objects.filter(group=group) \
+                .select_related('sender', 'group') \
+                .order_by('-created_at')[start_idx:start_idx+page_size]
+            
+            # Get read receipt for efficient status checking
+            try:
+                read_receipt = GroupReadReceipt.objects.get(user=user, group=group)
+                last_read_time = read_receipt.last_read_message.created_at
+            except GroupReadReceipt.DoesNotExist:
+                last_read_time = None
+            
+            message_list = []
+            unread_count = 0
+            
+            for message in messages:
+                # A message is read if it's older than the last read message or user is sender
+                is_read = False  # Default to unread
+                if last_read_time and message.created_at <= last_read_time:
+                    is_read = True  # Message is read if it's older than the last read message
+                elif message.sender.id == user.id:
+                    is_read = True  # Messages sent by the user are always considered read
+                        
+                if not is_read and message.sender.id != user.id:
+                    unread_count += 1
+                    
+                message_list.append({
+                    'message_id': message.id,
+                    'sender_id': message.sender.id,
+                    'sender_name': message.sender.full_name,
+                    'group_id': message.group.id,
+                    'group_name': message.group.name,
+                    'content': message.content,
+                    'message_type': message.message_type,
+                    'file_url': message.file_url,
+                    'created_at': message.created_at,
+                    'is_deleted': message.is_deleted,
+                    'is_read': is_read
+                })
+                
+            pagination = {
+                'current_page': page,
+                'total_pages': total_pages,
+                'page_size': page_size,
+                'total_messages': total_messages,
+                'has_next': page < total_pages,
+                'has_previous': page > 1
+            }
+                
+            return {
+                'status': 'SUCCESS',
+                'messages': message_list,
+                'pagination': pagination,
+                'unread': unread_count
+            }
+                
         except User.DoesNotExist:
             return {
                 'status': 'ERROR',
@@ -1200,4 +1272,72 @@ class DatabaseService:
                 'status': 'ERROR',
                 'message': str(e)
             }
+    
+    @staticmethod
+    def send_group_message(sender_id, group_id, content, message_type, file_url=None):
+        """
+        Send a message to a group.
         
+        Args:
+            sender_id (str): ID of the sender
+            group_id (str): ID of the group
+            content (str): Message content
+            message_type (str): Type of message (text, image, etc.)
+            file_url (str, optional): URL of the file being sent
+        
+        Returns:
+            dict: Status of the send operation
+        """
+        try:
+            sender = User.objects.get(cognito_id=sender_id)
+            group = Group.objects.get(id=group_id)
+
+            # Check if the user is a member of the group
+            if not GroupMember.objects.filter(user=sender, group=group).exists():
+                return {
+                    'status': 'ERROR',
+                    'message': 'User is not a member of this group'
+                }
+
+            message = GroupMessage.objects.create(
+                sender=sender,
+                group=group,
+                content=content,
+                message_type=message_type,
+                file_url=file_url
+            )
+            # Update last message of the user
+            try:
+                read_receipt, created = GroupReadReceipt.objects.get_or_create(
+                    user=sender,
+                    group=group,
+                    defaults={'last_read_message': message}
+                )
+                if not created:
+                    read_receipt.last_read_message = message
+                    read_receipt.save()
+                    
+            except Exception as e:
+                # Just log the error but don't fail the message sending
+                print(f"Error updating read receipt: {str(e)}")
+
+            return {
+                'status': 'SUCCESS',
+                'message': 'Group message sent successfully',
+                'message_id': message.id
+            }
+        except User.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'User not found'
+            }
+        except Group.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'Group not found'
+            }
+        except Exception as e:
+            return {
+                'status': 'ERROR',
+                'message': str(e)
+            }

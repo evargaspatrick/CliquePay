@@ -39,8 +39,7 @@ export default function ChatsContainer({
               groupChats={groupChats} 
               onOpenChat={onOpenGroupChat}
             />
-            
-            {/* Direct Messages Section */}
+          {/* Direct Messages Section */}
             <DirectMessagesList 
               directChats={directChats} 
               onOpenChat={onOpenDirectChat}
