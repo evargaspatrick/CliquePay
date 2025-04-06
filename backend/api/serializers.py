@@ -146,6 +146,9 @@ class GetDirectMessagesSerializer(serializers.Serializer):
             'blank': 'ID token cannot be blank'
         }
     )
+    page = serializers.IntegerField(required=False, default=1, min_value=1)
+    page_size = serializers.IntegerField(required=False, default=50, min_value=25, max_value=100)
+
 
 class GetGroupMessagesSerializer(serializers.Serializer):
     id_token = serializers.CharField(
@@ -156,6 +159,8 @@ class GetGroupMessagesSerializer(serializers.Serializer):
         }
     )
     group_id = serializers.CharField(required=True)
+    page = serializers.IntegerField(required=False, default=1, min_value=1)
+    page_size = serializers.IntegerField(required=False, default=50, min_value=25, max_value=100)
 
 class SearchUserSerializer(serializers.Serializer):
     id_token = serializers.CharField(required=True)
@@ -380,3 +385,18 @@ class AcceptGroupInviteSerializer(serializers.Serializer):
 
 class GetUserInvitesSerializer(serializers.Serializer):
     id_token = serializers.CharField(required=True)
+
+class SendGroupMessageSerializer(serializers.Serializer):
+    id_token = serializers.CharField(required=True)
+    group_id = serializers.CharField(required=True)
+    content = serializers.CharField(required=True)
+    MESSAGE_TYPES = [
+        ('TEXT', 'Text'),
+        ('FILE', 'File'),
+        ('IMAGE', 'Image'),
+    ]
+    message_type = serializers.ChoiceField(
+        choices=MESSAGE_TYPES,
+        default='TEXT',
+    )
+    file_url = serializers.URLField(required=False)

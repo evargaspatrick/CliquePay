@@ -33,7 +33,7 @@ urlpatterns = [
     path('api/record-payment/', views.record_payment, name='record_payment'),
     path('api/delete-expense/', views.delete_expense, name='delete_expense'),
     path('api/reject-friend-request/', views.reject_friend_request, name='reject_friend_request'),
-    path('api/remove-friend', views.remove_friend, name='remove_friend'),
+    path('api/remove-friend/', views.remove_friend, name='remove_friend'),
     path('api/group-info/', views.get_group_info, name='get_group_info'),
     path('api/create-group/', views.create_group, name='create_group'),
     path('api/group-invite/',views.invite_to_group, name='group_invite'),
@@ -43,4 +43,5 @@ urlpatterns = [
     path('api/reject-group-invite/',views.reject_group_invite, name='reject_group_invite'),
     path('api/get-user-invites/',views.get_user_invites, name='get_user_invites'),
     path('api/cancel-group-invite/',views.cancel_group_invite, name='cancel_group_invite'),
+    path('api/send-group-message/',views.send_group_message, name='send_group_message'),
 ]
