@@ -5,6 +5,8 @@ import PropTypes from "prop-types";
 import React, { useState, useEffect } from "react";
 import { SecurityUtils } from "../../utils/security";
 import { cn } from "../../lib/utils";
+import { set } from "zod";
+import GroupChatContainer from "./GroupChatContainer";
 const Loading = ({ className, size = "md" }) => {
   const sizeClasses = {
     sm: "w-4 h-4",
@@ -27,12 +29,12 @@ const Loading = ({ className, size = "md" }) => {
 
 
 // Separate Component for Chat Item
-const GroupChatItem = ({ chat }) => {
+const GroupChatItem = ({ chat, onClick }) => {
   return (
     <Button 
       variant="ghost" 
       className="w-full p-0 h-auto bg-zinc-800 hover:bg-zinc-700 rounded-lg overflow-hidden"
-      // onClick={() => onOpenChat(chat.id)}
+      onClick={onClick}
     >
       <div className="w-full py-3 px-4 flex items-center">
         {/* LEFT: Avatar and participant count */}
@@ -56,7 +58,7 @@ const GroupChatItem = ({ chat }) => {
               <MessageSquareDot className="h-4 w-4 ml-2 text-purple-400 flex-shrink-0" />
             )}
           </div>
-          <p className="text-sm text-gray-400 truncate">{chat.lastMessage}</p>
+          <p className="text-sm text-left ml-1 text-gray-400 truncate">{chat.lastMessage}</p>
         </div>
         
         {/* RIGHT: Time and unread count */}
@@ -74,7 +76,7 @@ const GroupChatItem = ({ chat }) => {
 };
 
 // Create New Group Modal
-const NewGroupModal = ({ onClose }) => {
+const NewGroupModal = ({ onClose, onGroupCreated }) => {
   const [groupName, setGroupName] = useState("");
   const [description, setDescription] = useState("");
   const [error, setError] = useState("");
@@ -104,6 +106,7 @@ const NewGroupModal = ({ onClose }) => {
       const data = await response.json();
       if(data.status === "SUCCESS"){
         // ADD TO GROUP CHATS
+        onGroupCreated(data.group);
         onClose();
       } else {
         setError(data.message || "Failed to create group. Please try again.");
@@ -169,119 +172,89 @@ const NewGroupModal = ({ onClose }) => {
     </div>
   )
 }
-export default function GroupChatsList() {
+// Modified GroupChatsList to receive groups from parent
+export default function GroupChatsList({ groups = [], isLoading, onGroupCreate }) {
   const [showNewGroupModal, setShowNewGroupModal] = useState(false);
-  const [userGroups, setUserGroups] = useState([]);
-  const [finalGroups, setFinalGroups] = useState([]);
   const [error, setError] = useState("");
-  const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api'
-  const [isLoading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchGroups = async () => {
-      try {
-        const token = await SecurityUtils.getCookie("idToken")
-        if (!token) return;
-        
-        const response = await fetch(`${API_URL}/get-user-groups/`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ id_token: token }),
-        });
-        
-        const data = await response.json();
-        if (data.status === "SUCCESS") {
-          setUserGroups(data.groups);
-          // Move this inside the fetchGroups function to ensure it runs after data is received
-          setFinalGroups(sortGroups(data.groups)); 
-        } else {
-          console.error("Failed to fetch user groups:", data.message);
-        }
-      } catch (error) {
-        console.error("Error fetching user groups:", error);
+  const [openGroup, setOpenGroup] = useState(null);
+  const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api';
+  
+  // Handle creating a new group - delegates to parent
+  const handleCreateGroup = async (newGroupData) => {
+    try {
+      if (onGroupCreate) {
+        onGroupCreate(newGroupData);
       }
-    };
-    
-    const sortGroups = (groups) => {
-      if (!groups || !Array.isArray(groups)) return [];
-      
-      return groups.map((group) => ({
-        id: group.group_id,
-        name: group.group_name,
-        avatarSrc: group.photo_url || "/placeholder.svg?height=40&width=40",
-        lastMessage: group.last_message || "No messages yet",
-        lastMessageTime: group.last_message_time || "",
-        unreadCount: group.unread_count || 0,
-        participants: group.members_count || 0
-      }));
-    };
-    
-    fetchGroups();
-    setLoading(false);
-  }, []); // No dependency on userGroups to avoid re-renders
-  // Mock data for visual display purposes
-  /* data format
-    'group_id'
-    'group_name'
-    'created_at'
-    'photo_url'
-    'description'
-    'role'
-    'last_message'
-    'last_message_time'
-    'unread_count'
-    'members_count'
-  */
+      setShowNewGroupModal(false);
+    } catch (error) {
+      console.error("Error updating groups after creation:", error);
+    }
+  };
 
-  // Add this line to handle modal opening/closing
   const handleToggleModal = () => setShowNewGroupModal(!showNewGroupModal);
+  const handleCLoseGroup = () => setOpenGroup(null);
   
   return (
-    
+    openGroup!=null ? (
+      <GroupChatContainer groupId={openGroup} onBack={handleCLoseGroup}/>
+    ) : (
+    <>
     <div>
       {isLoading ? (<Loading />) : (
         <>
-          {showNewGroupModal && <NewGroupModal onClose={() => setShowNewGroupModal(false)}/>}
+          {showNewGroupModal && (
+            <NewGroupModal 
+              onClose={() => setShowNewGroupModal(false)}
+              onGroupCreated={handleCreateGroup}
+            />
+          )}
           <div className="flex justify-between items-center mb-3">
-        <h3 className="text-lg font-semibold">Group Chats</h3>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="text-purple-400 border-purple-400 hover:bg-purple-400/10"
-          onClick={handleToggleModal}
-        >
-          <PlusCircle className="h-4 w-4 mr-2" />
-          New Group
-        </Button>
-      </div>
-      
-      <div className="max-h-[300px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-zinc-800">
-        {finalGroups.length > 0 ? (
-          <ul className="space-y-2">
-            {finalGroups.map((chat) => (
-              <li key={chat.id}>
-                <GroupChatItem chat={chat} />
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <div className="text-center py-8 bg-zinc-800 rounded-lg">
-            <div className="flex justify-center mb-3">
-              <UserPlus className="h-10 w-10 text-purple-400" />
-            </div>
-            <p className="text-gray-400 mb-3">No group chats yet</p>
-            <Button className="bg-purple-600 hover:bg-purple-700" onClick={() => setShowNewGroupModal(true)}>
+            <h3 className="text-lg font-semibold">Group Chats</h3>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="text-purple-400 border-purple-400 hover:bg-purple-400/10"
+              onClick={handleToggleModal}
+            >
               <PlusCircle className="h-4 w-4 mr-2" />
-              Create a Group
+              New Group
             </Button>
           </div>
-        )}
-      </div>
+          
+          <div className="max-h-[300px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-zinc-800">
+            {groups.length > 0 ? (
+              <ul className="space-y-2">
+                {groups.map((chat) => (
+                  <li key={chat.id}>
+                    <GroupChatItem chat={chat} onClick={() => setOpenGroup(chat.id)}/>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="text-center py-8 bg-zinc-800 rounded-lg">
+                <div className="flex justify-center mb-3">
+                  <UserPlus className="h-10 w-10 text-purple-400" />
+                </div>
+                <p className="text-gray-400 mb-3">No group chats yet</p>
+                <Button className="bg-purple-600 hover:bg-purple-700" onClick={() => setShowNewGroupModal(true)}>
+                  <PlusCircle className="h-4 w-4 mr-2" />
+                  Create a Group
+                </Button>
+              </div>
+            )}
+          </div>
         </>
       )}
     </div>
-  );
+    </>
+  ));
 }
+
+GroupChatsList.propTypes = {
+  groups: PropTypes.array,
+  isLoading: PropTypes.bool.isRequired,
+  onGroupCreate: PropTypes.func
+};
+
+
 

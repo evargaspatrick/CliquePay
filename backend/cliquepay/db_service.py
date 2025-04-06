@@ -880,7 +880,7 @@ class DatabaseService:
                 'created_at': group.created_at,
                 'photo_url': group.photo_url,
                 'group_size': len(members),
-                'created_by': group.created_by
+                'created_by': group.created_by.id
             }
 
             return {

@@ -43,4 +43,5 @@ urlpatterns = [
     path('api/reject-group-invite/',views.reject_group_invite, name='reject_group_invite'),
     path('api/get-user-invites/',views.get_user_invites, name='get_user_invites'),
     path('api/cancel-group-invite/',views.cancel_group_invite, name='cancel_group_invite'),
+    path('api/send-group-message/',views.send_group_message, name='send_group_message'),
 ]

@@ -7,7 +7,7 @@ from cliquepay.aws_cognito import CognitoService
 from cliquepay.db_service import DatabaseService
 from .serializers import *
 from cliquepay.storage_service import CloudStorageService
-from api.serializers import SearchUserSerializer, GetDirectMessagesSerializer
+from api.serializers import SearchUserSerializer, GetDirectMessagesSerializer, GetGroupMessagesSerializer
 
 import logging
 from django.db import models
@@ -187,6 +187,11 @@ def api_root(request, format=None):
                 'url':reverse('cancel_group_invite', request=request, format=format),
                 'method':'POST',
                 'description':'cancel group invite.'
+            },
+            'send-group-message':{
+                'url':reverse('send_group_message', request=request, format=format),
+                'method':'POST',
+                'description':'send group message.'
             },
         },
         'version': 'development',
@@ -916,7 +921,7 @@ def get_group_messages(request):
         "page_size "(optional): "default-50" 
     }
     """
-    serializer = serializers.GetGroupMessagesSerializer(data=request.data)
+    serializer = GetGroupMessagesSerializer(data=request.data)
     if serializer.is_valid():
         cognito = CognitoService()
         decoded = cognito.get_user_id(serializer.validated_data['id_token'])
@@ -1394,8 +1399,8 @@ def get_group_info(request):
 
     Request Body:
     {
-        "id-token" : "user-id-token",
-        "group-id" : "group-id",
+        "id_token" : "user-id-token",
+        "group_id" : "group-id",
     }
     """
     serializer = GetGroupInfoSerializer(data=request.data)
