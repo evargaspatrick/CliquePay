@@ -7,8 +7,7 @@ from cliquepay.aws_cognito import CognitoService
 from cliquepay.db_service import DatabaseService
 from .serializers import *
 from cliquepay.storage_service import CloudStorageService
-from api.serializers import SearchUserSerializer, GetDirectMessagesSerializer, GetGroupMessagesSerializer
-
+from api.serializers import SearchUserSerializer, GetDirectMessagesSerializer, GetGroupMessagesSerializer, InviteSearchListSerializer
 import logging
 from django.db import models
 from datetime import datetime
@@ -192,6 +191,11 @@ def api_root(request, format=None):
                 'url':reverse('send_group_message', request=request, format=format),
                 'method':'POST',
                 'description':'send group message.'
+            },
+            'invite-search':{
+                'url':reverse('invite_search', request=request, format=format),
+                'method':'POST',
+                'description': 'search api for inviting new users to a group.'
             },
         },
         'version': 'development',
@@ -1651,7 +1655,7 @@ def cancel_group_invite(request):
         if decoded['status'] == 'SUCCESS':
             db = DatabaseService()
             result = db.cancel_group_invite(
-                user_id=decoded['user_sub'],
+                user_sub=decoded['user_sub'],
                 invite_id=serializer.validated_data['invite_id']
             )
             if result['status'] == 'SUCCESS':
@@ -1690,6 +1694,39 @@ def send_group_message(request):
                 content=serializer.validated_data['content'],
                 message_type=serializer.validated_data['message_type'],
                 file_url=serializer.validated_data.get('file_url')
+            )
+            if result['status'] == 'SUCCESS':
+                return Response(result, status=status.HTTP_200_OK)
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        return Response(decoded, status=status.HTTP_401_UNAUTHORIZED)
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def invite_search(request):
+    """
+    Search users to invite to the group.
+
+    Request Body:
+    {
+        "id_token" : "",
+        "group_id" : "",
+        "search_term" : ""
+    }
+    """
+    serializer = InviteSearchListSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        decoded = cognito.get_user_id(serializer.validated_data['id_token'])
+        if decoded['status'] == 'SUCCESS':
+            db = DatabaseService()
+            result = db.search_invite(
+                user_sub=decoded['user_sub'],
+                group_id=serializer.validated_data['group_id'],
+                search_term=serializer.validated_data['search_term']
             )
             if result['status'] == 'SUCCESS':
                 return Response(result, status=status.HTTP_200_OK)

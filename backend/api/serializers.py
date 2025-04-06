@@ -400,3 +400,8 @@ class SendGroupMessageSerializer(serializers.Serializer):
         default='TEXT',
     )
     file_url = serializers.URLField(required=False)
+
+class InviteSearchListSerializer(serializers.Serializer):
+    id_token = serializers.CharField(required=True)
+    group_id = serializers.CharField(required=True)
+    search_term = serializers.CharField(required=True)

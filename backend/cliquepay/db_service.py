@@ -840,7 +840,7 @@ class DatabaseService:
     @staticmethod
     def get_group_info(user_sub, group_id):
         """
-        Get the group info along with members.
+        Get the group info along with members and pending invites.
         requires user passed in to be a member of the group.
         Args:
             user_sub(str): Cognito ID of the user requesting info.
@@ -870,9 +870,26 @@ class DatabaseService:
                     'profile_photo': member.user.avatar_url,
                     'phone_number': member.user.phone_number,
                     'role' : member.role,
-                    'joined_at': member.joined_at
+                    'joined_at': member.joined_at,
+                    'status': 'member'
                 }
                 group_members.append(data_payload)
+            
+            # Get pending invitations for this group
+            invitations = GroupInvitation.objects.filter(group=group).select_related('invited_user')
+            invited_users = []
+            
+            for invite in invitations:
+                invited_users.append({
+                    'user_id': invite.invited_user.id,
+                    'username': invite.invited_user.name,
+                    'full_name': invite.invited_user.full_name,
+                    'profile_photo': invite.invited_user.avatar_url,
+                    'invited_at': invite.created_at,
+                    'invited_by': invite.invited_by.id,
+                    'invite_id': invite.id,
+                    'status': 'invited'
+                })
             
             group_data = {
                 'group_name' : group.name,
@@ -887,6 +904,7 @@ class DatabaseService:
                 'status' : 'SUCCESS',
                 'group_info': group_data,
                 'group_members' : group_members,
+                'invited_users': invited_users
             }
         except User.DoesNotExist:
             return {
@@ -1381,3 +1399,69 @@ class DatabaseService:
                 'status': 'ERROR',
                 'message': str(e)
             }
+        
+    @staticmethod
+    def search_invite(user_sub, group_id, search_term):
+        """
+        Search for users to invite to a group.
+        
+        Args:
+            user_sub (str): Cognito ID of the user searching
+            group_id (str): ID of the group
+            search_term (str): Search term for username or email
+        
+        Returns:
+            dict: Status of the search operation and list of users found
+        """
+        try:
+            user = User.objects.get(cognito_id=user_sub)
+            group = Group.objects.get(id=group_id)
+
+            # Check if the user is an admin of the group
+            if not GroupMember.objects.filter(user=user, group=group, role='admin').exists():
+                return {
+                    'status': 'ERROR',
+                    'message': 'User is not an admin of this group'
+                }
+
+            # Find users matching search criteria
+            users = User.objects.filter(
+                models.Q(name__icontains=search_term) |
+                models.Q(email__icontains=search_term) |
+                models.Q(full_name__icontains=search_term)
+            ).exclude(
+                models.Q(id=user.id) | 
+                models.Q(id__in=Subquery(
+                    GroupMember.objects.filter(group_id=group_id).values('user__id')
+                ))
+            )[:15]
+
+            # Map results to dictionaries
+            users_list = [{
+                'user_id': u.id,
+                'username': u.name,
+                'full_name': u.full_name,
+                'profile_photo': u.avatar_url
+            } for u in users]
+
+            return {
+                'status': 'SUCCESS',
+                'users': users_list
+            }
+        except User.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'User not found'
+            }
+        except Group.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'Group not found'
+            }
+        except Exception as e:
+            return {
+                'status': 'ERROR',
+                'message': str(e)
+            }
+    
+    
