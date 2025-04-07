@@ -400,3 +400,23 @@ class SendGroupMessageSerializer(serializers.Serializer):
         default='TEXT',
     )
     file_url = serializers.URLField(required=False)
+
+class InviteSearchListSerializer(serializers.Serializer):
+    id_token = serializers.CharField(required=True)
+    group_id = serializers.CharField(required=True)
+    search_term = serializers.CharField(required=True)
+
+class DeleteGroupSerializer(serializers.Serializer):
+    id_token = serializers.CharField(required=True)
+    group_id = serializers.CharField(required=True)
+
+class EditGroupSerializer(serializers.Serializer):
+    id_token = serializers.CharField(required=True)
+    group_id = serializers.CharField(required=True)
+    group_name = serializers.CharField(required=False, max_length=255)
+    group_description = serializers.CharField(required=False, max_length=2000)
+
+class RemoveFromGroupSerializer(serializers.Serializer):
+    id_token = serializers.CharField(required=True)
+    group_id = serializers.CharField(required=True)
+    user_id = serializers.CharField(required=True)

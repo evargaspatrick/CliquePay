@@ -840,7 +840,7 @@ class DatabaseService:
     @staticmethod
     def get_group_info(user_sub, group_id):
         """
-        Get the group info along with members.
+        Get the group info along with members and pending invites.
         requires user passed in to be a member of the group.
         Args:
             user_sub(str): Cognito ID of the user requesting info.
@@ -870,13 +870,31 @@ class DatabaseService:
                     'profile_photo': member.user.avatar_url,
                     'phone_number': member.user.phone_number,
                     'role' : member.role,
-                    'joined_at': member.joined_at
+                    'joined_at': member.joined_at,
+                    'status': 'member'
                 }
                 group_members.append(data_payload)
+            
+            # Get pending invitations for this group
+            invitations = GroupInvitation.objects.filter(group=group).select_related('invited_user')
+            invited_users = []
+            
+            for invite in invitations:
+                invited_users.append({
+                    'user_id': invite.invited_user.id,
+                    'username': invite.invited_user.name,
+                    'full_name': invite.invited_user.full_name,
+                    'profile_photo': invite.invited_user.avatar_url,
+                    'invited_at': invite.created_at,
+                    'invited_by': invite.invited_by.id,
+                    'invite_id': invite.id,
+                    'status': 'invited'
+                })
             
             group_data = {
                 'group_name' : group.name,
                 'group_id': group.id,
+                'description': group.description,
                 'created_at': group.created_at,
                 'photo_url': group.photo_url,
                 'group_size': len(members),
@@ -887,6 +905,7 @@ class DatabaseService:
                 'status' : 'SUCCESS',
                 'group_info': group_data,
                 'group_members' : group_members,
+                'invited_users': invited_users
             }
         except User.DoesNotExist:
             return {
@@ -1365,6 +1384,221 @@ class DatabaseService:
                 'status': 'SUCCESS',
                 'message': 'Group message sent successfully',
                 'message_id': message.id
+            }
+        except User.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'User not found'
+            }
+        except Group.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'Group not found'
+            }
+        except Exception as e:
+            return {
+                'status': 'ERROR',
+                'message': str(e)
+            }
+        
+    @staticmethod
+    def search_invite(user_sub, group_id, search_term):
+        """
+        Search for users to invite to a group.
+        
+        Args:
+            user_sub (str): Cognito ID of the user searching
+            group_id (str): ID of the group
+            search_term (str): Search term for username or email
+        
+        Returns:
+            dict: Status of the search operation and list of users found
+        """
+        try:
+            user = User.objects.get(cognito_id=user_sub)
+            group = Group.objects.get(id=group_id)
+
+            # Check if the user is an admin of the group
+            if not GroupMember.objects.filter(user=user, group=group, role='admin').exists():
+                return {
+                    'status': 'ERROR',
+                    'message': 'User is not an admin of this group'
+                }
+
+            # Find users matching search criteria
+            users = User.objects.filter(
+                models.Q(name__icontains=search_term) |
+                models.Q(email__icontains=search_term) |
+                models.Q(full_name__icontains=search_term)
+            ).exclude(
+                models.Q(id=user.id) | 
+                models.Q(id__in=Subquery(
+                    GroupMember.objects.filter(group_id=group_id).values('user__id')
+                ))
+            )[:15]
+
+            # Map results to dictionaries
+            users_list = [{
+                'user_id': u.id,
+                'username': u.name,
+                'full_name': u.full_name,
+                'profile_photo': u.avatar_url
+            } for u in users]
+
+            return {
+                'status': 'SUCCESS',
+                'users': users_list
+            }
+        except User.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'User not found'
+            }
+        except Group.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'Group not found'
+            }
+        except Exception as e:
+            return {
+                'status': 'ERROR',
+                'message': str(e)
+            }
+    
+    @staticmethod
+    def delete_group(user_sub, group_id):
+        '''
+        Verifies if the user is an admin and deletes the group.
+
+        Args:
+            user_sub(str): cognito id of the user,
+            group_id(str): id of the group to be deleted
+        Returns:
+            dict: dict with status of the delete operation.
+        '''
+        try:
+            user = User.objects.get(cognito_id=user_sub)
+            group = Group.objects.get(id=group_id)
+    
+            if not GroupMember.objects.filter(user=user, group=group, role='admin').exists():
+                return {
+                    'status': 'ERROR',
+                    'message': 'User is not an admin of this group'
+                }
+            
+            # Delete all group members and messages
+            GroupMember.objects.filter(group=group).delete()
+            GroupMessage.objects.filter(group=group).delete()
+
+            GroupInvitation.objects.filter(group=group).delete()
+            # Delete the group itself
+            group.delete()
+
+            return {
+                'status' : 'SUCCESS',
+                'message' : 'Group deleted successfully'
+            }
+        except User.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'User not found'
+            }
+        except Group.DoesNotExist:
+            return{
+                'status': 'ERROR',
+                'message': 'Group not found'
+            }
+    
+    @staticmethod
+    def edit_group_details(user_sub, group_id, group_name=None, group_description=None):
+        """
+        Edit the group details.
+
+        Args:
+            user_sub (str): Cognito ID of the user editing the group
+            group_id (str): ID of the group
+            group_name (str, optional): New name for the group
+            group_description (str, optional): New description for the group
+        
+        Returns:
+            dict: Status of the edit operation
+        """
+        try:
+            user = User.objects.get(cognito_id=user_sub)
+            group = Group.objects.get(id=group_id)
+
+            # Check if the user is an admin of the group
+            if not GroupMember.objects.filter(user=user, group=group, role='admin').exists():
+                return {
+                    'status': 'ERROR',
+                    'message': 'User is not an admin of this group'
+                }
+
+            # Update group details
+            if group_name:
+                group.name = group_name
+            if group_description:
+                group.description = group_description
+            group.save()
+
+            return {
+                'status': 'SUCCESS',
+                'message': 'Group details updated successfully'
+            }
+        except User.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'User not found'
+            }
+        except Group.DoesNotExist:
+            return {
+                'status': 'ERROR',
+                'message': 'Group not found'
+            }
+        except Exception as e:
+            return {
+                'status': 'ERROR',
+                'message': str(e)
+            }
+    
+    @staticmethod
+    def remove_from_group(user_sub, group_id, user_id):
+        """
+        Remove a user from a group only if the method id called by group admin.
+
+        Args:
+            user_sub (str): Cognito ID of the user performing the action
+            group_id (str): ID of the group
+            user_id (str): ID of the user to be removed
+        
+        Returns:
+            dict: Status of the removal operation
+        """
+        try:
+            user = User.objects.get(cognito_id=user_sub)
+            group = Group.objects.get(id=group_id)
+            member_to_remove = User.objects.get(id=user_id)
+
+            # Check if the user is an admin of the group
+            if not GroupMember.objects.filter(user=user, group=group, role='admin').exists():
+                return {
+                    'status': 'ERROR',
+                    'message': 'User is not an admin of this group'
+                }
+
+            # Check if the member to remove is part of the group
+            if not GroupMember.objects.filter(user=member_to_remove, group=group).exists():
+                return {
+                    'status': 'ERROR',
+                    'message': 'User is not a member of this group'
+                }
+
+            # Remove the member from the group
+            GroupMember.objects.filter(user=member_to_remove, group=group).delete()
+
+            return {
+                'status': 'SUCCESS',
+                'message': 'User removed from the group successfully'
             }
         except User.DoesNotExist:
             return {
