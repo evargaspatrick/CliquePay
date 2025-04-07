@@ -1262,7 +1262,7 @@ def record_payment(request):
     }
     """
     try:
-        serializer = ExpensePaymentSerializer(data=request.data)
+        serializer = SettlementPaymentSerializer(data=request.data)
         if not serializer.is_valid():
             return Response({
                 "status": "error",

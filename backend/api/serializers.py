@@ -350,16 +350,14 @@ class ExpenseGetSerializer(serializers.ModelSerializer):
                  'total_amount', 'remaining_amount', 'description', 
                  'created_at', 'deadline']
 
-class ExpensePaymentSerializer(serializers.Serializer):
-    expense_id = serializers.CharField(required=True)
-    amount = serializers.DecimalField(max_digits=10, decimal_places=2, required=True)
+class SettlementPaymentSerializer(serializers.Serializer):
     id_token = serializers.CharField(required=True)
-
-    def validate_amount(self, value):
-        if value <= 0:
-            raise serializers.ValidationError('Amount must be greater than zero')
-        return value
-
+    user_id = serializers.CharField(required=False)
+    group_id = serializers.CharField(required=False)
+    amount = serializers.DecimalField(max_digits=10, decimal_places=2, required=False)
+    settle_all = serializers.BooleanField(required=False)
+    description = serializers.CharField(required=False)
+    
 class GetSettlementDataSerializer(serializers.Serializer):
     id_token = serializers.CharField(required=True)
     friend_id = serializers.CharField(required=False, allow_null=True)

@@ -264,6 +264,8 @@ export default function Dashboard() {
           recipient={settleUpDetails.recipient}
           onClose={() => setShowSettleUpModal(false)}
           onConfirm={confirmSettleUp}
+          onSuccess={refreshDashboardData}
+          setIsProcessing={setIsProcessingPayment}
           isProcessing={isProcessingPayment}
         />
       )}

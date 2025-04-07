@@ -94,7 +94,6 @@ export const PaymentModal = ({ isOpen, onClose, onSuccess }) => {
       const data = await response.json();
       
       if (data.status === 'SUCCESS' && Array.isArray(data.friends)) {
-        console.log(data.friends)
         setFriends(data.friends);
       } else {
         setError('Failed to load friends');
