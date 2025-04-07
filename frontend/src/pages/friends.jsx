@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 import { Button } from "../components/ui/button";
 import Loading from '../components/Loading';
-import { SecurityUtils } from '../utils/security';
+import { SecurityUtils } from '../utils/Security';
 import { Users, UserPlus, Search, CreditCard, ArrowLeftFromLineIcon, X, UserMinus, UserX } from "lucide-react";
 import { set } from 'zod';
 
@@ -156,7 +156,7 @@ const Content = () => {
                 setProfileData(data.user_data);
 
                 try{
-                    const friendsResponse = await fetch(`${API_URL}/friendlist/`, {
+                    const friendsResponse = await fetch(`${API_URL}/get-user-friends/`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',

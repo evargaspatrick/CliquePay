@@ -10,7 +10,7 @@ urlpatterns = [
     path('api/logout/',views.logout_user, name='logout_user'),
     path('api/reset-password/',views.initiate_reset_password, name='initiate_reset_password'),
     path('api/confirm-reset-password/',views.confirm_reset_password, name='confirm_reset_password'),
-    path('api/friendlist/',views.get_user_friends, name='get_user_friends'),
+    path('api/get-user-friends/',views.get_user_friends, name='get_user_friends'),
     path('api/resend-code/',views.get_resend_code, name='resend_code'),
     path('api/verify-user-access/',views.verify_user_access, name='verify_user_access'),
     path('api/user-profile/',views.get_user_profile, name='get_user_profile'),
@@ -43,4 +43,6 @@ urlpatterns = [
     path('api/reject-group-invite/',views.reject_group_invite, name='reject_group_invite'),
     path('api/get-user-invites/',views.get_user_invites, name='get_user_invites'),
     path('api/cancel-group-invite/',views.cancel_group_invite, name='cancel_group_invite'),
+    path('api/get-financial-summary/', views.get_financial_summary, name='get_finance_summary'),
+    path('api/get-settlement-data/', views.get_settlement_data, name='get_settlement_data'),
 ]
