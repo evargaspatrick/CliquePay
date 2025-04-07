@@ -1,25 +1,16 @@
-import React, { useState, useEffect, useRef } from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { 
-  Send, 
-  Paperclip, 
-  Image, 
-  Smile, 
-  ArrowLeft, 
-  UserPlus, 
-  Info,
-  Check,
-  CheckCheck,
-  MessageSquare
+  ArrowLeft, Info, UserPlus, X, Send, MessageSquare, Check, CheckCheck, 
+  Smile, Paperclip, Image, Edit2, LogOut, Camera, Search, Crown, Loader2
 } from "lucide-react";
 import { cn } from "../../lib/utils";
-import { SecurityUtils } from "../../utils/security";
 import { format } from "date-fns";
+import { SecurityUtils } from "../../utils/security";
 import PropTypes from "prop-types";
-import { X, Camera, Edit2, LogOut, Crown,Search } from "lucide-react";
-import {  } from "lucide-react";
+
 const InviteMembersList = ({ groupId, onInviteSuccess }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
@@ -118,7 +109,7 @@ const InviteMembersList = ({ groupId, onInviteSuccess }) => {
           
           // Add invited user to the array with invite information
           newInvitedUsers.push({
-            invite_id: data.invite_id, // Assuming backend returns invite_id
+            invite_id: data.invitation_id || data.invite_id, // Accommodate different API responses
             user_id: user.user_id,
             full_name: user.full_name,
             profile_photo: user.profile_photo,
@@ -173,7 +164,7 @@ const InviteMembersList = ({ groupId, onInviteSuccess }) => {
                 className="flex items-center bg-zinc-800 rounded-full pl-1 pr-2 py-1"
               >
                 <div className="h-5 w-5 mr-1 rounded-full overflow-hidden bg-zinc-700 flex-shrink-0">
-                  {user.avatar_url ? (
+                  {user.profile_photo ? (
                     <img src={user.profile_photo} alt={user.full_name} className="h-full w-full object-cover" />
                   ) : (
                     <div className="h-full w-full flex items-center justify-center text-[10px] text-white">
@@ -293,6 +284,11 @@ const LoadingSpinner = ({ className, size = "md" }) => {
   );
 };
 
+LoadingSpinner.propTypes = {
+  className: PropTypes.string,
+  size: PropTypes.string
+};
+
 // Message bubble component
 const MessageBubble = ({ message, isOwn }) => {
   // Format the date
@@ -311,7 +307,7 @@ const MessageBubble = ({ message, isOwn }) => {
           "bg-zinc-700 text-white rounded-bl-none"
       )}>
         {!isOwn && (
-          <p className="text-xs text-purple-300 font-medium mb-1">{message.sender_name}</p>
+          <p className="text-xs text-left text-purple-300 font-medium mb-1">{message.sender_name}</p>
         )}
 
         <p className="text-sm">{message.content}</p>
@@ -477,10 +473,25 @@ const GroupChatContainer = ({ groupId, onBack }) => {
         setGroupMembers(data.group_members || []);
         setInvitedUsers(data.invited_users || []);
         
-        // Check if current user is admin
-        if (data.group_members && userId.current) {
-          const currentUser = data.group_members.find(member => member.user_id === userId.current);
-          setIsAdmin(currentUser?.role === 'admin');
+        // Fix: Get user ID first before checking for admin status
+        const idResponse = await fetch(`${API_URL}/user-profile/`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ id_token: token }),
+        });
+        
+        const userData = await idResponse.json();
+        if (userData.status === "SUCCESS") {
+          userId.current = userData.user_data.id;
+          
+          // Now check if the current user is an admin
+          if (data.group_members && userId.current) {
+            const currentUser = data.group_members.find(member => member.user_id === userId.current);
+            console.log("Current user role:", currentUser?.role);
+            setIsAdmin(currentUser?.role === 'admin');
+          }
         }
       }
     } catch (error) {
@@ -584,12 +595,26 @@ const GroupChatContainer = ({ groupId, onBack }) => {
     
     // If the update is just to refresh data, fetch the group info
     if (Object.keys(updatedInfo).length === 0) {
-      fetchGroupInfo();
+      const fetchInfo = async () => {
+        const token = await SecurityUtils.getCookie("idToken");
+        if (token) fetchGroupInfo(token);
+      };
+      fetchInfo();
     }
   };
 
-  const toggleGroupInfo = () => {
-    setShowGroupInfo(prevState => !prevState);
+  // Modified toggleGroupInfo function to handle leave action
+  const handleGroupInfoBack = (result) => {
+    if (result && result.left && result.groupId) {
+      // If user left the group, go back to the chats list
+      onBack({ left: true, groupId: result.groupId });
+    } else if (result && result.deleted && result.groupId) {
+      // If group was deleted, go back to the chats list
+      onBack({ deleted: true, groupId: result.groupId });
+    } else {
+      // Otherwise just toggle back to the chat view
+      setShowGroupInfo(false);
+    }
   };
 
   const handleInviteComplete = (newlyInvitedUsers) => {
@@ -624,6 +649,7 @@ const GroupChatContainer = ({ groupId, onBack }) => {
     );
   };
 
+  // When toggling group info view, pass isAdmin correctly
   return (
     <div className="flex flex-col h-[65vh] bg-zinc-900 rounded-lg overflow-hidden border border-zinc-800">
       {!showGroupInfo ? (
@@ -675,7 +701,7 @@ const GroupChatContainer = ({ groupId, onBack }) => {
                 variant="ghost" 
                 size="icon" 
                 className="text-zinc-400 hover:text-white hover:bg-zinc-700"
-                onClick={toggleGroupInfo}
+                onClick={() => setShowGroupInfo(true)}
               >
                 <Info className="h-5 w-5" />
               </Button>
@@ -779,7 +805,7 @@ const GroupChatContainer = ({ groupId, onBack }) => {
           groupMembers={groupMembers}
           invitedUsers={invitedUsers}
           isAdmin={isAdmin}
-          onBack={toggleGroupInfo}
+          onBack={handleGroupInfoBack}
           onUpdateGroup={handleUpdateGroup}
         />
       )}
@@ -799,16 +825,44 @@ const GroupInfoView = ({ groupId, groupInfo, groupMembers, invitedUsers, isAdmin
   const [profilePhoto, setProfilePhoto] = useState(null);
   const [showInviteMembers, setShowInviteMembers] = useState(false);
   const [error, setError] = useState(null);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState(null);
+  const [showLeaveConfirmation, setShowLeaveConfirmation] = useState(false);
+  const [isLeaving, setIsLeaving] = useState(false);
+  const [leaveError, setLeaveError] = useState(null);
+  
   const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api';
 
+  // Set initial values when editing
   useEffect(() => {
-    if (groupInfo) {
+    if (isEditing && groupInfo) {
       setEditedName(groupInfo.group_name || "");
       setEditedDescription(groupInfo.description || "");
     }
-  }, [groupInfo]);
+  }, [isEditing, groupInfo]);
 
+  // Add the missing handleFileChange function
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    // Display the selected image as a preview
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setProfilePhoto(event.target.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Add the missing handleSaveChanges function
   const handleSaveChanges = async () => {
+    if (!editedName.trim()) {
+      setError("Group name is required");
+      return;
+    }
+    
     try {
       const token = await SecurityUtils.getCookie("idToken");
       if (!token) {
@@ -816,7 +870,7 @@ const GroupInfoView = ({ groupId, groupInfo, groupMembers, invitedUsers, isAdmin
         return;
       }
       
-      const response = await fetch(`${API_URL}/update-group/`, {
+      const response = await fetch(`${API_URL}/edit-group/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -825,62 +879,35 @@ const GroupInfoView = ({ groupId, groupInfo, groupMembers, invitedUsers, isAdmin
           id_token: token,
           group_id: groupId,
           group_name: editedName,
-          description: editedDescription,
-          // Handle photo update if needed
-          // photo_data: profilePhoto
+          group_description: editedDescription
         }),
       });
       
       const data = await response.json();
-      
       if (data.status === "SUCCESS") {
+        // Update local state
         onUpdateGroup({
           group_name: editedName,
-          description: editedDescription,
-          photo_url: profilePhoto || groupInfo?.photo_url
+          description: editedDescription
         });
         setIsEditing(false);
       } else {
         setError(data.message || "Failed to update group");
       }
-    } catch (err) {
-      console.error("Error updating group:", err);
-      setError("An error occurred while updating the group");
+    } catch (error) {
+      setError("Error updating group: " + error.message);
     }
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfilePhoto(reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
+  // Add the missing handleInviteComplete function
   const handleInviteComplete = (newlyInvitedUsers) => {
     setShowInviteMembers(false);
-    // Pass new invites to parent component
-    if (onUpdateGroup && newlyInvitedUsers && newlyInvitedUsers.length > 0) {
+    if (newlyInvitedUsers && newlyInvitedUsers.length > 0) {
       onUpdateGroup({ newInvites: newlyInvitedUsers });
     }
   };
 
-  const fetchGroupInfo = async () => {
-    try {
-      const token = await SecurityUtils.getCookie("idToken");
-      if (!token) return;
-
-      if (onUpdateGroup) {
-        onUpdateGroup({}); // This will trigger a refresh from the parent
-      }
-    } catch (error) {
-      console.error("Error refreshing group info:", error);
-    }
-  };
-
+  // Add the missing handleCancelInvite function
   const handleCancelInvite = async (inviteId) => {
     try {
       const token = await SecurityUtils.getCookie("idToken");
@@ -901,22 +928,228 @@ const GroupInfoView = ({ groupId, groupInfo, groupMembers, invitedUsers, isAdmin
       });
       
       const data = await response.json();
-      
       if (data.status === "SUCCESS") {
-        // Update the invitedUsers state locally by filtering out the canceled invite
-        // Use a callback to ensure proper state update that respects props
-        if (onUpdateGroup) {
-          onUpdateGroup({ 
-            canceledInviteId: inviteId 
-          });
-        }
+        // Update UI to remove the canceled invite
+        onUpdateGroup({ canceledInviteId: inviteId });
       } else {
-        setError(data.message || "Failed to cancel invite");
+        setError(data.message || "Failed to cancel invitation");
       }
     } catch (error) {
-      console.error("Error canceling invite:", error);
-      setError("Failed to cancel invite. Please try again.");
+      setError("Error canceling invitation: " + error.message);
     }
+  };
+
+  // Fix delete group function
+  const handleDeleteGroup = async () => {
+    if (deleteConfirmText !== groupInfo?.group_name) {
+      setDeleteError("Please type the group name exactly to confirm deletion");
+      return;
+    }
+    
+    setIsDeleting(true);
+    setDeleteError(null);
+
+    try {
+      const token = await SecurityUtils.getCookie("idToken");
+      if (!token) {
+        setDeleteError("Authentication required");
+        setIsDeleting(false);
+        return;
+      }
+
+      const response = await fetch(`${API_URL}/delete-group/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id_token: token,
+          group_id: groupId
+        }),
+      });
+
+      const data = await response.json();
+      if (data.status === "SUCCESS") {
+        // Send deletion info back to parent with deleted flag and groupId
+        onBack({ deleted: true, groupId });
+      } else {
+        setDeleteError(data.message || "Failed to delete group");
+      }
+    } catch (error) {
+      setDeleteError("Error deleting group: " + error.message);
+      console.error("Error deleting group:", error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Fix the leave group function
+  const handleLeaveGroup = async () => {
+    setIsLeaving(true);
+    setLeaveError(null);
+
+    try {
+      const token = await SecurityUtils.getCookie("idToken");
+      if (!token) {
+        setLeaveError("Authentication required");
+        setIsLeaving(false);
+        return;
+      }
+
+      const response = await fetch(`${API_URL}/leave-group/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id_token: token,
+          group_id: groupId
+        }),
+      });
+
+      const data = await response.json();
+      if (data.status === "SUCCESS") {
+        // Return to the chat list with a signal that we've left this group
+        onBack({ left: true, groupId: groupId });
+      } else {
+        setLeaveError(data.message || "Failed to leave group");
+      }
+    } catch (error) {
+      setLeaveError("Error leaving group: " + error.message);
+      console.error("Error leaving group:", error);
+    } finally {
+      setIsLeaving(false);
+    }
+  };
+
+  // Fix DeleteConfirmationModal component
+  const DeleteConfirmationModal = () => {
+    if (!showDeleteConfirmation) return null;
+
+    return (
+      <div 
+        className="fixed inset-0 bg-black/70 flex items-center justify-center z-50"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div 
+          className="bg-zinc-800 rounded-lg p-6 max-w-md w-full mx-4 border border-zinc-700"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <h3 className="text-xl font-semibold mb-2 text-red-500">Delete Group</h3>
+          <p className="text-zinc-300 mb-4">
+            This action cannot be undone. This will permanently delete the group 
+            <strong> {groupInfo?.group_name} </strong> 
+            and all associated messages.
+          </p>
+          
+          <div className="mb-4">
+            <label className="block text-xs text-zinc-400 mb-1">
+              To confirm, type the group name: <strong>{groupInfo?.group_name}</strong>
+            </label>
+            <input
+              type="text"
+              value={deleteConfirmText}
+              onChange={(e) => {
+                e.stopPropagation();
+                setDeleteConfirmText(e.target.value);
+              }}
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => e.stopPropagation()}
+              className="w-full bg-zinc-700 border border-zinc-600 rounded-md p-2 text-white"
+              autoFocus
+            />
+          </div>          
+          
+          {deleteError && (
+            <div className="bg-red-900/20 border border-red-500 rounded-md p-3 mb-4">
+              <p className="text-red-300 text-sm">{deleteError}</p>
+            </div>
+          )}
+
+          <div className="flex justify-end space-x-3">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowDeleteConfirmation(false);
+                setDeleteConfirmText("");
+                setDeleteError(null);
+              }}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={handleDeleteGroup}
+              disabled={isDeleting || deleteConfirmText !== groupInfo?.group_name}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete Group"
+              )}
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Fix LeaveConfirmationModal component
+  const LeaveConfirmationModal = () => {
+    if (!showLeaveConfirmation) return null;
+
+    return (
+      <div 
+        className="fixed inset-0 bg-black/70 flex items-center justify-center z-50"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div 
+          className="bg-zinc-800 rounded-lg p-6 max-w-md w-full mx-4 border border-zinc-700"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <h3 className="text-xl font-semibold mb-2">Leave Group</h3>
+          <p className="text-zinc-300 mb-4">
+            Are you sure you want to leave this group? You will need to be invited back to rejoin.
+          </p>
+          
+          {leaveError && (
+            <div className="bg-red-900/20 border border-red-500 rounded-md p-3 mb-4">
+              <p className="text-red-300 text-sm">{leaveError}</p>
+            </div>
+          )}
+
+          <div className="flex justify-end space-x-3">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowLeaveConfirmation(false)}
+              disabled={isLeaving}
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={handleLeaveGroup}
+              disabled={isLeaving}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isLeaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Leaving...
+                </>
+              ) : (
+                "Leave Group"
+              )}
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -932,6 +1165,13 @@ const GroupInfoView = ({ groupId, groupInfo, groupMembers, invitedUsers, isAdmin
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <h2 className="font-semibold">Group Info</h2>
+        
+        {/* Show admin badge if user is admin */}
+        {isAdmin && (
+          <span className="ml-2 bg-yellow-500 text-black text-xs px-2 py-0.5 rounded-full">
+            Admin
+          </span>
+        )}
       </div>
 
       {/* Scrollable content */}
@@ -1147,6 +1387,31 @@ const GroupInfoView = ({ groupId, groupInfo, groupMembers, invitedUsers, isAdmin
             <p className="text-sm text-zinc-500 italic">No pending invites</p>
           )}
         </div>
+
+        {/* Danger Zone - Only visible to admins */}
+        {isAdmin && (
+          <div className="px-4 py-3 border-t border-red-900/30">
+            <h3 className="text-red-500 font-medium mb-3">Danger Zone</h3>
+            
+            <div className="bg-zinc-900/50 border border-red-900/30 rounded-md p-4">
+              <div className="flex flex-col space-y-3">
+                <div>
+                  <p className="font-medium text-white">Delete this group</p>
+                  <p className="text-xs text-zinc-400 mt-1">
+                    Once deleted, this group and all its messages will be permanently removed.
+                  </p>
+                </div>
+                <Button
+                  variant="destructive"
+                  className="bg-red-600 hover:bg-red-700 text-white w-full"
+                  onClick={() => setShowDeleteConfirmation(true)}
+                >
+                  Delete Group
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Exit Group Button */}
@@ -1154,11 +1419,16 @@ const GroupInfoView = ({ groupId, groupInfo, groupMembers, invitedUsers, isAdmin
         <Button 
           variant="outline" 
           className="w-full border-red-800 text-red-500 hover:bg-red-900/20"
+          onClick={() => setShowLeaveConfirmation(true)}
         >
           <LogOut className="h-5 w-5 mr-2" />
           Exit Group
         </Button>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <DeleteConfirmationModal />
+      <LeaveConfirmationModal />
     </>
   );
 };

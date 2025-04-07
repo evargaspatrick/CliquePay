@@ -192,10 +192,25 @@ def api_root(request, format=None):
                 'method':'POST',
                 'description':'send group message.'
             },
-            'invite-search':{
+            'search-invite':{
                 'url':reverse('invite_search', request=request, format=format),
                 'method':'POST',
                 'description': 'search api for inviting new users to a group.'
+            },
+            'delete-group':{
+                'url':reverse('delete_group', request=request, format=format),
+                'method':'POST',
+                'description':'delete group.'
+            },
+            'edit-group':{
+                'url':reverse('edit_group', request=request, format=format),
+                'method':'POST',
+                'description':'edit group.'
+            },
+            'remove-from-group':{
+                'url':reverse('remove_from_group', request=request, format=format),
+                'method':'POST',
+                'description':'remove user from group.'
             },
         },
         'version': 'development',
@@ -1508,7 +1523,7 @@ def leave_group(request):
         if decoded['status'] == 'SUCCESS':
             db = DatabaseService()
             result = db.leave_group(
-                user_id=decoded['user_sub'],
+                user_sub=decoded['user_sub'],
                 group_id=serializer.validated_data['group_id']
             )
             if result['status'] == 'SUCCESS':
@@ -1566,7 +1581,7 @@ def accept_group_invite(request):
         if decoded['status'] == 'SUCCESS':
             db = DatabaseService()
             result = db.accept_group_invite(
-                user_id=decoded['user_sub'],
+                user_sub=decoded['user_sub'],
                 invite_id=serializer.validated_data['invite_id']
             )
             if result['status'] == 'SUCCESS':
@@ -1597,7 +1612,7 @@ def reject_group_invite(request):
         if decoded['status'] == 'SUCCESS':
             db = DatabaseService()
             result = db.reject_group_invite(
-                user_id=decoded['user_sub'],
+                user_sub=decoded['user_sub'],
                 invite_id=serializer.validated_data['invite_id']
             )
             if result['status'] == 'SUCCESS':
@@ -1727,6 +1742,105 @@ def invite_search(request):
                 user_sub=decoded['user_sub'],
                 group_id=serializer.validated_data['group_id'],
                 search_term=serializer.validated_data['search_term']
+            )
+            if result['status'] == 'SUCCESS':
+                return Response(result, status=status.HTTP_200_OK)
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        return Response(decoded, status=status.HTTP_401_UNAUTHORIZED)
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def delete_group(request):
+    """
+    Delete a group.
+
+    Request Body:
+    {
+        "id_token": "your-id-token",
+        "group_id": "group-id"
+    }
+    """
+    serializer = DeleteGroupSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        decoded = cognito.get_user_id(serializer.validated_data['id_token'])
+        if decoded['status'] == 'SUCCESS':
+            db = DatabaseService()
+            result = db.delete_group(
+                user_sub=decoded['user_sub'],
+                group_id=serializer.validated_data['group_id']
+            )
+            if result['status'] == 'SUCCESS':
+                return Response(result, status=status.HTTP_200_OK)
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        return Response(decoded, status=status.HTTP_401_UNAUTHORIZED)
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def edit_group(request):
+    """
+    Edit a group.
+
+    Request Body:
+    {
+        "id_token": "your-id-token",
+        "group_id": "group-id",
+        "group_name": "new-group-name",
+        "group_description" (optional): "maxlength-2000 chars"
+    }
+    """
+    serializer = EditGroupSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        decoded = cognito.get_user_id(serializer.validated_data['id_token'])
+        if decoded['status'] == 'SUCCESS':
+            db = DatabaseService()
+            result = db.edit_group(
+                user_sub=decoded['user_sub'],
+                group_id=serializer.validated_data['group_id'],
+                group_name=serializer.validated_data.get('group_name'),
+                group_description=serializer.validated_data.get('group_description')
+            )
+            if result['status'] == 'SUCCESS':
+                return Response(result, status=status.HTTP_200_OK)
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        return Response(decoded, status=status.HTTP_401_UNAUTHORIZED)
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def remove_from_group(request):
+    """
+    Remove a user from a group.
+
+    Request Body:
+    {
+        "id_token": "your-id-token",
+        "group_id": "group-id",
+        "user_id": "user-id"
+    }
+    """
+    serializer = RemoveFromGroupSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        decoded = cognito.get_user_id(serializer.validated_data['id_token'])
+        if decoded['status'] == 'SUCCESS':
+            db = DatabaseService()
+            result = db.remove_from_group(
+                user_sub=decoded['user_sub'],
+                group_id=serializer.validated_data['group_id'],
+                user_id=serializer.validated_data['user_id']
             )
             if result['status'] == 'SUCCESS':
                 return Response(result, status=status.HTTP_200_OK)

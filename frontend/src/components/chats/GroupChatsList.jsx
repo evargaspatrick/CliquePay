@@ -84,13 +84,13 @@ const NewGroupModal = ({ onClose, onGroupCreated }) => {
 
   const handleSubmit = async(e) => {
     e.preventDefault();
-    try{
+    try {
       if (!groupName.trim()) {
         setError("Group name is required");
         return;
       }
       const token = await SecurityUtils.getCookie("idToken")
-      if(!token){
+      if(!token) {
         setError("You must be logged in to create a group")
         return;
       }
@@ -104,9 +104,13 @@ const NewGroupModal = ({ onClose, onGroupCreated }) => {
       });
 
       const data = await response.json();
-      if(data.status === "SUCCESS"){
-        // ADD TO GROUP CHATS
-        onGroupCreated(data.group);
+      if(data.status === "SUCCESS") {
+        // Pass properly formatted data to match what parent expects
+        onGroupCreated({
+          group_id: data.group_id,
+          group_name: groupName,
+          group_description: description
+        });
         onClose();
       } else {
         setError(data.message || "Failed to create group. Please try again.");
@@ -180,10 +184,16 @@ export default function GroupChatsList({ groups = [], isLoading, onGroupCreate }
   const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api';
   
   // Handle creating a new group - delegates to parent
-  const handleCreateGroup = async (newGroupData) => {
+  const handleCreateGroup = (newGroupData) => {
     try {
       if (onGroupCreate) {
-        onGroupCreate(newGroupData);
+        // Add the necessary fields to match the expected structure
+        const formattedGroup = {
+          group_id: newGroupData.group_id,
+          group_name: newGroupData.group_name,
+          description: newGroupData.group_description || ""
+        };
+        onGroupCreate(formattedGroup);
       }
       setShowNewGroupModal(false);
     } catch (error) {
@@ -192,10 +202,27 @@ export default function GroupChatsList({ groups = [], isLoading, onGroupCreate }
   };
 
   const handleToggleModal = () => setShowNewGroupModal(!showNewGroupModal);
-  const handleCLoseGroup = () => setOpenGroup(null);
+  
+  const handleCLoseGroup = (result) => {
+    // If the group was deleted or left, we need to refresh the groups list
+    if (result) {
+      if (result.deleted && result.groupId) {
+        // Pass the deletion info to parent component
+        if (onGroupCreate) {
+          onGroupCreate({ deleted: true, groupId: result.groupId });
+        }
+      } else if (result.left && result.groupId) {
+        // Handle left group - similar to deletion from UI perspective
+        if (onGroupCreate) {
+          onGroupCreate({ left: true, groupId: result.groupId });
+        }
+      }
+    }
+    setOpenGroup(null);
+  };
   
   return (
-    openGroup!=null ? (
+    openGroup != null ? (
       <GroupChatContainer groupId={openGroup} onBack={handleCLoseGroup}/>
     ) : (
     <>
