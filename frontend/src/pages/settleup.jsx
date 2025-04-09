@@ -52,7 +52,8 @@ const SettleUpModal = ({ onClose, onConfirm, amount, isProcessing, onSuccess, se
                 amount: settlement.amount,
                 description: `Settling up with ${settlement.name}`
               };
-              
+              conconsle.log('Specific payment data:', specificPayment);
+
               // Make the API call for this specific settlement
               const response = await fetch(`${API_URL}/record-payment/`, {
                 method: 'POST',
@@ -94,7 +95,7 @@ const SettleUpModal = ({ onClose, onConfirm, amount, isProcessing, onSuccess, se
             // Settle within specific group - existing code
             paymentData.group_id = selectedEntityId;
             paymentData.amount = totalAmount;
-            
+            console.log('Group payment data:', paymentData);
             const response = await fetch(`${API_URL}/record-payment/`, {
               method: 'POST',
               headers: {
@@ -167,12 +168,15 @@ const SettleUpModal = ({ onClose, onConfirm, amount, isProcessing, onSuccess, se
                         expense.group_id !== undefined && expense.group_id !== null);
                     
                     if (hasGroupExpenses) {
+                        console.log(settlement)
                         groupsData.push(settlement);
                     } else {
                         friendsData.push(settlement);
                     }
                 });
                 
+                console.log('groups data: ', groupsData)
+                console.log('friends data: ', friendsData)
                 setFriends(friendsData);
                 setGroups(groupsData);
                 setSettlements(data.settlements);
@@ -227,13 +231,13 @@ const SettleUpModal = ({ onClose, onConfirm, amount, isProcessing, onSuccess, se
                                 </svg>
                             </div>
                             <h3 className="text-lg font-medium text-white">Payment Successful!</h3>
-                            <p className="text-gray-400 mt-2">
+                            {/* <p className="text-gray-400 mt-2">
                                 {settlementType === 'all' 
                                     ? 'All outstanding balances have been settled.' 
                                     : settlementType === 'groups'
                                     ? 'Group expenses have been settled successfully.'
                                     : `Your payment to ${recipient || 'your friend'} has been settled.`}
-                            </p>
+                            </p> */}
                         </div>
                     ) : (
                         <div>
@@ -295,21 +299,21 @@ const SettleUpModal = ({ onClose, onConfirm, amount, isProcessing, onSuccess, se
                                         <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                                             {groups.map(group => (
                                                 <button
-                                                    key={group.id}
+                                                    key={group.expenses[0].group_id}
                                                     className={`w-full p-3 flex items-center rounded-lg border ${
-                                                        selectedEntityId === group.id
+                                                        selectedEntityId === group.expenses[0].group_id
                                                             ? 'border-purple-500 bg-purple-900/20'
                                                             : 'border-zinc-700 bg-zinc-800 hover:bg-zinc-700'
                                                     }`}
                                                     onClick={() => {
-                                                        if (selectedEntityId === group.id) {
+                                                        if (selectedEntityId === group.expenses[0].group_id) {
                                                             // Clicking the same group again deselects it
                                                             setSelectedEntityId('');
                                                             // Reset to total amount
                                                             setTotalAmount(data.total_owed || 0);
                                                         } else {
                                                             // Select this group
-                                                            setSelectedEntityId(group.id);
+                                                            setSelectedEntityId(group.expenses[0].group_id);
                                                             setTotalAmount(group.amount);
                                                         }
                                                     }}
@@ -318,7 +322,7 @@ const SettleUpModal = ({ onClose, onConfirm, amount, isProcessing, onSuccess, se
                                                         <Users size={18} />
                                                     </div>
                                                     <div className="text-left">
-                                                        <h4 className="font-medium text-white">{group.name}</h4>
+                                                        <h4 className="font-medium text-white">{group.expenses[0].group_name}</h4>
                                                         <p className="text-sm text-gray-400">${group.amount?.toFixed(2) || "0.00"}</p>
                                                     </div>
                                                 </button>

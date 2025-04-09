@@ -14,8 +14,9 @@ import { PageLayout, Section, Header, Footer } from "../components/layout/PageLa
 import ChatsContainer from "../components/chats/ChatsContainer";
 import { getTotalUnreadCount } from "../components/chats/ChatNotifications";
 import SettleUpModal from "./settleup";
-import { PaymentModal } from "./newpayment";
 import { SecurityUtils } from "../utils/Security";
+import { PaymentModal } from "./newpayment";
+// Create a simple Logo component if it doesn't exist
 const Logo = () => (
   <div className="flex items-center gap-2">
     <div className="bg-purple-600 w-8 h-8 rounded-md flex items-center justify-center">
@@ -281,19 +282,44 @@ export default function Dashboard() {
       }
       
       <Header className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-sm py-4 relative z-[100]">
-        <Logo />
-        <div className="flex items-center gap-4">
-          <Button variant="outline" className="border-zinc-700 bg-zinc-800 hover:bg-zinc-700">
-            <Bell className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">Notifications</span>
-          </Button>
-          <Button className="bg-purple-600 hover:bg-purple-700" onClick={() => handlePaymentModalOpen(true)}>
-            <DollarSign className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">New Payment</span>
-          </Button>
-          <ProfileDropdown onLogout={() => setShowLogoutModal(true)} />
-        </div>
-      </Header>
+          <Logo />
+          <div className="flex items-center gap-4 relative z-[100]">
+            <Button 
+          variant="ghost" 
+          className="hover:bg-zinc-800 relative group"
+          title="Friend List"
+          onClick={() => navigate('/friends')}
+            >
+          <UsersRound className="h-auto w-auto text-white" />
+          {getTotalUnreadCount(groupChats, directChats) > 0 && (
+            <span 
+              className="absolute -top-1 -right-1 bg-purple-600 text-white text-xs rounded-full h-5 min-w-5 flex items-center justify-center"
+            >
+              {getTotalUnreadCount(groupChats, directChats)}
+            </span>
+          )}
+            </Button>
+            <Button 
+              variant="ghost" 
+              className="hover:bg-zinc-800 relative group"
+              title="New Payment"
+              onClick={handlePaymentModalOpen}
+            >
+              <CircleDollarSign className="h-auto w-auto text-white" />
+            </Button>
+            <Button
+              variant="ghost"
+              className="hover:bg-zinc-800 relative group"
+              title="notifications"
+            >
+              <Bell className="h-auto w-auto text-white" />
+              <span className="absolute -top-0 right-3.5 bg-purple-600 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+                {getTotalUnreadCount(groupChats, directChats)}
+              </span>
+            </Button>
+            <ProfileDropdown onLogout={() => setShowLogoutModal(true)} />
+          </div>
+        </Header>
 
         {/* Main Content */}
       <Section className="py-8">
