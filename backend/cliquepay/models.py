@@ -217,10 +217,8 @@ class Expense(models.Model):
     remaining_amount = models.DecimalField(max_digits=10, decimal_places=2)
     description = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    deadline = models.DateTimeField(blank=True, null=True) # Optional deadline for payment
+    deadline = models.DateTimeField(blank=True, null=True)
     receipt_url = models.URLField(blank=True, null=True)
-
-    
 
     class Meta:
         db_table = 'expenses'

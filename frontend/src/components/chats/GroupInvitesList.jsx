@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { MessageSquare, Check, X, AlertCircle, Loader2 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import PropTypes from "prop-types";
-import { SecurityUtils } from "../../utils/security";
+import { SecurityUtils } from '../../utils/Security';
 
 const Loading = ({ size = "md" }) => {
   const sizeClasses = {

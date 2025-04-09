@@ -3,7 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { PlusCircle, UserPlus, MessageSquareDot } from "lucide-react";
 import PropTypes from "prop-types";
 import React, { useState, useEffect } from "react";
-import { SecurityUtils } from "../../utils/security";
+import { SecurityUtils } from '../../utils/Security';
 import { cn } from "../../lib/utils";
 import { set } from "zod";
 import GroupChatContainer from "./GroupChatContainer";
