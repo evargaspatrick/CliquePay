@@ -530,6 +530,12 @@ const Content = () => {
                         <span>Dashboard</span>
                     
                     </Button>
+                    
+                    </Button>
+                    <Button className="bg-purple-600 hover:bg-purple-700" onClick={() => navigate('/login')}>
+                        <LogOut className="h-4 w-4 mr-2" />
+                        <span>Logout</span>
+                    </Button>
                 </div>
             </Header>
 
@@ -611,21 +617,24 @@ const Content = () => {
                                     You have {friends.length} friends
                                 </CardDescription>
                             </CardHeader>
-                            <CardContent className="space-y-4">
-                                {friends.length === 0 ? (
-                                    <p className="text-center text-zinc-400 py-4">You don't have any friends yet. Add some friends to get started!</p>
-                                ) : (
-                                    friends.map(friend => (
-                                        <FriendCard 
-                                            key={friend.friend_id}
-                                            name={friend.friend_name}
-                                            email={friend.email}
-                                            imgSrc={friend.profile_photo}
-                                            onRemove={() => handleRemoveFriendClick(friend)}
-                                        />
-                                    ))
-                                )}
-                            </CardContent>
+                          <CardContent className="space-y-4">
+                              <style>{scrollbarStyles}</style> {/* Keep the custom scrollbar */}
+                              <div className="limit-height custom-scrollbar pr-2">
+                                  {friends.length === 0 ? (
+                                      <p className="text-center text-zinc-400 py-4">You don't have any friends yet. Add some friends to get started!</p>
+                                  ) : (
+                                      friends.map(friend => (
+                                          <FriendCard 
+                                              key={friend.friend_id}
+                                              name={friend.friend_name}
+                                              email={friend.email} {/* Include email */}
+                                              imgSrc={friend.profile_photo}
+                                              onRemove={() => handleRemoveFriendClick(friend)} {/* Pick the correct function */}
+                                          />
+                                      ))
+                                  )}
+                              </div>
+                          </CardContent>
                         </Card>
                     </TabsContent>
 
