@@ -7,8 +7,7 @@ from cliquepay.aws_cognito import CognitoService
 from cliquepay.db_service import DatabaseService
 from .serializers import *
 from cliquepay.storage_service import CloudStorageService
-from api.serializers import SearchUserSerializer
-
+from api.serializers import SearchUserSerializer, GetDirectMessagesSerializer, GetGroupMessagesSerializer, InviteSearchListSerializer
 import logging
 from django.db import models
 from datetime import datetime
@@ -68,7 +67,7 @@ def api_root(request, format=None):
                 'method': 'POST',
                 'description': 'Change the user password if they provide the old one.'
             },
-            'friendlist': {
+            'get-user-friends': {
                 'url': reverse('get_user_friends', request=request, format=format),
                 'method': 'POST',
                 'description': 'Extracts the user_sub from ID token,gets the user_id from database using user_sub and then makes a db query to get user friends using the user_id.'
@@ -97,11 +96,6 @@ def api_root(request, format=None):
                 'url': reverse('accept_friend_request', request=request, format=format),
                 'method': 'POST',
                 'description': 'accept friend request.'
-            },
-            'remove-friend': {
-                'url': reverse('remove_friend', request=request, format=format),
-                'method': 'POST',
-                'description': 'remove friend.'
             },
             'block-user': {
                 'url': reverse('block_user', request=request, format=format),
@@ -137,6 +131,112 @@ def api_root(request, format=None):
                 'url': reverse('search_user', request=request, format=format),
                 'method': 'POST',
                 'description': 'search user by username or email.'
+            },
+            'reject-friend-request': {
+                'url': reverse('reject_friend_request', request=request, format=format),
+                'method': 'POST',
+                'description': 'reject friend request.'
+            },
+            'delete-expense': {
+                'url': reverse('delete_expense', request=request, format=format),
+                'method': 'DELETE',
+                'description': 'deletes an existing expense record from the database.'
+            },
+            'create-expense': {
+                'url': reverse('create_expense', request=request, format=format),
+                'method': 'POST',
+                'description': 'create expense.'
+            },
+            'get-expenses': {
+                'url': reverse('get_expenses', request=request, format=format),
+                'method': 'POST',
+                'description': 'get expense.'
+            },
+
+            'remove-friend' : {
+                'url': reverse('remove_friend', request=request, format=format),
+                'method': 'POST',
+                'description': 'remove friend.'
+            },
+            'get-group-info':{
+                'url':reverse('get_group_info', request=request, format=format),
+                'method':'POST',
+                'description':'get group information.'
+            },
+            'create-group':{
+                'url':reverse('create_group', request=request, format=format),
+                'method':'POST',
+                'description':'create group.'
+            },
+            'group-invite':{
+                'url':reverse('group_invite', request=request, format=format),
+                'method':'POST',
+                'description':'invite user to group.'
+            },
+            'leave-group':{
+                'url':reverse('leave_group', request=request, format=format),
+                'method':'POST',
+                'description':'leave group.'
+            },
+            'get-user-groups':{
+                'url':reverse('get_user_groups', request=request, format=format),
+                'method':'POST',
+                'description':'get user groups.'
+            },
+            'accept-group-invite':{
+                'url':reverse('accept_group_invite', request=request, format=format),
+                'method':'POST',
+                'description':'accept group invite.'
+            },
+            'reject-group-invite':{
+                'url':reverse('reject_group_invite', request=request, format=format),
+                'method':'POST',
+                'description':'reject group invite.'
+            },
+            'get-user-invites':{
+                'url':reverse('get_user_invites', request=request, format=format),
+                'method':'POST',
+                'description':'get user invites.'
+            },
+            'cancel-group-invite':{
+                'url':reverse('cancel_group_invite', request=request, format=format),
+                'method':'POST',
+                'description':'cancel group invite.'
+            },
+            'get-financial-summary':{
+                'url':reverse('get_financial_summary', request=request, format=format),
+                'method':'POST',
+                'description':'get financial summary.'
+            },
+            'get-settlement-data':{
+                'url':reverse('get_settlement_data', request=request, format=format),
+                'method':'POST',
+                'description':'get settlement summary.'
+            },
+            'send-group-message':{
+                'url':reverse('send_group_message', request=request, format=format),
+                'method':'POST',
+                'description':'send group message.'
+            },
+            'search-invite':{
+                'url':reverse('invite_search', request=request, format=format),
+                'method':'POST',
+                'description': 'search api for inviting new users to a group.'
+            },
+            'delete-group':{
+                'url':reverse('delete_group', request=request, format=format),
+                'method':'POST',
+                'description':'delete group.'
+            },
+            'edit-group':{
+                'url':reverse('edit_group', request=request, format=format),
+                'method':'POST',
+                'description':'edit group.'
+            },
+            'remove-from-group':{
+                'url':reverse('remove_from_group', request=request, format=format),
+                'method':'POST',
+                'description':'remove user from group.'
             }
         },
         'version': 'development',
@@ -634,48 +734,13 @@ def accept_friend_request(request):
     }, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])
-def remove_friend(request):
-    """
-    Remove a friend connection between two users.
-    
-    Request Body Example:
-    {
-        "id_token": "user-id-token",
-        "friend_id": "friend-database-id"
-    }
-    """
-    serializer = RemoveFriendSerializer(data=request.data)
-    if serializer.is_valid():
-        cognito = CognitoService()
-        id_result = cognito.get_user_id(serializer.validated_data['id_token'])
-        
-        if id_result['status'] == 'SUCCESS':
-            db = DatabaseService()
-            result = db.remove_friend(
-                cognito_id=id_result['user_sub'],
-                friend_id=serializer.validated_data['friend_id']
-            )
-            
-            if result['status'] == 'SUCCESS':
-                return Response(result, status=status.HTTP_200_OK)
-            return Response(result, status=status.HTTP_400_BAD_REQUEST)
-            
-        return Response(id_result, status=status.HTTP_401_UNAUTHORIZED)
-        
-    return Response({
-        'status': 'error',
-        'message': 'Invalid input',
-        'errors': serializer.errors
-    }, status=status.HTTP_400_BAD_REQUEST)
-
-@api_view(['POST'])
 def block_user(request):
     """
     Block a user from the given idToken account
 
     Request Body Example:
     {
-        "idToken": "user-ID-TOKEN",
+        "id_token": "user-ID-TOKEN",
         "blocked_id": "blocker-user-id"
     }
     """
@@ -869,13 +934,13 @@ def get_direct_messages(request):
         id_token: "your-id-token",
     }
     """
-    serializer = serializers.GetDirectMessagesSerializer(data=request.data)
+    serializer = GetDirectMessagesSerializer(data=request.data)
     if serializer.is_valid():
         cognito = CognitoService()
         decoded = cognito.get_user_id(serializer.validated_data['id_token'])
         if decoded['status'] == 'SUCCESS':
             db = DatabaseService()
-            result = db.get_direct_messages(decoded['user_sub'])
+            result = db.get_direct_messages(decoded['user_sub'], serializer.validated_data.get('page'), serializer.validated_data.get('page_size')) 
             if result['status'] == 'SUCCESS':
                 return JsonResponse(result, status=status.HTTP_200_OK)
             return JsonResponse(result, status=status.HTTP_400_BAD_REQUEST)
@@ -895,17 +960,19 @@ def get_group_messages(request):
     Request Body:
 
     {
-        id_token: "your-id-token",
-        group_id: "your-group-id"
+        "id_token": "your-id-token",
+        "group_id": "your-group-id",
+        "page"(optional): "default-1",
+        "page_size "(optional): "default-50" 
     }
     """
-    serializer = serializers.GetGroupMessagesSerializer(data=request.data)
+    serializer = GetGroupMessagesSerializer(data=request.data)
     if serializer.is_valid():
         cognito = CognitoService()
         decoded = cognito.get_user_id(serializer.validated_data['id_token'])
         if decoded['status'] == 'SUCCESS':
             db = DatabaseService()
-            result = db.get_group_messages(decoded['user_sub'], serializer.validated_data['group_id'])
+            result = db.get_group_messages(decoded['user_sub'], serializer.validated_data['group_id'], serializer.validated_data.get('page'), serializer.validated_data.get('page_size'))
             if result['status'] == 'SUCCESS':
                 return JsonResponse(result, status=status.HTTP_200_OK)
             return JsonResponse(result, status=status.HTTP_400_BAD_REQUEST)
@@ -923,11 +990,11 @@ def send_direct_message(request):
     
     Request Body:
     {
-        id_token: "your-id-token",
-        recipient_id: "recipient-user-id"
-        content: "Hello there!",
-        message_type: "TEXT",
-        file_url (optional): "https://example.com/file.jpg"
+        "id_token": "your-id-token",
+        "recipient_id": "recipient-user-id"
+        "content": "Hello there!",
+        "message_type": "TEXT",
+        "file_url" (optional): "https://example.com/file.jpg"
     }
 
     NOTE: message_type can only be one of:
@@ -935,7 +1002,7 @@ def send_direct_message(request):
         - FILE  or File
         - IMAGE or Image
     """
-    serializer = serializers.SendDirectMessageSerializer(data=request.data)
+    serializer = SendDirectMessageSerializer(data=request.data)
     if serializer.is_valid():
         cognito = CognitoService()
         decoded = cognito.get_user_id(serializer.validated_data['id_token'])
@@ -987,36 +1054,6 @@ def search_user(request):
         'errors': serializer.errors
     }, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(['POST'])
-def create_group(request):
-    """
-    Create a new group with the authenticated user as the owner.
-    Request Body:
-    {
-        "id_token": "user-id"
-        "name": "Group Name",
-        "created_by": "user-id",
-        "members": ["user-id-1", "user-id-2", ...]
-    }
-    """
-
-    request_data = request.data.copy()
-    serializer = GroupCreateSerializer(data=request_data)
-    is_valid = serializer.is_valid()
-    
-    if not is_valid:
-        return Response({
-            "status": "Returned",
-            "errors": serializer.errors if not is_valid else None
-    })
-
-    serializer.save()
-    
-    return Response({
-        "status": "Returned",
-    })
-
-
 
 @api_view(['POST'])
 def create_expense(request):
@@ -1029,7 +1066,7 @@ def create_expense(request):
         "total_amount": 100.00,
         "description": "Expense description",
         "paid_by": "user-id",
-        "deadline": "2021-12-31",  # Optional
+        "deadline": "2021-12-31",
         "receipt_url": "https://example.com/receipt.jpg"  # Optional
     }
     
@@ -1041,12 +1078,26 @@ def create_expense(request):
 
     request_data = request.data.copy()
 
+    try:
+        cognito = CognitoService()
+        firstResult = cognito.get_user_id(id_token=request_data['paid_by'])
+        
+        db = DatabaseService()
+        user_id = db.get_user_id_by_cognito_id(firstResult['user_sub'])['user_id']
+        request_data['paid_by'] = user_id
+        
+    except Exception as e:
+        print(f"Token verification error: {str(e)}")
+        return Response({
+            "status": "error",
+            "message": "Invalid token"
+        }, status=status.HTTP_401_UNAUTHORIZED)
+
     serializer = ExpenseCreateSerializer(data=request_data)
     is_valid = serializer.is_valid()
-
     if not is_valid:
         return Response({
-            "status": "Returned",
+            "status": "ERROR",
             "errors": serializer.errors if not is_valid else None
         })
     
@@ -1054,7 +1105,7 @@ def create_expense(request):
     
     return Response(
         {
-            "status": "success",
+            "status": "SUCCESS",
             "message": "Expense created successfully",
             "expense": serializer.data
         },
@@ -1064,48 +1115,53 @@ def create_expense(request):
 @api_view(['GET'])
 def get_expenses(request):
     """
-    Get a list of expenses for a group or friend.
-    
-    Request Body:
+    Get all expenses for the authenticated user.
+    Query Parameters:
     {
-        "user_id": "user-id"
+        "id_token": "your-id-token"
     }
-    
-    Returns:
-    - 200: Successfully fetched expenses with expense details
-    - 400: Validation error with detailed error messages
-    - 403: Permission denied if user doesn't have access to the group
     """
-
-    
     try:
-        user_id = request.data.get('user_id')
-        if not user_id:
+        id_token = request.query_params.get('idToken')
+        
+        if not id_token:
             return Response({
                 "status": "error",
-                "message": "user_id is required"
+                "message": "idToken is required as a query parameter"
             }, status=status.HTTP_400_BAD_REQUEST)
-
+            
+        try:
+            cognito = CognitoService()
+            firstResult = cognito.get_user_id(id_token=id_token)
+            
+            db = DatabaseService()
+            user_id = db.get_user_id_by_cognito_id(firstResult['user_sub'])['user_id']
+            
+        except Exception as e:
+            print(f"Token verification error: {str(e)}")
+            return Response({
+                "status": "error",
+                "message": "Invalid token"
+            }, status=status.HTTP_401_UNAUTHORIZED)
+        
         expenses = Expense.objects.filter(
-            models.Q(paid_by_id=user_id)
+            models.Q(paid_by=user_id) | models.Q(splits=user_id)
         ).distinct()
-        
-        serializer = ExpenseGetSerializer(data=expenses, many=True)
-        serializer.is_valid()
 
         
+        serializer = ExpenseGetSerializer(expenses, many=True)
+
         return Response({
             "status": "Returned",
             "message": "Expenses fetched successfully",
             "expenses": serializer.data
         })
-
+        
     except Exception as e:
         return Response({
-            "status": "Returned",
-            "message": "Error fetching expenses",
-            "error": str(e)
-        })
+            "status": "error",
+            "message": str(e)
+        }, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['PUT', 'PATCH'])
 def update_expense(request):
@@ -1221,67 +1277,100 @@ def get_expense_detail(request):
 @api_view(['POST'])
 def record_payment(request):
     """
-    Record a payment for an expense split
+    Record a payment for settling up with a friend
     
     Request Body:
     {
-        "expense_id": "expense-id",
-        "expense_split_id": "expense-split-id",
+        "id_token": "your-id-token",
+        "user_id": "user-id-to-pay",
         "amount": 50.00,
+        "description": "Payment settlement"
     }
     """
-    expense_id = request.data.get('expense_id')
-    expense_split_id = request.data.get('expense_split_id')
-    amount = request.data.get('amount')
-            
-
-    if not all([expense_id, expense_split_id, amount]):
-        return Response({
-            "status": "error",
-            "message": "Missing required fields"
-        }, status=status.HTTP_400_BAD_REQUEST)
-        
     try:
-        amount = float(amount)
-        if amount <= 0:
+        serializer = SettlementPaymentSerializer(data=request.data)
+        if not serializer.is_valid():
             return Response({
                 "status": "error",
-                "message": "Amount must be positive"
+                "message": "Invalid input",
+                "errors": serializer.errors
             }, status=status.HTTP_400_BAD_REQUEST)
-    except ValueError:
-        return Response({
-            "status": "error",
-            "message": "Amount must be a valid number"
-        }, status=status.HTTP_400_BAD_REQUEST)
+            
+        # Get the authenticated user
+        cognito = CognitoService()
+        decoded = cognito.get_user_id(serializer.validated_data['id_token'])
+        if decoded['status'] != 'SUCCESS':
+            return Response(decoded, status=status.HTTP_401_UNAUTHORIZED)
         
+        db_user = User.objects.get(cognito_id=decoded['user_sub'])
+        print(f"Authenticated user: {db_user.name}")   
 
-    try:
-        expense = Expense.objects.get(id=expense_id)
-        split = ExpenseSplit.objects.get(id=expense_split_id)
-        split.remaining_amount -= amount
-
-        if split.remaining_amount == 0:
-            split.is_paid = True
+        is_group_settlement = 'group_id' in serializer.validated_data
+        amount_to_settle = float(serializer.validated_data['amount'])
         
-        expense.remaining_amount -= amount
+        if is_group_settlement:
+            # Group settlement logic
+            group_id = serializer.validated_data['group_id']
+            print(f"Processing group settlement for group {group_id}")
 
+            # Get all splits where current user owes money to other users in the group
+            splits_to_settle = ExpenseSplit.objects.filter(
+                user_id=db_user.id,
+                expense__group_id=group_id,
+                is_paid=False
+            )
+            print(splits_to_settle.values())
+
+        else:
+            recipient_id = serializer.validated_data['user_id']
+            # Find all unsettled splits between these users
+            # Get all splits where current user owes money to the recipient
+            splits_to_settle = ExpenseSplit.objects.filter(
+                user_id=db_user.id,
+                expense__paid_by_id=recipient_id,
+                is_paid=False
+            ).order_by('created_at')
+        
+        if not splits_to_settle.exists():
+            return Response({
+                "status": "error",
+                "message": "No splits found to settle"
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        # Record payments for each split until the amount is fully paid
+        remaining_to_pay = amount_to_settle
+        settled_splits = []
+        for split in splits_to_settle:
+            if remaining_to_pay <= 0:
+                break
+            split_amount = min(float(split.remaining_amount), remaining_to_pay)
+            
+            # Update the split
+            split.remaining_amount = float(split.remaining_amount) - split_amount
+            if split.remaining_amount <= 0:
+                split.is_paid = True
+            split.save()
+            
+            # Update the expense's remaining amount
+            expense = split.expense
+            expense.remaining_amount = float(expense.remaining_amount) - split_amount
+            expense.save()
+            
+            remaining_to_pay -= split_amount
+            settled_splits.append({
+                'id': split.id,
+                'expense_id': split.expense_id,
+                'amount_paid': split_amount,
+                'is_fully_paid': split.is_paid
+            })
+        
         return Response({
             "status": "success",
             "message": "Payment recorded successfully",
             "data": {
-                "payment": {
-                    "amount": amount,
-                    "date": datetime.now().isoformat()
-                },
-                "expense_split": {
-                    "id": split.id,
-                    "remaining_amount": split.remaining_amount,
-                    "is_paid": split.is_paid
-                },
-                "expense": {
-                    "id": expense.id,
-                    "remaining_amount": expense.remaining_amount
-                }
+                "amount_settled": amount_to_settle - remaining_to_pay,
+                "remaining_amount": remaining_to_pay if remaining_to_pay > 0 else 0,
+                "settled_splits": settled_splits
             }
         }, status=status.HTTP_200_OK)
             
@@ -1327,11 +1416,679 @@ def delete_expense(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-
-
-
 @api_view(['GET'])
-def get_settlement_summary(request, group_id=None):
-    """Get optimized settlement instructions for a group"""
-    # Calculate most efficient way to settle balances
-    # Return list of who pays whom and how much
+def get_financial_summary(request):
+    """
+    Get financial summary for dashboard.
+    
+    """
+    id_token = request.query_params.get('idToken')
+    if not id_token:
+        return Response({
+            'status': 'ERROR',
+            'message': 'ID token is required'
+        }, status=status.HTTP_400_BAD_REQUEST)
+        
+    cognito = CognitoService()
+    decoded = cognito.get_user_id(id_token)
+    
+    if decoded['status'] != 'SUCCESS':
+        return Response(decoded, status=status.HTTP_401_UNAUTHORIZED)
+    
+    user_id = decoded['user_sub']
+    
+    try:
+        # Find the database user by their Cognito ID
+        db_user = User.objects.get(cognito_id=user_id)
+        
+        # Now use the database primary key for queries
+        you_owe_splits = ExpenseSplit.objects.filter(
+            user_id=db_user.id,  # Use DB primary key
+            is_paid=False
+        ).exclude(expense__paid_by_id=db_user.id)
+        
+        they_owe_splits = ExpenseSplit.objects.filter(
+            expense__paid_by_id=db_user.id,  # Use DB primary key
+            is_paid=False
+        ).exclude(user_id=db_user.id)
+        
+        total_you_owe = sum(float(split.remaining_amount) for split in you_owe_splits)
+        total_they_owe = sum(float(split.remaining_amount) for split in they_owe_splits)
+        total_bill = total_you_owe + total_they_owe
+
+        
+        return Response({
+            'status': 'SUCCESS',
+            'message': 'Financial summary fetched successfully',
+            'summary': {
+                'youOwe': total_you_owe,
+                'theyOwe': total_they_owe,
+                'totalBill': total_bill,
+            }
+        }, status=status.HTTP_200_OK)
+        
+    except User.DoesNotExist:
+        return Response({
+            'status': 'ERROR',
+            'message': 'User not found'
+        }, status=status.HTTP_404_NOT_FOUND)
+
+@api_view(['POST'])
+def get_settlement_data(request):
+    """
+    Get data about money the user owes to others.
+    
+    Request Body:
+    {
+        "id_token": "your-id-token",
+    }
+    """
+    serializer = GetSettlementDataSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        decoded = cognito.get_user_id(serializer.validated_data['id_token'])
+        
+        if decoded['status'] != 'SUCCESS':
+            return Response(decoded, status=status.HTTP_401_UNAUTHORIZED)
+        
+        try:
+            # Find the database user by their Cognito ID
+            db_user = User.objects.get(cognito_id=decoded['user_sub'])
+            
+            # Initialize response data
+            response_data = {
+                'settlements': [],
+                'total_to_pay': 0,
+            }
+            
+            # Get unsettled expense splits
+            splits_query = ExpenseSplit.objects.filter(is_paid=False)
+            
+            # THIS IS THE KEY CHANGE: Get splits where USER OWES OTHERS
+            # (user is in the split but NOT the payer)
+            you_owe_splits = splits_query.filter(
+                user_id=db_user.id  # User is part of the split
+            ).exclude(expense__paid_by_id=db_user.id)  # But user is not the payer
+            
+
+            
+            # Filter by group if specified
+            # if group_id:
+            #     you_owe_splits = you_owe_splits.filter(expense__group_id=group_id)
+            
+            # Process the splits where user owes others
+            user_owes = {}
+            for split in you_owe_splits:
+                paid_by_id = split.expense.paid_by_id
+                if paid_by_id not in user_owes:
+                    try:
+                        paid_by_user = User.objects.get(id=paid_by_id)
+                        user_owes[paid_by_id] = {
+                            'id': paid_by_id,
+                            'name': paid_by_user.full_name,
+                            'avatar_url': paid_by_user.avatar_url,
+                            'amount': 0,
+                            'expenses': []
+                        }
+                    except User.DoesNotExist:
+                        continue
+                group = None
+                if split.expense.group_id:
+                    group = Group.objects.get(id=split.expense.group_id)
+
+                user_owes[paid_by_id]['amount'] += float(split.remaining_amount)
+                user_owes[paid_by_id]['expenses'].append({
+                    'id': split.expense.id,
+                    'description': split.expense.description,
+                    'amount': float(split.remaining_amount),
+                    'created_at': split.expense.created_at.isoformat(),
+                    'deadline': split.expense.deadline.isoformat() if split.expense.deadline else None,
+                    'group_id': split.expense.group_id,
+                    'group_name': group.name if split.expense.group_id else None,
+                })
+                
+            # Combine data and calculate totals
+            all_settlements = []
+            total_to_pay = 0
+            for user_id, data in user_owes.items():
+                total_to_pay += data['amount']
+                data['type'] = 'to_pay'  # Explicitly mark as "to pay"
+                all_settlements.append(data)
+
+            print(all_settlements)
+            
+            response_data = {
+                'status': 'SUCCESS',
+                'message': 'Settlement data fetched successfully',
+                'settlements': all_settlements,
+                'total_to_pay': total_to_pay
+            }
+            
+            return Response(response_data, status=status.HTTP_200_OK)
+            
+        except User.DoesNotExist:
+            return Response({
+                'status': 'ERROR',
+                'message': 'User not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+            
+        except Exception as e:
+            return Response({
+                'status': 'ERROR',
+                'message': f'Failed to fetch settlement data: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def reject_friend_request(request):
+    """
+    Reject a friend request on behalf of the authenticated user.
+    
+    Request Body Example:
+    {
+        "id_token": "user-id-token",
+        "request_id": "FriEndReqUestId" 
+    }
+    """
+    serializer = AcceptFriendRequestSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        id_req = cognito.get_user_id(id_token=serializer.validated_data['id_token'])
+        if id_req['status'] == 'SUCCESS':
+            cognito_id = id_req['user_sub']
+            db = DatabaseService()
+            result = db.reject_friend_request(cognito_id=cognito_id, request_id=serializer.validated_data['request_id'])
+            if result['status'] == 'SUCCESS':
+                return Response(result, status=status.HTTP_202_ACCEPTED)
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        return Response(id_req, status=status.HTTP_401_UNAUTHORIZED)
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def remove_friend(request):
+    """
+    Remove a friend connection between two users.
+    Also provide the option to block them.
+    
+    Request Body Example:
+    {
+        "id_token": "user-id-token",
+        "friendship_id": "friendship-id",
+        "block": false
+    }
+    """
+    serializer = RemoveFriendSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        id_result = cognito.get_user_id(serializer.validated_data['id_token'])
+        
+        if id_result['status'] == 'SUCCESS':
+            db = DatabaseService()
+            result = db.remove_friend(
+                cognito_id=id_result['user_sub'],
+                friendship_id=serializer.validated_data['friendship_id'],
+                block=serializer.validated_data.get('block')
+            )
+            
+            if result['status'] == 'SUCCESS':
+                return Response(result, status=status.HTTP_200_OK)
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+            
+        return Response(id_result, status=status.HTTP_401_UNAUTHORIZED)
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def get_group_info(request):
+    """
+    Get the group information along with members.
+    requires user passed int to be a member of the group.
+
+    Request Body:
+    {
+        "id_token" : "user-id-token",
+        "group_id" : "group-id",
+    }
+    """
+    serializer = GetGroupInfoSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        decoded = cognito.get_user_id(serializer.validated_data['id_token'])
+        if decoded['status'] == 'SUCCESS':
+            db = DatabaseService()
+            result = db.get_group_info(decoded['user_sub'], serializer.validated_data['group_id'])
+            if result['status'] == 'SUCCESS':
+                return Response(result, status=status.HTTP_200_OK)
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        return Response(decoded, status=status.HTTP_401_UNAUTHORIZED)
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def create_group(request):
+    """
+    Creates a group and assigns the user admin role.
+
+    Request Body:
+    {
+        "id_token": "your-id-token",
+        "group_name": "desired-name",
+        "group_description" (optional): "maxlength-2000 chars"
+    }
+    """
+    serializer = CreateGroupSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        decoded = cognito.get_user_id(serializer.validated_data['id_token'])
+        if decoded['status'] == 'SUCCESS':
+            db = DatabaseService()
+            result = db.create_group(
+                user_sub=decoded['user_sub'],
+                group_name=serializer.validated_data['group_name'],
+                group_description=serializer.validated_data.get('group_description')
+            )
+            if result['status'] == 'SUCCESS':
+                return Response(result, status=status.HTTP_200_OK)
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        return Response(decoded, status=status.HTTP_401_UNAUTHORIZED)
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def invite_to_group(request):
+    """
+    Invite a user to group.
+
+    Request Body:
+    {
+        "id_token": "your-id-token",
+        "invited_id": "id-of-invited-person",
+        "group_id": "group-id"
+    }
+    """
+    serializer = InvitePersonSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        decoded = cognito.get_user_id(serializer.validated_data['id_token'])
+        if decoded['status'] == 'SUCCESS':
+            db = DatabaseService()
+            result = db.invite_to_group(
+                user_sub=decoded['user_sub'],
+                invited_id=serializer.validated_data['invited_id'],
+                group_id=serializer.validated_data['group_id']
+            )
+            if result['status'] == 'SUCCESS':
+                return Response(result, status=status.HTTP_200_OK)
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        return Response(decoded, status=status.HTTP_401_UNAUTHORIZED)
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def leave_group(request):
+    """
+    Leave a group.
+    
+    Request Body:
+    {
+        "id_token": "your-id-token",
+        "group_id": "group-id"
+    }
+    """
+    serializer = LeaveGroupSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        decoded = cognito.get_user_id(serializer.validated_data['id_token'])
+        if decoded['status'] == 'SUCCESS':
+            db = DatabaseService()
+            result = db.leave_group(
+                user_sub=decoded['user_sub'],
+                group_id=serializer.validated_data['group_id']
+            )
+            if result['status'] == 'SUCCESS':
+                return Response(result, status=status.HTTP_200_OK)
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        return Response(decoded, status=status.HTTP_401_UNAUTHORIZED)
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def get_user_groups(request):
+    """
+    Get all the groups belonging to the user.
+
+    Request Body:
+    {
+        "id_token": "your-id-token"
+    }
+    """
+    serializer = GetUserGroupsSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        decoded = cognito.get_user_id(serializer.validated_data['id_token'])
+        if decoded['status'] == 'SUCCESS':
+            db = DatabaseService()
+            result = db.get_user_groups(decoded['user_sub'])
+            print(result)
+            if result['status'] == 'SUCCESS':
+                return Response(result, status=status.HTTP_200_OK)
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        return Response(decoded, status=status.HTTP_401_UNAUTHORIZED)
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def accept_group_invite(request):
+    """
+    Accept an invitation to join a group.
+
+    Request Body:
+    {
+        "id_token": "your-id-token",
+        "invite_id": "group-id"
+    }
+    """
+    serializer = AcceptGroupInviteSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        decoded = cognito.get_user_id(serializer.validated_data['id_token'])
+        if decoded['status'] == 'SUCCESS':
+            db = DatabaseService()
+            result = db.accept_group_invite(
+                user_sub=decoded['user_sub'],
+                invite_id=serializer.validated_data['invite_id']
+            )
+            if result['status'] == 'SUCCESS':
+                return Response(result, status=status.HTTP_200_OK)
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        return Response(decoded, status=status.HTTP_401_UNAUTHORIZED)
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def reject_group_invite(request):
+    """
+    reject a group invitation.
+
+    Request Body:
+    {
+        "id_token": "your-id-token",
+        "invite_id": "group-id"
+    }
+    """
+    serializer = AcceptGroupInviteSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        decoded = cognito.get_user_id(serializer.validated_data['id_token'])
+        if decoded['status'] == 'SUCCESS':
+            db = DatabaseService()
+            result = db.reject_group_invite(
+                user_sub=decoded['user_sub'],
+                invite_id=serializer.validated_data['invite_id']
+            )
+            if result['status'] == 'SUCCESS':
+                return Response(result, status=status.HTTP_200_OK)
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        return Response(decoded, status=status.HTTP_401_UNAUTHORIZED)
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def get_user_invites(request):
+    """
+    Get all the group invitations for a user.
+
+    Request Body:
+    {
+        "id_token": "your-id-token"
+    }
+    """
+    serializer = GetUserInvitesSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        decoded = cognito.get_user_id(serializer.validated_data['id_token'])
+        if decoded['status'] == 'SUCCESS':
+            db = DatabaseService()
+            result = db.get_user_invites(decoded['user_sub'])
+            if result['status'] == 'SUCCESS':
+                return Response(result, status=status.HTTP_200_OK)
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        return Response(decoded, status=status.HTTP_401_UNAUTHORIZED)
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def cancel_group_invite(request):
+    """
+    Take back the invite sent to a user.
+
+    Request Body:
+    {
+        "id_token": "your-id-token",
+        "invite_id": "group-id"
+    }
+    """
+    serializer = AcceptGroupInviteSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        decoded = cognito.get_user_id(serializer.validated_data['id_token'])
+        if decoded['status'] == 'SUCCESS':
+            db = DatabaseService()
+            result = db.cancel_group_invite(
+                user_sub=decoded['user_sub'],
+                invite_id=serializer.validated_data['invite_id']
+            )
+            if result['status'] == 'SUCCESS':
+                return Response(result, status=status.HTTP_200_OK)
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        return Response(decoded, status=status.HTTP_401_UNAUTHORIZED)
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def send_group_message(request):
+    """
+    Send a message to a group.
+
+    Request Body:
+    {
+        "id_token": "your-id-token",
+        "group_id": "group-id",
+        "content": "Hello everyone!",
+        "message_type": "TEXT",
+        "file_url" (optional): "https://example.com/file.jpg"
+    }
+    """
+    serializer = SendGroupMessageSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        decoded = cognito.get_user_id(serializer.validated_data['id_token'])
+        if decoded['status'] == 'SUCCESS':
+            db = DatabaseService()
+            result = db.send_group_message(
+                sender_id=decoded['user_sub'],
+                group_id=serializer.validated_data['group_id'],
+                content=serializer.validated_data['content'],
+                message_type=serializer.validated_data['message_type'],
+                file_url=serializer.validated_data.get('file_url')
+            )
+            if result['status'] == 'SUCCESS':
+                return Response(result, status=status.HTTP_200_OK)
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        return Response(decoded, status=status.HTTP_401_UNAUTHORIZED)
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def invite_search(request):
+    """
+    Search users to invite to the group.
+
+    Request Body:
+    {
+        "id_token" : "",
+        "group_id" : "",
+        "search_term" : ""
+    }
+    """
+    serializer = InviteSearchListSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        decoded = cognito.get_user_id(serializer.validated_data['id_token'])
+        if decoded['status'] == 'SUCCESS':
+            db = DatabaseService()
+            result = db.search_invite(
+                user_sub=decoded['user_sub'],
+                group_id=serializer.validated_data['group_id'],
+                search_term=serializer.validated_data['search_term']
+            )
+            if result['status'] == 'SUCCESS':
+                return Response(result, status=status.HTTP_200_OK)
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        return Response(decoded, status=status.HTTP_401_UNAUTHORIZED)
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def delete_group(request):
+    """
+    Delete a group.
+
+    Request Body:
+    {
+        "id_token": "your-id-token",
+        "group_id": "group-id"
+    }
+    """
+    serializer = DeleteGroupSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        decoded = cognito.get_user_id(serializer.validated_data['id_token'])
+        if decoded['status'] == 'SUCCESS':
+            db = DatabaseService()
+            result = db.delete_group(
+                user_sub=decoded['user_sub'],
+                group_id=serializer.validated_data['group_id']
+            )
+            if result['status'] == 'SUCCESS':
+                return Response(result, status=status.HTTP_200_OK)
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        return Response(decoded, status=status.HTTP_401_UNAUTHORIZED)
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def edit_group(request):
+    """
+    Edit a group.
+
+    Request Body:
+    {
+        "id_token": "your-id-token",
+        "group_id": "group-id",
+        "group_name": "new-group-name",
+        "group_description" (optional): "maxlength-2000 chars"
+    }
+    """
+    serializer = EditGroupSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        decoded = cognito.get_user_id(serializer.validated_data['id_token'])
+        if decoded['status'] == 'SUCCESS':
+            db = DatabaseService()
+            result = db.edit_group(
+                user_sub=decoded['user_sub'],
+                group_id=serializer.validated_data['group_id'],
+                group_name=serializer.validated_data.get('group_name'),
+                group_description=serializer.validated_data.get('group_description')
+            )
+            if result['status'] == 'SUCCESS':
+                return Response(result, status=status.HTTP_200_OK)
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        return Response(decoded, status=status.HTTP_401_UNAUTHORIZED)
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def remove_from_group(request):
+    """
+    Remove a user from a group.
+
+    Request Body:
+    {
+        "id_token": "your-id-token",
+        "group_id": "group-id",
+        "user_id": "user-id"
+    }
+    """
+    serializer = RemoveFromGroupSerializer(data=request.data)
+    if serializer.is_valid():
+        cognito = CognitoService()
+        decoded = cognito.get_user_id(serializer.validated_data['id_token'])
+        if decoded['status'] == 'SUCCESS':
+            db = DatabaseService()
+            result = db.remove_from_group(
+                user_sub=decoded['user_sub'],
+                group_id=serializer.validated_data['group_id'],
+                user_id=serializer.validated_data['user_id']
+            )
+            if result['status'] == 'SUCCESS':
+                return Response(result, status=status.HTTP_200_OK)
+            return Response(result, status=status.HTTP_400_BAD_REQUEST)
+        return Response(decoded, status=status.HTTP_401_UNAUTHORIZED)
+    return Response({
+        'status': 'error',
+        'message': 'Invalid input',
+        'errors': serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)

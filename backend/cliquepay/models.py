@@ -70,7 +70,7 @@ class Friendship(models.Model):
         ]
 
 class Group(models.Model):
-    id = models.CharField(max_length=128, primary_key=True, unique=True)
+    id = models.CharField(max_length=128, primary_key=True, default=uuid.uuid4, unique=True)
     name = models.CharField(max_length=255)
     created_by = models.ForeignKey(
         User,
@@ -79,7 +79,8 @@ class Group(models.Model):
         related_name='created_groups'
     )
     created_at = models.DateTimeField(auto_now_add=True)
-
+    photo_url = models.URLField(blank=True, null=True)
+    description = models.TextField(blank=True)
     class Meta:
         db_table = 'groups'
 
@@ -99,8 +100,12 @@ class GroupMember(models.Model):
         on_delete=models.CASCADE,
         related_name='group_memberships'
     )
-    created_at = models.DateTimeField(auto_now_add=True)
-
+    joined_at = models.DateTimeField(auto_now_add=True)
+    ROLE_CHOICES = [
+        ('admin', 'Admin'),
+        ('member', 'Member')
+    ]
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='member')
     class Meta:
         db_table = 'group_members'
         constraints = [
@@ -111,6 +116,29 @@ class GroupMember(models.Model):
 
     def __str__(self):
         return f"{self.user.full_name} in {self.group.name}"
+
+class GroupInvitation(models.Model):
+    id = models.CharField(max_length=128, primary_key=True, default=uuid.uuid4, unique=True)
+    group = models.ForeignKey(
+        Group,
+        on_delete=models.CASCADE,
+        related_name='invitations'
+    )
+    invited_user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='group_invitations'
+    )
+    invited_by = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='sent_group_invitations'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    accepted_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'group_invitations'
 
 class ChatMessage(models.Model):
     MESSAGE_TYPES = [
@@ -143,12 +171,22 @@ class DirectMessage(ChatMessage):
 class GroupMessage(ChatMessage):
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_group_messages')
     group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='messages')
-    read_by = models.ManyToManyField(User, related_name='read_group_messages', blank=True)
+    # read_by = models.ManyToManyField(User, related_name='read_group_messages', blank=True)
     
     class Meta:
         db_table = 'group_messages'
         ordering = ['created_at']
-    
+
+class GroupReadReceipt(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='read_receipts')
+    last_read_message = models.ForeignKey(GroupMessage, on_delete=models.CASCADE, related_name='read_receipts')
+    group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='read_receipts')
+
+    class Meta:
+        db_table = 'group_read_receipts'
+        unique_together = ('user', 'group')
+        ordering = ['-last_read_message__created_at']
+
 class Expense(models.Model):
     """
     Represents an expense paid by a user
@@ -179,10 +217,8 @@ class Expense(models.Model):
     remaining_amount = models.DecimalField(max_digits=10, decimal_places=2)
     description = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    deadline = models.DateTimeField(blank=True, null=True) # Optional deadline for payment
+    deadline = models.DateTimeField(blank=True, null=True)
     receipt_url = models.URLField(blank=True, null=True)
-
-    
 
     class Meta:
         db_table = 'expenses'

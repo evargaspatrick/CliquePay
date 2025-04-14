@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Mail, AlertCircle, CheckCircle, Eye, EyeOff, Lock } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { PageLayout, Header, Section } from "../components/layout/PageLayout";
-import { SecurityUtils } from '../utils/security';
-
+import { SecurityUtils } from '../utils/Security';
 export default function ForgotPassword() {
     const navigate = useNavigate();
     const [email, setEmail] = useState('');

@@ -95,10 +95,6 @@ class AcceptFriendRequestSerializer(serializers.Serializer):
     id_token = serializers.CharField(required=True)
     request_id = serializers.CharField(max_length=255, required=True)
 
-class RemoveFriendSerializer(serializers.Serializer):
-    id_token = serializers.CharField(required=True)
-    friend_id = serializers.CharField(required=True)
-
 class BlockUserSerializer(serializers.Serializer):
     id_token = serializers.CharField(required=True)
     blocked_id = serializers.CharField(required=True)
@@ -150,6 +146,9 @@ class GetDirectMessagesSerializer(serializers.Serializer):
             'blank': 'ID token cannot be blank'
         }
     )
+    page = serializers.IntegerField(required=False, default=1, min_value=1)
+    page_size = serializers.IntegerField(required=False, default=50, min_value=25, max_value=100)
+
 
 class GetGroupMessagesSerializer(serializers.Serializer):
     id_token = serializers.CharField(
@@ -160,6 +159,8 @@ class GetGroupMessagesSerializer(serializers.Serializer):
         }
     )
     group_id = serializers.CharField(required=True)
+    page = serializers.IntegerField(required=False, default=1, min_value=1)
+    page_size = serializers.IntegerField(required=False, default=50, min_value=25, max_value=100)
 
 class SearchUserSerializer(serializers.Serializer):
     id_token = serializers.CharField(required=True)
@@ -258,71 +259,84 @@ class ExpenseCreateSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         expense_id = str(uuid.uuid4())
-
-
+        
         group_id = validated_data.pop('group_id', None).id if 'group_id' in validated_data else None
         friend_id = validated_data.pop('friend_id', None).id if 'friend_id' in validated_data else None
         paid_by_id = validated_data.pop('paid_by').id if 'paid_by' in validated_data else None
-
-        
+        remaining_amount = 0
+        # Calculate the remaining amount based on whether it's a group or friend expense
+        if group_id:
+            # For group expenses, we need to find how many members are in the group
+            group_members = GroupMember.objects.filter(group_id=group_id)
+            member_count = group_members.count()
+            
+            if member_count > 0:
+                # The person who paid is owed by everyone else
+                # So remaining amount is total minus their own share
+                payer_share = validated_data['total_amount'] / member_count
+                remaining_amount = validated_data['total_amount'] - payer_share
+            else:
+                # Edge case - if no members (shouldn't happen), set remaining to 0
+                remaining_amount = 0
+        elif friend_id:
+            # For friend expenses, it's a simple 50/50 split
+            remaining_amount = validated_data['total_amount'] / 2
+        else:
+            # Edge case - no group or friend (shouldn't happen)
+            remaining_amount = 0
+        # print(remaining_amount)
         expense = Expense.objects.create(
             id=expense_id,
             friend_id=friend_id,
             group_id=group_id,
             paid_by_id=paid_by_id,
-            remaining_amount=validated_data['total_amount'],
+            remaining_amount=remaining_amount,
             **validated_data
         )
-
+        
         # Splitting the expense amount among group members or a friend
         if group_id:
             group_members = GroupMember.objects.filter(group_id=group_id)
             member_count = group_members.count()
-
+            
             if member_count > 0:
                 split_amount = validated_data['total_amount'] / member_count
                 
                 for member in group_members:
-                    if member.user_id != paid_by_id:
-                        ExpenseSplit.objects.create(
-                            id=str(uuid.uuid4()),
-                            expense_id=expense_id,
-                            user_id=member.user_id,
-                            total_amount=split_amount ,
-                            remaining_amount=split_amount
-                        )
-                    else: 
-                        ExpenseSplit.objects.create(
-                            id=str(uuid.uuid4()),
-                            expense_id=expense_id,
-                            user_id=member.user_id,
-                            total_amount=split_amount,
-                            remaining_amount=split_amount,
-                            is_paid=True
-                        )
-        
-        if friend_id:
-            if friend_id != paid_by_id:
-                ExpenseSplit.objects.create(
-                    id=str(uuid.uuid4()),
-                    expense_id=expense_id,
-                    user_id=friend_id,
-                    total_amount=validated_data['total_amount'] / 2,
-                    remaining_amount=validated_data['total_amount'] / 2
-                )
-            else:
-                ExpenseSplit.objects.create(
-                    id=str(uuid.uuid4()),
-                    expense_id=expense_id,
-                    user_id=member.user_id,
-                    total_amount=split_amount,
-                    remaining_amount=split_amount,
-                    is_paid=True
-                )
-
-        
+                    # Create a split for each member
+                    # The payer's split is marked as paid, others as unpaid
+                    is_payer = str(member.user_id) == str(paid_by_id)
+                    
+                    ExpenseSplit.objects.create(
+                        id=str(uuid.uuid4()),
+                        expense_id=expense_id,
+                        user_id=member.user_id,
+                        total_amount=split_amount,
+                        remaining_amount=0 if is_payer else split_amount,
+                        is_paid=is_payer
+                    )
+        elif friend_id:
+            # Create splits for a friend expense (just two people)
+            # Split for the payer
+            ExpenseSplit.objects.create(
+                id=str(uuid.uuid4()),
+                expense_id=expense_id,
+                user_id=paid_by_id,
+                total_amount=validated_data['total_amount'] / 2,
+                remaining_amount=0,
+                is_paid=True
+            )
+            
+            # Split for the friend
+            ExpenseSplit.objects.create(
+                id=str(uuid.uuid4()),
+                expense_id=expense_id,
+                user_id=friend_id,
+                total_amount=validated_data['total_amount'] / 2,
+                remaining_amount=validated_data['total_amount'] / 2,
+                is_paid=False
+            )
         expense.save()
-
         return expense
     
 class ExpenseUpdateSerializer(serializers.ModelSerializer):
@@ -341,12 +355,89 @@ class ExpenseGetSerializer(serializers.ModelSerializer):
                  'total_amount', 'remaining_amount', 'description', 
                  'created_at', 'deadline']
 
-class ExpensePaymentSerializer(serializers.Serializer):
-    expense_id = serializers.CharField(required=True)
-    amount = serializers.DecimalField(max_digits=10, decimal_places=2, required=True)
+class SettlementPaymentSerializer(serializers.Serializer):
+    id_token = serializers.CharField(required=True)
+    user_id = serializers.CharField(required=False)
+    group_id = serializers.CharField(required=False)
+    amount = serializers.DecimalField(max_digits=10, decimal_places=2, required=False)
+    settle_all = serializers.BooleanField(required=False)
+    description = serializers.CharField(required=False)
+
+    def validate(self, data):
+        if 'user_id' not in data and 'group_id' not in data:
+            raise serializers.ValidationError("Either user_id or group_id must be provided")
+        return data
+    
+class GetSettlementDataSerializer(serializers.Serializer):
+    id_token = serializers.CharField(required=True)
+    friend_id = serializers.CharField(required=False, allow_null=True)
+    group_id = serializers.CharField(required=False, allow_null=True)
+
+class RemoveFriendSerializer(serializers.Serializer):
+    id_token = serializers.CharField(required=True)
+    friendship_id = serializers.CharField(required=True)
+    block = serializers.BooleanField(required=False, default=False)
+
+class GetGroupInfoSerializer(serializers.Serializer):
+    id_token = serializers.CharField(required=True)
+    group_id = serializers.CharField(required=True)
+
+class CreateGroupSerializer(serializers.Serializer):
+    id_token = serializers.CharField(required=True)
+    group_name = serializers.CharField(required=True, max_length=255)
+    group_description = serializers.CharField(required=False, max_length=2000)
+
+class InvitePersonSerializer(serializers.Serializer):
+    id_token = serializers.CharField(required=True)
+    invited_id = serializers.CharField(required=True)
+    group_id = serializers.CharField(required=True)
+
+class LeaveGroupSerializer(serializers.Serializer):
+    id_token = serializers.CharField(required=True)
+    group_id = serializers.CharField(required=True)
+
+class GetUserGroupsSerializer(serializers.Serializer):
     id_token = serializers.CharField(required=True)
 
-    def validate_amount(self, value):
-        if value <= 0:
-            raise serializers.ValidationError('Amount must be greater than zero')
-        return value
+#same one used for cancel, accept and reject
+class AcceptGroupInviteSerializer(serializers.Serializer):
+    id_token = serializers.CharField(required=True)
+    invite_id = serializers.CharField(required=True)
+
+class GetUserInvitesSerializer(serializers.Serializer):
+    id_token = serializers.CharField(required=True)
+
+class SendGroupMessageSerializer(serializers.Serializer):
+    id_token = serializers.CharField(required=True)
+    group_id = serializers.CharField(required=True)
+    content = serializers.CharField(required=True)
+    MESSAGE_TYPES = [
+        ('TEXT', 'Text'),
+        ('FILE', 'File'),
+        ('IMAGE', 'Image'),
+    ]
+    message_type = serializers.ChoiceField(
+        choices=MESSAGE_TYPES,
+        default='TEXT',
+    )
+    file_url = serializers.URLField(required=False)
+
+class InviteSearchListSerializer(serializers.Serializer):
+    id_token = serializers.CharField(required=True)
+    group_id = serializers.CharField(required=True)
+    search_term = serializers.CharField(required=True)
+
+class DeleteGroupSerializer(serializers.Serializer):
+    id_token = serializers.CharField(required=True)
+    group_id = serializers.CharField(required=True)
+
+class EditGroupSerializer(serializers.Serializer):
+    id_token = serializers.CharField(required=True)
+    group_id = serializers.CharField(required=True)
+    group_name = serializers.CharField(required=False, max_length=255)
+    group_description = serializers.CharField(required=False, max_length=2000)
+
+class RemoveFromGroupSerializer(serializers.Serializer):
+    id_token = serializers.CharField(required=True)
+    group_id = serializers.CharField(required=True)
+    user_id = serializers.CharField(required=True)

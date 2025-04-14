@@ -2,7 +2,6 @@ import { z } from 'zod';
 import DOMPurify from 'dompurify';
 import Cookies from 'js-cookie';
 import { renewTokens } from './RenewTokens';
-// Define Zod schemas
 const passwordSchema = z.string()
   .min(8, "Password must be at least 8 characters long")
   .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
@@ -33,7 +32,7 @@ export const SecurityUtils = {
     try {
       emailSchema.parse(email);
       return true;
-    } catch {  // Remove error parameter
+    } catch {
       return false;
     }
   },

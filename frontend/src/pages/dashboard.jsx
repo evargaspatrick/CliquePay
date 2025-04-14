@@ -1,22 +1,21 @@
-"use client"
-import { AlertTriangle, Bell, CreditCard, CircleDollarSign, Home, Users, BarChart3, MessagesSquare, MessageSquareDot, UsersRound } from "lucide-react";
+import { AlertTriangle, Bell, CreditCard, CircleDollarSign, DollarSign, Home, Users, BarChart3, MessagesSquare, MessageSquareDot, UsersRound } from "lucide-react";
 import { useState, useEffect } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import PropTypes from "prop-types"
 import { renewTokens } from '../utils/RenewTokens';
 import Cookies from 'js-cookie';
 import { ProfileDropdown } from "../components/profile/ProfileDropdown"
-// Import UI components
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
 import ProfilePhotoModal from "../components/ProfilePhotoModal"
-// Import layout components
 import { PageLayout, Section, Header, Footer } from "../components/layout/PageLayout"
 import ChatsContainer from "../components/chats/ChatsContainer";
 import { getTotalUnreadCount } from "../components/chats/ChatNotifications";
-
+import SettleUpModal from "./settleup";
+import { SecurityUtils } from "../utils/Security";
+import { PaymentModal } from "./newpayment";
 // Create a simple Logo component if it doesn't exist
 const Logo = () => (
   <div className="flex items-center gap-2">
@@ -27,72 +26,7 @@ const Logo = () => (
   </div>
 )
 
-// Mock data and component definitions remain unchanged
-const MOCK_BILL_SUMMARY = {
-  totalBill: 1250.5,
-  youOwe: 485.75,
-  theyOwe: 764.75,
-}
-
-const MOCK_RECENT_ACTIVITY = [
-  {
-    id: 1,
-    description: "Dinner at Olive Garden with Alice",
-    amount: 84.5,
-    date: "2024-02-20",
-  },
-  {
-    id: 2,
-    description: "Movie tickets with Bob",
-    amount: 32.0,
-    date: "2024-02-19",
-  },
-  {
-    id: 3,
-    description: "Grocery shopping with Charlie",
-    amount: 156.25,
-    date: "2024-02-18",
-  },
-  {
-    id: 4,
-    description: "Utilities split with Dana",
-    amount: 213.0,
-    date: "2024-02-17",
-  },
-]
-
-const MOCK_FRIENDS = [
-  {
-    name: "Alice Johnson",
-    imgSrc: "/placeholder.svg?height=100&width=100",
-    owes: 125.5,
-    isOwed: false,
-  },
-  {
-    name: "Bob Smith",
-    imgSrc: "/placeholder.svg?height=100&width=100",
-    owes: 0,
-    isOwed: true,
-    amount: 45.75,
-  },
-  {
-    name: "Charlie Brown",
-    imgSrc: "/placeholder.svg?height=100&width=100",
-    owes: 89.25,
-    isOwed: false,
-  },
-  {
-    name: "Dana White",
-    imgSrc: "/placeholder.svg?height=100&width=100",
-    owes: 0,
-    isOwed: true,
-    amount: 178.5,
-  },
-]
-
-// Friend Card Component remains unchanged
 function FriendCard({ name, imgSrc, owes, isOwed, amount }) {
-
   return (
     <Card className="bg-zinc-800 border-zinc-700 overflow-hidden">
       <CardContent className="p-0">
@@ -144,6 +78,7 @@ export default function Dashboard() {
     youOwe: 0,
     theyOwe: 0,
   })
+  const [showPaymentModalOpen, setShowPaymentModalOpen] = useState(false);
   const [recentActivity, setRecentActivity] = useState([])
   const [friends, setFriends] = useState([])
   const [showLogoutModal, setShowLogoutModal] = useState(false)
@@ -151,6 +86,9 @@ export default function Dashboard() {
   const [error, setError] = useState("")
   const [groupChats, setGroupChats] = useState([]);
   const [directChats, setDirectChats] = useState([]);
+  const [showSettleUpModal, setShowSettleUpModal] = useState(false);
+  const [settleUpDetails, setSettleUpDetails] = useState({ amount: 0, recipient: '' });
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   
   // API URL from environment variable or fallback
   const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api'
@@ -161,28 +99,55 @@ export default function Dashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 500))
-
-      // Use mock data instead of API call
-      setBillSummary(MOCK_BILL_SUMMARY)
-      setRecentActivity(MOCK_RECENT_ACTIVITY)
-      setFriends(MOCK_FRIENDS)
+      setError("");
+      
+      // Get the user's ID token
+      const idToken = await SecurityUtils.getCookie('idToken');
+      if (!idToken) {
+        throw new Error("Authentication required");
+      }
+      
+      // Fetch expenses
+      const response = await fetch(`${API_URL}/get-financial-summary/?idToken=${encodeURIComponent(idToken)}`);
+      const data = await response.json();
+      if (data.status === 'SUCCESS') {
+        // Update bill summary directly from the API
+        setBillSummary(data.summary);
+        // setRecentActivity(recentExpenses);
+      } else {
+        setError("Failed to load expenses data");
+      }
     } catch (error) {
-      console.error("Failed to fetch dashboard data:", error)
+      console.error("Failed to fetch dashboard data:", error);
+      setError("Failed to load dashboard data. Please try again.");
     }
+  };
+
+  const handleSettleUp = (amount, recipient) => {
+    setSettleUpDetails({ amount, recipient });
+    setShowSettleUpModal(true);
+  };
+
+  const handlePaymentModalOpen = () => {
+    setShowPaymentModalOpen(true);
   }
 
-  const handleSettleUp = async () => {
+  const confirmSettleUp = async () => {
+    setIsProcessingPayment(true);
     try {
       // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 500))
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Success handling
+      setShowSettleUpModal(false);
       // Refresh dashboard data after settling up
-      fetchDashboardData()
+      fetchDashboardData();
     } catch (error) {
-      console.error("Failed to settle up:", error)
+      console.error("Failed to settle up:", error);
+      // Add error handling here if needed
+    } finally {
+      setIsProcessingPayment(false);
     }
-  }
+  };
 
   const handleRemind = async (activityId) => {
     try {
@@ -194,6 +159,10 @@ export default function Dashboard() {
       console.error("Failed to send reminder:", error)
     }
   }
+
+  const refreshDashboardData = () => {
+    fetchDashboardData();
+  };
 
   const handleOpenGroupChat = (chatId) => {
     // Mark as read
@@ -290,7 +259,29 @@ export default function Dashboard() {
   return (
     <PageLayout>
       {showLogoutModal && <LogoutConfirmationModal />}
-        <Header className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-sm py-4 relative z-[100]">
+      {showSettleUpModal && (
+        <SettleUpModal
+          amount={settleUpDetails.amount}
+          recipient={settleUpDetails.recipient}
+          onClose={() => setShowSettleUpModal(false)}
+          onConfirm={confirmSettleUp}
+          onSuccess={refreshDashboardData}
+          setIsProcessing={setIsProcessingPayment}
+          isProcessing={isProcessingPayment}
+        />
+      )}
+
+      {
+        showPaymentModalOpen && (
+          <PaymentModal
+          isOpen={showPaymentModalOpen}
+          onClose={() => setShowPaymentModalOpen(false)}
+          onSuccess={refreshDashboardData}  // Add this line
+        />
+        )
+      }
+      
+      <Header className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-sm py-4 relative z-[100]">
           <Logo />
           <div className="flex items-center gap-4 relative z-[100]">
             <Button 
@@ -312,6 +303,7 @@ export default function Dashboard() {
               variant="ghost" 
               className="hover:bg-zinc-800 relative group"
               title="New Payment"
+              onClick={handlePaymentModalOpen}
             >
               <CircleDollarSign className="h-auto w-auto text-white" />
             </Button>
@@ -364,7 +356,6 @@ export default function Dashboard() {
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-8">
-            {/* Bill Summary Section */}
             <div>
               <h2 className="text-2xl font-bold mb-4">Bill Summary</h2>
               <Card className="bg-zinc-900 border-zinc-800">
@@ -374,7 +365,7 @@ export default function Dashboard() {
                       <p className="text-gray-400 mb-1">Total Bill</p>
                       <p className="text-3xl font-bold text-white">${billSummary.totalBill.toFixed(2)}</p>
                     </div>
-                    <Button onClick={handleSettleUp} className="bg-purple-600 hover:bg-purple-700">
+                    <Button onClick={() => handleSettleUp(billSummary.youOwe, "friends")} className="bg-purple-600 hover:bg-purple-700">
                       Settle Up
                     </Button>
                   </div>
@@ -398,7 +389,6 @@ export default function Dashboard() {
               </Card>
             </div>
 
-            {/* Recent Activity Section */}
             <div>
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold">Recent Activity</h2>
@@ -433,7 +423,6 @@ export default function Dashboard() {
               </Card>
             </div>
 
-            {/* Friends Section */}
             <div>
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold">Your Friends</h2>
@@ -492,7 +481,6 @@ export default function Dashboard() {
         </Tabs>
       </Section>
 
-      {/* Footer */}
       <Footer className="border-t border-zinc-800 py-6">
         <div className="flex flex-col md:flex-row justify-between items-center">
           <p className="text-sm text-gray-400">© {new Date().getFullYear()} CliquePay. All rights reserved.</p>
