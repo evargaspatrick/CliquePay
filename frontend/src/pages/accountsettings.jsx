@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import PropTypes from 'prop-types';
-import { ArrowLeft, Bell, CreditCard, KeyRound, Lock, Save, User } from "lucide-react";
+import { ArrowLeft, CreditCard, KeyRound, Lock, Save, User, X, Check, Bell } from "lucide-react";
 import { useNavigate } from 'react-router-dom';
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
@@ -8,6 +8,7 @@ import { PageLayout, Header, Section, Footer } from "../components/layout/PageLa
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Switch } from "../components/ui/switch";
+import cliquepayLogo from "../assets/images/CliquePay.jpeg";
 
 export default function AccountSettings() {
   const navigate = useNavigate();
@@ -18,12 +19,190 @@ export default function AccountSettings() {
     avatar: null
   });
   const [activeTab, setActiveTab] = useState("profile");
+  const [showAddPaymentModal, setShowAddPaymentModal] = useState(false);
+  const [paymentMethods, setPaymentMethods] = useState([
+    {
+      id: '1',
+      type: 'VISA',
+      lastFour: '4242',
+      expiryDate: '09/25',
+      isDefault: true,
+      bgColor: 'bg-blue-500'
+    },
+    {
+      id: '2',
+      type: 'MC',
+      lastFour: '8888',
+      expiryDate: '05/24',
+      isDefault: false,
+      bgColor: 'bg-gray-600'
+    }
+  ]);
+  const [newPaymentMethod, setNewPaymentMethod] = useState({
+    cardNumber: '',
+    expiryDate: '',
+    cvv: '',
+    cardholderName: ''
+  });
 
   const handleSave = (e) => {
     e.preventDefault();
-    // Save user data logic here
     alert('Changes saved successfully!');
   };
+
+  // Payment method functions
+  const handleRemovePaymentMethod = (id) => {
+    setPaymentMethods(paymentMethods.filter(method => method.id !== id));
+  };
+
+  const handleSetDefaultPaymentMethod = (id) => {
+    setPaymentMethods(paymentMethods.map(method => ({
+      ...method,
+      isDefault: method.id === id
+    })));
+  };
+
+  const handleAddPaymentMethod = () => {
+    // Simple validation
+    if (newPaymentMethod.cardNumber.length < 15 || 
+        !newPaymentMethod.expiryDate || 
+        !newPaymentMethod.cardholderName) {
+      alert('Please complete all required fields');
+      return;
+    }
+    
+    // Determine card type based on first digit
+    const firstDigit = newPaymentMethod.cardNumber.charAt(0);
+    let type = 'OTHER';
+    let bgColor = 'bg-gray-600';
+    
+    if (firstDigit === '4') {
+      type = 'VISA';
+      bgColor = 'bg-blue-500';
+    } else if (firstDigit === '5') {
+      type = 'MC';
+      bgColor = 'bg-gray-600';
+    } else if (firstDigit === '3') {
+      type = 'AMEX';
+      bgColor = 'bg-green-600';
+    }
+    
+    // Create new payment method
+    const newMethod = {
+      id: Date.now().toString(),
+      type,
+      lastFour: newPaymentMethod.cardNumber.slice(-4),
+      expiryDate: newPaymentMethod.expiryDate,
+      isDefault: paymentMethods.length === 0, // Make default if first card
+      bgColor
+    };
+    
+    setPaymentMethods([...paymentMethods, newMethod]);
+    setShowAddPaymentModal(false);
+    setNewPaymentMethod({
+      cardNumber: '',
+      expiryDate: '',
+      cvv: '',
+      cardholderName: ''
+    });
+  };
+
+  // Add Payment Modal Component
+  const AddPaymentModal = () => {
+    if (!showAddPaymentModal) return null;
+    
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-6 max-w-md w-full mx-4">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-bold">Add Payment Method</h3>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-8 w-8 p-0 rounded-full"
+              onClick={() => setShowAddPaymentModal(false)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="cardholderName">Cardholder Name</Label>
+              <Input
+                id="cardholderName"
+                value={newPaymentMethod.cardholderName}
+                onChange={(e) => setNewPaymentMethod({...newPaymentMethod, cardholderName: e.target.value})}
+                className="bg-zinc-800 border-zinc-700 mt-1"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="cardNumber">Card Number</Label>
+              <Input
+                id="cardNumber"
+                value={newPaymentMethod.cardNumber}
+                onChange={(e) => setNewPaymentMethod({...newPaymentMethod, cardNumber: e.target.value.replace(/\D/g, '')})}
+                maxLength={16}
+                className="bg-zinc-800 border-zinc-700 mt-1"
+                placeholder="1234 5678 9012 3456"
+              />
+            </div>
+            
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <Label htmlFor="expiryDate">Expiry Date</Label>
+                <Input
+                  id="expiryDate"
+                  placeholder="MM/YY"
+                  value={newPaymentMethod.expiryDate}
+                  onChange={(e) => {
+                    let value = e.target.value.replace(/[^\d/]/g, '');
+                    if (value.length > 2 && !value.includes('/')) {
+                      value = value.slice(0, 2) + '/' + value.slice(2);
+                    }
+                    setNewPaymentMethod({...newPaymentMethod, expiryDate: value});
+                  }}
+                  maxLength={5}
+                  className="bg-zinc-800 border-zinc-700 mt-1"
+                />
+              </div>
+              
+              <div className="flex-1">
+                <Label htmlFor="cvv">CVV</Label>
+                <Input
+                  id="cvv"
+                  type="password"
+                  value={newPaymentMethod.cvv}
+                  onChange={(e) => setNewPaymentMethod({...newPaymentMethod, cvv: e.target.value.replace(/\D/g, '')})}
+                  maxLength={3}
+                  className="bg-zinc-800 border-zinc-700 mt-1"
+                />
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex gap-4 mt-6">
+            <Button 
+              variant="outline" 
+              className="flex-1"
+              onClick={() => setShowAddPaymentModal(false)}
+            >
+              Cancel
+            </Button>
+            
+            <Button 
+              className="flex-1 bg-purple-600 hover:bg-purple-700"
+              onClick={handleAddPaymentMethod}
+            >
+              Add Card
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const TabPanel = ({ id, active, children }) => {
     if (id !== activeTab) return null;
     return <div>{children}</div>;
@@ -37,28 +216,33 @@ export default function AccountSettings() {
   
   return (
     <PageLayout>
-      <Header>
+      <Header className="border-b border-zinc-800 pb-4">
         <div className="flex items-center gap-2">
-          <div className="bg-purple-600 w-8 h-8 rounded-md flex items-center justify-center">
-            <CreditCard className="w-5 h-5" />
+          <div className="bg-purple-600 w-8 h-8 rounded-md flex items-center justify-center overflow-hidden">
+            <img 
+              src={cliquepayLogo} 
+              alt="CliquePay Logo" 
+              className="w-full h-full object-cover"
+            />
           </div>
           <span className="font-bold text-xl">CliquePay</span>
         </div>
-        <Button 
-          variant="ghost" 
-          className="!text-white"
-          onClick={() => navigate('/dashboard')}
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
-        </Button>
+        <div className="flex items-center gap-4">
+          <Button 
+            variant="ghost" 
+            className="!text-white"
+            onClick={() => navigate('/dashboard')}
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
+          </Button>
+        </div>
       </Header>
 
-      <Section className="py-12">
+      <Section className="pt-6 pb-12">
         <div className="max-w-5xl mx-auto">
-          <h1 className="text-3xl font-bold mb-8">Account Settings</h1>
+          <h1 className="text-2xl font-bold mb-6">Account Settings</h1>
           
           <div className="flex flex-col md:flex-row gap-6">
-            {/* Vertical Tab List */}
             <div className="md:w-64 shrink-0">
               <div className="bg-zinc-800 rounded-lg border border-zinc-700 overflow-hidden">
                 <button 
@@ -92,7 +276,6 @@ export default function AccountSettings() {
               </div>
             </div>
             
-            {/* Tab Content */}
             <div className="flex-1">
               <TabPanel id="profile">
                 <Card className="bg-zinc-800 border-zinc-700">
@@ -214,7 +397,7 @@ export default function AccountSettings() {
                   </CardContent>
                 </Card>
               </TabPanel>
-              
+
               <TabPanel id="notifications">
                 <Card className="bg-zinc-800 border-zinc-700">
                   <CardHeader>
@@ -257,6 +440,36 @@ export default function AccountSettings() {
                         <Switch id="marketing-notifications" />
                       </div>
                     </div>
+
+                    <div className="mt-6 pt-6 border-t border-zinc-700">
+                      <h3 className="text-lg font-medium mb-4">Notification Methods</h3>
+                      
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">Email Notifications</p>
+                            <p className="text-sm text-gray-400">Receive notifications via email</p>
+                          </div>
+                          <Switch id="email-notifications" defaultChecked />
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">Push Notifications</p>
+                            <p className="text-sm text-gray-400">Receive notifications on your device</p>
+                          </div>
+                          <Switch id="push-notifications" defaultChecked />
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">SMS Notifications</p>
+                            <p className="text-sm text-gray-400">Receive text messages for important updates</p>
+                          </div>
+                          <Switch id="sms-notifications" />
+                        </div>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
               </TabPanel>
@@ -271,47 +484,58 @@ export default function AccountSettings() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-6">
-                      <div className="bg-zinc-900 p-4 rounded-md flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-8 bg-blue-500 rounded-md flex items-center justify-center text-xs font-bold text-white">
-                            VISA
-                          </div>
-                          <div>
-                            <p className="font-medium">•••• •••• •••• 4242</p>
-                            <p className="text-xs text-gray-400">Expires 09/25</p>
-                          </div>
+                      {paymentMethods.length === 0 ? (
+                        <div className="text-center p-6 bg-zinc-900 rounded-md">
+                          <p className="text-gray-400 mb-4">You don&apos;t have any payment methods yet</p>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <div className="text-xs px-2 py-1 bg-green-900/30 text-green-400 rounded-md">
-                            Default
+                      ) : (
+                        paymentMethods.map((method) => (
+                          <div key={method.id} className="bg-zinc-900 p-4 rounded-md flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                              <div className={`w-12 h-8 ${method.bgColor} rounded-md flex items-center justify-center text-xs font-bold text-white`}>
+                                {method.type}
+                              </div>
+                              <div>
+                                <p className="font-medium">•••• •••• •••• {method.lastFour}</p>
+                                <p className="text-xs text-gray-400">Expires {method.expiryDate}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {method.isDefault ? (
+                                <div className="text-xs px-2 py-1 bg-green-900/30 text-green-400 rounded-md flex items-center">
+                                  <Check className="w-3 h-3 mr-1" /> Default
+                                </div>
+                              ) : (
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-8 text-xs"
+                                  onClick={() => handleSetDefaultPaymentMethod(method.id)}
+                                >
+                                  Set Default
+                                </Button>
+                              )}
+                              
+                              {!method.isDefault && (
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-8 text-red-400 hover:text-red-300 hover:bg-red-950/30"
+                                  onClick={() => handleRemovePaymentMethod(method.id)}
+                                >
+                                  Remove
+                                </Button>
+                              )}
+                            </div>
                           </div>
-                          <Button variant="ghost" size="sm" className="h-8">
-                            Edit
-                          </Button>
-                        </div>
-                      </div>
+                        ))
+                      )}
                       
-                      <div className="bg-zinc-900 p-4 rounded-md flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-8 bg-gray-600 rounded-md flex items-center justify-center text-xs font-bold text-white">
-                            MC
-                          </div>
-                          <div>
-                            <p className="font-medium">•••• •••• •••• 8888</p>
-                            <p className="text-xs text-gray-400">Expires 05/24</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button variant="ghost" size="sm" className="h-8">
-                            Edit
-                          </Button>
-                          <Button variant="ghost" size="sm" className="h-8 text-red-400 hover:text-red-300 hover:bg-red-950/30">
-                            Remove
-                          </Button>
-                        </div>
-                      </div>
-                      
-                      <Button variant="outline" className="w-full mt-4">
+                      <Button 
+                        variant="outline" 
+                        className="w-full mt-4"
+                        onClick={() => setShowAddPaymentModal(true)}
+                      >
                         <CreditCard className="mr-2 h-4 w-4" /> Add Payment Method
                       </Button>
                     </div>
@@ -326,8 +550,12 @@ export default function AccountSettings() {
       <Footer className="bg-zinc-950">
         <div className="flex flex-col md:flex-row justify-between items-center mb-8">
           <div className="flex items-center gap-2 mb-6 md:mb-0">
-            <div className="bg-purple-600 w-8 h-8 rounded-md flex items-center justify-center">
-              <CreditCard className="w-5 h-5" />
+            <div className="bg-purple-600 w-8 h-8 rounded-md flex items-center justify-center overflow-hidden">
+              <img 
+                src={cliquepayLogo} 
+                alt="CliquePay Logo" 
+                className="w-full h-full object-cover"
+              />
             </div>
             <span className="font-bold text-xl">CliquePay</span>
           </div>
@@ -356,6 +584,8 @@ export default function AccountSettings() {
           <p>© {new Date().getFullYear()} CliquePay. All rights reserved.</p>
         </div>
       </Footer>
+      
+      <AddPaymentModal />
     </PageLayout>
   );
 }

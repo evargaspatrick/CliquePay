@@ -16,11 +16,17 @@ import { getTotalUnreadCount } from "../components/chats/ChatNotifications";
 import SettleUpModal from "./settleup";
 import { SecurityUtils } from "../utils/Security";
 import { PaymentModal } from "./newpayment";
-// Create a simple Logo component if it doesn't exist
+import cliquepayLogo from "../assets/images/CliquePay.jpeg";
+
+// Update the Logo component
 const Logo = () => (
   <div className="flex items-center gap-2">
-    <div className="bg-purple-600 w-8 h-8 rounded-md flex items-center justify-center">
-      <CreditCard className="w-5 h-5" />
+    <div className="bg-purple-600 w-8 h-8 rounded-md flex items-center justify-center overflow-hidden">
+      <img 
+        src={cliquepayLogo} 
+        alt="CliquePay Logo" 
+        className="w-full h-full object-cover"
+      />
     </div>
     <span className="font-bold text-xl">CliquePay</span>
   </div>

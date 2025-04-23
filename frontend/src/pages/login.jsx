@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import Cookies from 'js-cookie';
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../components/ui/card";
-import { ArrowLeft, Check, CreditCard, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Check, Eye, EyeOff } from "lucide-react";
+import cliquepayLogo from "../assets/images/CliquePay.jpeg";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -109,12 +110,16 @@ export default function Login() {
   
   return (
     <div className="min-h-screen bg-black text-white flex flex-col">
-      {/* Header */}
+      {/* Header - Updated with logo */}
       <header className="container mx-auto py-6 px-4">
         <div className="flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <div className="bg-purple-600 w-8 h-8 rounded-md flex items-center justify-center">
-              <CreditCard className="w-5 h-5" />
+            <div className="bg-purple-600 w-8 h-8 rounded-md flex items-center justify-center overflow-hidden">
+              <img 
+                src={cliquepayLogo} 
+                alt="CliquePay Logo" 
+                className="w-full h-full object-cover"
+              />
             </div>
             <span className="font-bold text-xl">CliquePay</span>
           </div>

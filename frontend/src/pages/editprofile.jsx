@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Lock, Save, CreditCard } from 'lucide-react'
+import { ArrowLeft, Lock, Save } from 'lucide-react'
 import Cookies from 'js-cookie'
 import { PageLayout, Header, Section } from "../components/layout/PageLayout"
+import cliquepayLogo from "../assets/images/CliquePay.jpeg"
 
 const EditProfile = () => {
   const navigate = useNavigate()
@@ -64,11 +65,15 @@ const EditProfile = () => {
 
   return (
     <PageLayout>
-      {/* Header */}
+      {/* Header with logo updated */}
       <Header className="border-b border-zinc-800 bg-zinc-900/50 backdrop-blur-sm py-4">
         <div className="flex items-center gap-2">
-          <div className="bg-purple-600 w-8 h-8 rounded-md flex items-center justify-center">
-            <CreditCard className="w-5 h-5" />
+          <div className="bg-purple-600 w-8 h-8 rounded-md flex items-center justify-center overflow-hidden">
+            <img 
+              src={cliquepayLogo} 
+              alt="CliquePay Logo" 
+              className="w-full h-full object-cover"
+            />
           </div>
           <span className="font-bold text-xl">CliquePay</span>
         </div>

@@ -1,9 +1,10 @@
-import { useState, useEffect, createContext, useContext } from 'react';
-import { X, CheckCircle, AlertTriangle, Info, AlertCircle } from 'lucide-react';
-import { cn } from "../../lib/utils";
-import { createPortal } from 'react-dom';
-import PropTypes from 'prop-types';
-
+import { useState } from 'react';ateContext, useContext } from 'react';
+import PropTypes from 'prop-types';gle, Info, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Bell, CreditCard, KeyRound, Lock, Save, User } from "lucide-react";
+import { useNavigate } from 'react-router-dom';
+// Import the logo image
+import cliquepayLogo from "../assets/images/CliquePay.jpeg";
+import { Button } from "../components/ui/button";
 // Context for notification system
 const NotificationContext = createContext(null);
 
@@ -39,7 +40,6 @@ export const Notification = ({
   message,
   duration = 5000,
   onClose,
-  position = 'top-right',
   customIcon,
   customClass = '',
   showClose = true,
@@ -211,3 +211,18 @@ export const useNotifications = () => {
 
 // Export constants
 export { NOTIFICATION_TYPES };
+
+export function App() {
+  return (
+    <NotificationsProvider>
+      {/* Rest of your app */}
+      <Router>
+        <Routes>
+          {/* Your routes */}
+        </Routes>
+      </Router>
+      {/* Position notifications in bottom-right corner */}
+      <NotificationsContainer position="bottom-right" />
+    </NotificationsProvider>
+  );
+}

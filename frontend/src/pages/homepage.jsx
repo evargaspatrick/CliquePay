@@ -1,20 +1,25 @@
-import { ArrowRight, CreditCard, Lock, Smartphone, Users, Zap } from "lucide-react";
+import { ArrowRight, Lock, Smartphone, Users, Zap } from "lucide-react"; // Remove CreditCard
 import { useNavigate } from 'react-router-dom';
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
 import { PageLayout, Header, Section, Footer } from "../components/layout/PageLayout";
 import BillSplittingVisualization from "../components/designs/bill-splitting-visualization";
+import cliquepayLogo from "../assets/images/CliquePay.jpeg"; // Add logo import
 
 export default function Home() {
   const navigate = useNavigate();
   
   return (
     <PageLayout>
-      {/* Header */}
+      {/* Header - Updated with logo */}
       <Header>
         <div className="flex items-center gap-2">
-          <div className="bg-purple-600 w-8 h-8 rounded-md flex items-center justify-center">
-            <CreditCard className="w-5 h-5" />
+          <div className="bg-purple-600 w-8 h-8 rounded-md flex items-center justify-center overflow-hidden">
+            <img 
+              src={cliquepayLogo} 
+              alt="CliquePay Logo" 
+              className="w-full h-full object-cover"
+            />
           </div>
           <span className="font-bold text-xl">CliquePay</span>
         </div>
@@ -258,8 +263,12 @@ export default function Home() {
       <Footer className="bg-zinc-950">
         <div className="flex flex-col md:flex-row justify-between items-center mb-8">
           <div className="flex items-center gap-2 mb-6 md:mb-0">
-            <div className="bg-purple-600 w-8 h-8 rounded-md flex items-center justify-center">
-              <CreditCard className="w-5 h-5" />
+            <div className="bg-purple-600 w-8 h-8 rounded-md flex items-center justify-center overflow-hidden">
+              <img 
+                src={cliquepayLogo} 
+                alt="CliquePay Logo" 
+                className="w-full h-full object-cover"
+              />
             </div>
             <span className="font-bold text-xl">CliquePay</span>
           </div>

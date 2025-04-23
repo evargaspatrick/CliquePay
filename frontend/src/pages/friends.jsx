@@ -8,15 +8,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 import { Button } from "../components/ui/button";
 import Loading from '../components/Loading';
-import { SecurityUtils } from '../utils/security';
+import { SecurityUtils } from '../utils/Security';
 import { Users, UserPlus, Search, CreditCard, ArrowLeftFromLine, LogOut, X, UserMinus, UserX } from "lucide-react";
 import { set } from 'zod';
+import cliquepayLogo from "../assets/images/CliquePay.jpeg";
 
 // Simple Logo component
 const Logo = () => (
   <div className="flex items-center gap-2">
-    <div className="bg-purple-600 w-8 h-8 rounded-md flex items-center justify-center">
-      <CreditCard className="w-5 h-5" />
+    <div className="bg-purple-600 w-8 h-8 rounded-md flex items-center justify-center overflow-hidden">
+      <img 
+        src={cliquepayLogo} 
+        alt="CliquePay Logo" 
+        className="w-full h-full object-cover"
+      />
     </div>
     <span className="font-bold text-xl">CliquePay</span>
   </div>
